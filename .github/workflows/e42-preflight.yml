@@ -1,4 +1,4 @@
-# final preflight: +Infinity support preserved; CloudSim event resolution 0.001 ms
+# final preflight: +Infinity support preserved; CloudSim event resolution 0.001 ms; CPU-only CloudSim service semantics
 name: E4.2 CloudSim Publication Preflight
 
 on:
