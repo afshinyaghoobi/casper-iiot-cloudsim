@@ -1,8 +1,8 @@
 [
   {
     "path": "E41_PARITY_MATRIX.csv",
-    "bytes": 2170,
-    "sha256": "d712f33c980e3a2a6abe6440263a4ae3a100172bac05e45a456bf16133e5d681"
+    "bytes": 2147,
+    "sha256": "3ebb1483d92b21c8a74ddc689279de1fc60741e7027dfd92abfbd04c41883cbb"
   },
   {
     "path": "E41_SCOPE_AND_VALIDITY.md",
