@@ -1,5 +1,5 @@
-# E4.1b frozen runtime-parity trigger
-name: E4.1b CloudSim Plus Runtime Parity
+# E4.1c harness-corrected runtime parity; CASPER scientific architecture remains frozen.
+name: E4.1c CloudSim Plus Runtime Parity
 
 on:
   workflow_dispatch:
@@ -8,6 +8,7 @@ on:
       - 'pom.xml'
       - 'src/**'
       - 'scripts/**'
+      - 'E41_SOURCE_MANIFEST.json'
       - '.github/workflows/e41b-cloudsim-runtime-parity.yml'
 
 jobs:
@@ -25,8 +26,11 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Verify frozen E4.1 source hashes
-        run: mkdir -p e41b_results && python3 scripts/verify_frozen_source.py | tee e41b_results/FROZEN_SOURCE_VERIFY.txt
+      - name: Prepare evidence directory
+        run: mkdir -p e41b_results
+
+      - name: Verify frozen architecture source hashes
+        run: python3 scripts/verify_frozen_source.py | tee e41b_results/FROZEN_SOURCE_VERIFY.txt
 
       - name: Environment
         run: |
@@ -37,29 +41,39 @@ jobs:
       - name: Dependency-free core parity
         run: bash scripts/run_core_parity.sh | tee e41b_results/CORE_PARITY.txt
 
-      - name: CloudSim Plus 8.5.7 runtime smoke
+      - name: CloudSim Plus runtime smoke
+        id: runtime_smoke
+        continue-on-error: true
         run: |
           set -o pipefail
           mvn -B -ntp -DskipTests compile exec:java \
             -Dexec.mainClass=org.casperiiot.e41.cloudsim.CloudSimPlusSmoke \
             2>&1 | tee e41b_results/CLOUDSIM_RUNTIME_SMOKE.txt
-          grep -F 'CLOUDSIM_RUNTIME_SMOKE PASS hosts=21 vms=21 cloudlets=42 finished=42' \
-            e41b_results/CLOUDSIM_RUNTIME_SMOKE.txt
 
-      - name: Record dependency version
+      - name: Record resolved CloudSim dependency even if smoke fails
+        if: always()
         run: |
+          set -o pipefail
           mvn -B -ntp dependency:tree -Dincludes=org.cloudsimplus:cloudsimplus \
             2>&1 | tee e41b_results/CLOUDSIM_DEPENDENCY_TREE.txt
-          grep -F 'org.cloudsimplus:cloudsimplus:jar:8.5.7' e41b_results/CLOUDSIM_DEPENDENCY_TREE.txt
 
-      - name: Write machine-readable PASS marker
+      - name: Final strict E4.1c parity gate
+        if: always()
         run: |
-          cat > e41b_results/E41B_RUNTIME_PARITY_RESULT.json <<'JSON'
+          set -e
+          grep -F 'FROZEN_SOURCE_VERIFY PASS checked=19' e41b_results/FROZEN_SOURCE_VERIFY.txt
+          grep -F 'CORE_PARITY passed=23 failed=0' e41b_results/CORE_PARITY.txt
+          grep -F 'org.cloudsimplus:cloudsimplus:jar:8.5.7' e41b_results/CLOUDSIM_DEPENDENCY_TREE.txt
+          grep -F 'CLOUDSIM_RUNTIME_SMOKE PASS hosts=21 vms=21 cloudlets=42 finished=42' e41b_results/CLOUDSIM_RUNTIME_SMOKE.txt
+          cat > e41b_results/E41C_RUNTIME_PARITY_RESULT.json <<'JSON'
           {
             "status": "PASS",
+            "stage": "E4.1c",
+            "harness_correction_only": true,
+            "casper_architecture_retuned": false,
             "frozen_source_verified": true,
             "core_parity": "PASS",
-            "cloudsim_plus_version": "8.5.7",
+            "cloudsim_plus_dependency": "org.cloudsimplus:cloudsimplus:8.5.7",
             "cloudsim_runtime_smoke": "PASS",
             "expected": "hosts=21 vms=21 cloudlets=42 finished=42",
             "e42_gate": "GO"
@@ -67,8 +81,9 @@ jobs:
           JSON
 
       - name: Upload parity evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e41b-runtime-parity-evidence
+          name: e41c-runtime-parity-evidence
           path: e41b_results/
           if-no-files-found: error
