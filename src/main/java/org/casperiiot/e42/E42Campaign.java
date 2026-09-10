@@ -70,12 +70,12 @@ public final class E42Campaign {
                         double outputMb, double arrivalMs) {}
     private static final class DispatchMeta {
         final Task task; final int rank; final int node;
-        final double predictedLatencyMs, sigmaMs, nominalServiceMs, actualNetworkMs;
+        final double predictedLatencyMs, sigmaMs, nominalServiceMs, actualNetworkMs, etaAtDispatch;
         final boolean certified, familyCovered, probe;
-        DispatchMeta(Task t,int rank,int node,double pred,double sigma,double nominal,double net,
+        DispatchMeta(Task t,int rank,int node,double pred,double sigma,double nominal,double net,double eta,
                      boolean cert,boolean fwc,boolean probe){
             task=t;this.rank=rank;this.node=node;predictedLatencyMs=pred;sigmaMs=sigma;
-            nominalServiceMs=nominal;actualNetworkMs=net;certified=cert;familyCovered=fwc;this.probe=probe;
+            nominalServiceMs=nominal;actualNetworkMs=net;etaAtDispatch=eta;certified=cert;familyCovered=fwc;this.probe=probe;
         }
     }
     private record MissionRec(int taskIndex, boolean post, boolean fwc, boolean air, boolean far,
@@ -155,8 +155,8 @@ public final class E42Campaign {
                 final Cloudlet cl=evt.getCloudlet();
                 final DispatchMeta m=meta.get(cl);
                 if(m==null) return;
-                final double serviceMs=cl.getActualCpuTime()*1000.0;
-                final double actualLatency=m.actualNetworkMs + cl.getWaitingTime()*1000.0 + serviceMs;
+                final double serviceMs=(cl.getFinishTime()-cl.getStartTime())*1000.0;
+                final double actualLatency=m.actualNetworkMs + cl.getStartWaitTime()*1000.0 + serviceMs;
                 lastObserved[m.node]=finishOrdinal[0]++;
                 if(m.task.index()>=CAL_BURNIN) {
                     serviceByTier[tier(m.node)].add(serviceMs/Math.max(m.nominalServiceMs,1e-12));
@@ -201,7 +201,7 @@ public final class E42Campaign {
             trueNextFree[j]=Math.max(trueNextFree[j],now)+actualService;
             vq.onDispatch(j,now,nominal);
             meta.put(cl,new DispatchMeta(t,rank,j,predj,sigma,nominal,
-                    nominalNetworkMs(t,nodes[j]),false,true,probe));
+                    nominalNetworkMs(t,nodes[j]),1.0,false,true,probe));
             return vms.get(j);
         });
         broker.submitCloudletList(cloudlets);
@@ -265,15 +265,16 @@ public final class E42Campaign {
                 final DispatchMeta m=meta.get(cl);
                 if(m==null)return;
                 acc.finished++;
-                final double serviceMs=cl.getActualCpuTime()*1000.0;
+                final double serviceMs=(cl.getFinishTime()-cl.getStartTime())*1000.0;
                 final double planned=lengthToMs(cl.getLength(),nodes[m.node].vmMips());
                 acc.maxServiceParityErrorMs=Math.max(acc.maxServiceParityErrorMs,Math.abs(serviceMs-planned));
-                final double actualLatency=m.actualNetworkMs+cl.getWaitingTime()*1000.0+serviceMs;
+                final double actualLatency=m.actualNetworkMs+cl.getStartWaitTime()*1000.0+serviceMs;
                 lastObserved[m.node]=finishOrdinal[0]++;
 
                 if(policy.health){
                     health[m.node].observe(serviceMs,m.nominalServiceMs);
-                    if(health[m.node].isAlarmed() && !affected[m.node] && !acc.countedFalseAlarm[m.node]){
+                    final boolean trueComputeDegraded = scenario.computeRetained < 1.0 && affected[m.node];
+                    if(health[m.node].isAlarmed() && !trueComputeDegraded && !acc.countedFalseAlarm[m.node]){
                         acc.countedFalseAlarm[m.node]=true;
                         acc.healthyFalseAlarmNodes++;
                     }
@@ -288,7 +289,7 @@ public final class E42Campaign {
                     final boolean far=m.certified && dvr;
                     acc.mission.add(new MissionRec(m.task.index(),m.task.index()>=CHANGE_TASK,
                             m.familyCovered,!m.certified,far,dvr,actualLatency,
-                            policy.adaptive?e17.etaBeforeOutcome():1.0));
+                            m.etaAtDispatch));
                 }
             });
             cloudlets.add(c);
@@ -377,7 +378,7 @@ public final class E42Campaign {
 
             final long ns=System.nanoTime()-wall0;
             acc.mapperNsSum+=ns; acc.mapperCalls++;
-            meta.put(cl,new DispatchMeta(t,chosenRank,j,predj,sigma,nominal,actualNet,
+            meta.put(cl,new DispatchMeta(t,chosenRank,j,predj,sigma,nominal,actualNet,eta,
                     certified,familyCovered,probe));
             return vms.get(j);
         });
@@ -398,7 +399,8 @@ public final class E42Campaign {
     }
 
     private static String summarize(long seed,int n,Scenario s,Policy p,Acc a,boolean[] affected){
-        final List<MissionRec> post=a.mission.stream().filter(MissionRec::post).toList();
+        final List<MissionRec> ordered=a.mission.stream().sorted(Comparator.comparingInt(MissionRec::taskIndex)).toList();
+        final List<MissionRec> post=ordered.stream().filter(MissionRec::post).toList();
         final List<MissionRec> late=post.size()<=LATE_MISSION?post:post.subList(post.size()-LATE_MISSION,post.size());
         final List<MissionRec> shock=post.size()<=LATE_MISSION?post:post.subList(0,LATE_MISSION);
         final double postFwc=p.cp?meanBool(post,MissionRec::fwc):Double.NaN;
