@@ -1,0 +1,97 @@
+[
+  {
+    "path": "E41_PARITY_MATRIX.csv",
+    "bytes": 2170,
+    "sha256": "d712f33c980e3a2a6abe6440263a4ae3a100172bac05e45a456bf16133e5d681"
+  },
+  {
+    "path": "E41_SCOPE_AND_VALIDITY.md",
+    "bytes": 1743,
+    "sha256": "85291d4b2447426e8d69ef46fcd283f593a4601f967f04d23d360e1dd93e782c"
+  },
+  {
+    "path": "pom.xml",
+    "bytes": 1263,
+    "sha256": "cee26e853acf4c1b0f9ddc7bfba363d86962b6d1b0432464953642c492cf3223"
+  },
+  {
+    "path": "reference/E312_DECISION.json",
+    "bytes": 280,
+    "sha256": "6488a06995cfdd50288f2db8a04af4f18e6f9c28322ac9f294151bdd671ec864"
+  },
+  {
+    "path": "reference/E312_LOCKED_PROTOCOL.json",
+    "bytes": 2005,
+    "sha256": "ec525347f196c91dcdbee8e605f9757126df84adcb61fd82413e61274ccf175a"
+  },
+  {
+    "path": "scripts/run_cloudsim_smoke.sh",
+    "bytes": 367,
+    "sha256": "a6d6eed40a9974a4fb5fd651cd0f62ea02e6dbbd68cc025a49b6362acc67e59e"
+  },
+  {
+    "path": "scripts/run_core_parity.sh",
+    "bytes": 306,
+    "sha256": "0566ac49af1cb74666d0eaeb7978dd48fddbbb15679099f396ec08b29a19b610"
+  },
+  {
+    "path": "src/main/java/org/casperiiot/e41/cloudsim/CloudSimCasperBridge.java",
+    "bytes": 2032,
+    "sha256": "47c65745e69b2906efa984f81844a53cca54a3617b7b76e2a6b68544e7884cab"
+  },
+  {
+    "path": "src/main/java/org/casperiiot/e41/cloudsim/CloudSimPlusSmoke.java",
+    "bytes": 3239,
+    "sha256": "e0ce522708bbe47c8016cbbd3e952021275a53ecee56d9aa1e68c61b94d0b788"
+  },
+  {
+    "path": "src/main/java/org/casperiiot/e41/core/CandidateGate.java",
+    "bytes": 808,
+    "sha256": "93b2d50e92c779124269d5075c9fc9074480bc73b7f4909cd835767cae5a5dc3"
+  },
+  {
+    "path": "src/main/java/org/casperiiot/e41/core/Conformal.java",
+    "bytes": 1006,
+    "sha256": "27513a8a9742727446177db9737eb0b97d18f60fcde45fd34b56f6c3045ae7a2"
+  },
+  {
+    "path": "src/main/java/org/casperiiot/e41/core/CoreParitySmoke.java",
+    "bytes": 4481,
+    "sha256": "10596e25a7bb4c8438979c5dbc259f19a0a704eec26ca1ad01a12919f3f94269"
+  },
+  {
+    "path": "src/main/java/org/casperiiot/e41/core/E17DualMemory.java",
+    "bytes": 3001,
+    "sha256": "d214e44c53693336e05a2abf5a82846efb401a8d332f473b7db83a456c3df136"
+  },
+  {
+    "path": "src/main/java/org/casperiiot/e41/core/FrozenConfig.java",
+    "bytes": 1543,
+    "sha256": "8facfab556c5c688035282711946b93a55d54ba555144e02f822eb57cd02476a"
+  },
+  {
+    "path": "src/main/java/org/casperiiot/e41/core/FrozenExperimentSpec.java",
+    "bytes": 849,
+    "sha256": "52ab74b805f4766b743dc2a4f29e91cd6f9012f33a686f0e9112238fe9c40d2e"
+  },
+  {
+    "path": "src/main/java/org/casperiiot/e41/core/NodeHealthDetector.java",
+    "bytes": 1292,
+    "sha256": "aa8ab8ab02eefe52b096bf59514b3e57faf76fe4161c46b718efb7e66f1323ce"
+  },
+  {
+    "path": "src/main/java/org/casperiiot/e41/core/SparseProbeBudget.java",
+    "bytes": 748,
+    "sha256": "8fdaf1b4aca4d1a0c2a0eb9dc68df4a4149ab9d0fe01b268edef5e9ca0dc58a6"
+  },
+  {
+    "path": "src/main/java/org/casperiiot/e41/core/SparseProbeSelector.java",
+    "bytes": 907,
+    "sha256": "547814e8e48e0e316b3767f56354704d750f5cd24390b480e9cc811272e40d01"
+  },
+  {
+    "path": "src/main/java/org/casperiiot/e41/core/VirtualQueueEstimator.java",
+    "bytes": 1067,
+    "sha256": "a3765cc5dc57a6cbd449d0ef5effa7f960175dec551f67c494d003a329ba936e"
+  }
+]
