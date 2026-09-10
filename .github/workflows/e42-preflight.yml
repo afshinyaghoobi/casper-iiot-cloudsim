@@ -1,0 +1,44 @@
+name: E4.2 CloudSim Publication Preflight
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/main/java/org/casperiiot/e42/**'
+      - 'E42_LOCKED_PROTOCOL.json'
+      - '.github/workflows/e42-preflight.yml'
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Verify CloudSim Plus dependency
+        run: |
+          mvn -B -ntp dependency:tree -Dincludes=org.cloudsimplus:cloudsimplus | tee e42_dependency.txt
+          grep -F 'org.cloudsimplus:cloudsimplus:jar:8.5.7' e42_dependency.txt
+      - name: Compile E4.2
+        run: mvn -B -ntp -DskipTests compile
+      - name: Dynamic CloudSim preflight
+        run: |
+          mkdir -p e42_preflight
+          mvn -B -ntp -DskipTests exec:java \
+            -Dexec.mainClass=org.casperiiot.e42.E42Campaign \
+            -Dexec.args='--seed 0 --cal 80000 --tasks 12000 --scenarios S0_STATIONARY,S2_HIDDEN_COMPUTE_40LOSS --out e42_preflight/preflight.csv' \
+            2>&1 | tee e42_preflight/preflight.log
+          grep -F 'CALIBRATION_VALIDATION PASS' e42_preflight/preflight.log
+          grep -F 'E42_SEED_COMPLETE seed=0 rows=16' e42_preflight/preflight.log
+          test "$(($(wc -l < e42_preflight/preflight.csv)-1))" -eq 16
+      - name: Upload preflight evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: e42-preflight-evidence
+          path: |
+            e42_preflight/
+            e42_dependency.txt
