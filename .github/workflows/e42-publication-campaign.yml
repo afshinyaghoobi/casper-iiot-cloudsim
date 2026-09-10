@@ -1,0 +1,106 @@
+name: E4.2 Publication-Scale CloudSim Campaign
+
+on:
+  workflow_run:
+    workflows: ["E4.2 CloudSim Publication Preflight"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+env:
+  TESTED_SHA: 48ff4433f8b09e506f706ab84c3dd9b33fe85953
+  SCENARIOS: S0_STATIONARY,S1_LAMBDA_X2,S2_HIDDEN_COMPUTE_40LOSS,S3_HIDDEN_NETWORK_50LOSS,S4_COMPOUND
+
+jobs:
+  publication-seeds:
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_sha == '48ff4433f8b09e506f706ab84c3dd9b33fe85953' }}
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        seed: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29]
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout exact preflight-tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TESTED_SHA }}
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Verify frozen protocol and CloudSim dependency
+        run: |
+          test "$(git rev-parse HEAD)" = "$TESTED_SHA"
+          grep -F '"publication_runs": 30' E42_LOCKED_PROTOCOL.json
+          grep -F '"no_result_driven_retuning": true' E42_LOCKED_PROTOCOL.json
+          mvn -B -ntp dependency:tree -Dincludes=org.cloudsimplus:cloudsimplus | tee e42_dependency_seed_${{ matrix.seed }}.txt
+          grep -F 'org.cloudsimplus:cloudsimplus:jar:8.5.7' e42_dependency_seed_${{ matrix.seed }}.txt
+      - name: Compile frozen E4.2 source
+        run: mvn -B -ntp -DskipTests compile
+      - name: Run publication seed ${{ matrix.seed }}
+        run: |
+          mkdir -p e42_seed_${{ matrix.seed }}
+          mvn -B -ntp -DskipTests exec:java \
+            -Dexec.mainClass=org.casperiiot.e42.E42Campaign \
+            -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios $SCENARIOS --out e42_seed_${{ matrix.seed }}/e42_seed_${{ matrix.seed }}.csv" \
+            2>&1 | tee e42_seed_${{ matrix.seed }}/e42_seed_${{ matrix.seed }}.log
+          grep -F 'CALIBRATION_VALIDATION PASS' e42_seed_${{ matrix.seed }}/e42_seed_${{ matrix.seed }}.log
+          grep -F 'E42_SEED_COMPLETE seed=${{ matrix.seed }} rows=40' e42_seed_${{ matrix.seed }}/e42_seed_${{ matrix.seed }}.log
+          test "$(($(wc -l < e42_seed_${{ matrix.seed }}/e42_seed_${{ matrix.seed }}.csv)-1))" -eq 40
+      - name: Upload seed evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e42-seed-${{ matrix.seed }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            e42_seed_${{ matrix.seed }}/
+            e42_dependency_seed_${{ matrix.seed }}.txt
+
+  aggregate-publication-results:
+    needs: publication-seeds
+    if: ${{ needs.publication-seeds.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact preflight-tested analysis code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TESTED_SHA }}
+      - name: Download all 30 seed artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: e42-seed-*
+          path: e42_raw
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install locked analysis dependencies
+        run: python -m pip install --disable-pip-version-check numpy pandas scipy tabulate
+      - name: Validate 1,200 rows and run prelocked statistics
+        run: |
+          python scripts/e42_aggregate.py --input e42_raw --out e42_publication
+          test "$(($(wc -l < e42_publication/e42_all_runs.csv)-1))" -eq 1200
+          grep -F '"seeds": 30' e42_publication/E42_DECISION.json
+          grep -F '"no_result_driven_retuning": true' e42_publication/E42_DECISION.json
+      - name: Record exact provenance
+        run: |
+          printf 'preflight_run_id=%s\npreflight_head_sha=%s\nanalysis_checkout_sha=%s\n' \
+            '${{ github.event.workflow_run.id }}' \
+            '${{ github.event.workflow_run.head_sha }}' \
+            "$(git rev-parse HEAD)" > e42_publication/E42_PROVENANCE.txt
+      - name: Upload publication package
+        uses: actions/upload-artifact@v4
+        with:
+          name: e42-publication-results
+          retention-days: 90
+          path: e42_publication/
