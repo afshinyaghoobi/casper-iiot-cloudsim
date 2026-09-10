@@ -1,4 +1,4 @@
-# rerun after deterministic CloudSim 8.5.7 API/provenance correction
+# rerun after CloudSim 0.1 ms numerical-resolution correction
 name: E4.2 CloudSim Publication Preflight
 
 on:
