@@ -1,0 +1,75 @@
+{
+  "stage": "E4.2",
+  "name": "Publication-scale CloudSim Plus campaign",
+  "status_before_results": "LOCKED",
+  "cloudsim_plus_dependency": "org.cloudsimplus:cloudsimplus:8.5.7",
+  "scientific_architecture": "Frozen from E3.12 and runtime-parity validated in E4.1c",
+  "architecture_components": [
+    "dispatcher-side virtual queue",
+    "support-restored rank-wise conformal calibration",
+    "fixed sigma=(3+0.10*predicted_latency)*tier_multiplier",
+    "E1.7 slow/fast adaptive conformal recalibration",
+    "tier-q99 node-local service-health detector",
+    "sticky health-gated candidate eligibility",
+    "sparse Normal-task probing capped at 1%"
+  ],
+  "publication_runs": 30,
+  "calibration_events_per_seed": 80000,
+  "calibration_burnin": 10000,
+  "deployment_events_per_scenario_policy_seed": 30000,
+  "change_task": 10000,
+  "mission_late_window": 250,
+  "topology": {"edge": 12, "fog": 6, "cloud": 3},
+  "arrival_rate_nominal_tasks_per_second": 120,
+  "criticality_prevalence": {"normal": 0.80, "high": 0.15, "mission": 0.05},
+  "mission_deadline_ms": [40, 120],
+  "scenarios": {
+    "S0_STATIONARY": "stationary 120 tasks/s",
+    "S1_LAMBDA_X2": "arrival rate doubles after task 10000",
+    "S2_HIDDEN_COMPUTE_40LOSS": "six preselected nodes silently retain 60% compute capacity",
+    "S3_HIDDEN_NETWORK_50LOSS": "six preselected nodes silently retain 50% bandwidth",
+    "S4_COMPOUND": "arrival rate doubles and six preselected nodes simultaneously retain 60% compute and 50% bandwidth"
+  },
+  "baselines_and_ablations": [
+    "CLOUD_ONLY",
+    "EDGE_FIRST",
+    "PRED_GREEDY",
+    "GLOBAL_CP",
+    "RANKED_CP_STATIC",
+    "CASPER_ADAPT_NO_HEALTH",
+    "CASPER_HEALTH_STATIC",
+    "CASPER_FULL"
+  ],
+  "primary_metrics": [
+    "Mission post/late family-wise candidate coverage for assurance methods",
+    "Mission AIR",
+    "Mission FAR",
+    "Mission deadline violation rate",
+    "Mission P99 latency",
+    "probe rate",
+    "compute-degraded-node alarm coverage",
+    "healthy-node false alarms",
+    "scheduler decision overhead",
+    "CloudSim selected-service parity error"
+  ],
+  "statistics": {
+    "independent_unit": "seed/run",
+    "confidence_interval": "95% paired bootstrap, 20000 resamples",
+    "paired_test": "two-sided Wilcoxon signed-rank",
+    "effect_size": "Cliff's delta supplementary",
+    "omnibus": "Friedman test across policies for Mission deadline violation rate",
+    "multiple_testing": "Holm correction for FULL-vs-baseline paired comparisons"
+  },
+  "prelocked_full_casper_gates": {
+    "mean_late_mission_fwc_each_scenario": ">=0.99",
+    "mean_late_mission_air_each_scenario": "<0.20",
+    "mean_probe_rate_each_scenario": "<=0.01",
+    "healthy_false_alarm_nodes_each_scenario_across_30_seeds": "<=6",
+    "mean_compute_degraded_alarm_coverage_in_compute_and_compound": ">=0.90",
+    "max_cloudsim_selected_service_parity_error_ms": "<=2.0",
+    "all_cloudlets_finished": true
+  },
+  "network_model_note": "CloudSim Plus executes compute and queue dynamics. End-to-end network latency remains the explicit algebraic endpoint component used by the frozen E3 architecture; hidden bandwidth shifts affect this component without being exposed to the scheduler.",
+  "counterfactual_note": "Counterfactual retained-candidate outcomes are simulator audit-only. They never update the scheduler, calibrator, health detector, or E1.7 memory.",
+  "no_result_driven_retuning": true
+}
