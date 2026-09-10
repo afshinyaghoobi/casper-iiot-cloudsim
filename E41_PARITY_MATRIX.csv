@@ -1,0 +1,23 @@
+component,frozen_e312_semantics,e41_implementation,core_parity_status,cloudsim_runtime_status
+Topology,12 edge + 6 fog + 3 cloud = 21,FrozenConfig; CloudSimPlusSmoke.createHosts/createVms,PASS,PENDING_RUNTIME
+Criticality risk,eps N=.10 H=.05 M=.01,FrozenConfig,PASS,core-owned
+Rank risk allocation,Mission weights .60/.30/.10 -> alpha .006/.003/.001,FrozenConfig.missionRankAlpha,PASS,core-owned
+Finite-sample qhat,ceil((n+1)(1-alpha)); +inf if k>n,Conformal.qhat,PASS,core-owned
+One-sided score,"max(0,(L-Lhat)/(sigma+delta))",Conformal.score,PASS,core-owned
+Virtual queue,telemetry reset; dispatch update with predicted service,VirtualQueueEstimator; CloudSimCasperBridge,PASS,PENDING_RUNTIME_BINDING
+Health detector,tier q99; rolling 8; alarm at >=5 exceedances,NodeHealthDetector,PASS,core-owned
+Health gate,alarmed nodes excluded before top-3 family,CandidateGate,PASS,PENDING_RUNTIME_BINDING
+Sparse probing,Normal only; every 100th; <=1% budget; least-recently-observed plausible,SparseProbeBudget; SparseProbeSelector,PASS,PENDING_RUNTIME_BINDING
+E1.7 slow memory,W=200 q95 ratio,E17DualMemory,PASS,core-owned
+E1.7 fast memory,W=50 during 200-arrival transition,E17DualMemory,PASS,core-owned
+E1.7 detector,50-score window; >=12 exceeds pre q95,E17DualMemory,PASS,core-owned
+Eta clipping,"[1,3]",FrozenConfig.clipEta; E17DualMemory,PASS,core-owned
+Calibration size,"80,000 with 10,000 burn-in",FrozenExperimentSpec,PASS,runner pending
+Deployment size / change,"30,000; changepoint 10,000",FrozenExperimentSpec,PASS,runner pending
+S0,stationary,FrozenExperimentSpec.Scenario,PASS,runner pending
+S1,lambda x2,FrozenExperimentSpec.Scenario,PASS,runner pending
+S2,hidden compute retained=.60,FrozenExperimentSpec.Scenario,PASS,runner pending
+S3,hidden bandwidth retained=.50,FrozenExperimentSpec.Scenario,PASS,runner pending
+CloudSim construction,CloudSimPlus + DatacenterSimple + DatacenterBrokerSimple,CloudSimPlusSmoke,SOURCE_READY,BLOCKED_ENVIRONMENT
+VM mapping,broker.setVmMapper,CloudSimPlusSmoke,SOURCE_READY,BLOCKED_ENVIRONMENT
+Cloudlet completion,finished count equals submitted count,CloudSimPlusSmoke,SOURCE_READY,BLOCKED_ENVIRONMENT
