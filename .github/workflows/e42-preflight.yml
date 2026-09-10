@@ -1,4 +1,4 @@
-# rerun after CloudSim 0.1 ms numerical-resolution correction
+# final preflight: conservative +Infinity qhat semantics preserved under sparse health support
 name: E4.2 CloudSim Publication Preflight
 
 on:
