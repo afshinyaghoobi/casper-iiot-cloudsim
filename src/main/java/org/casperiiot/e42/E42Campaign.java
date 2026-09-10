@@ -131,7 +131,7 @@ public final class E42Campaign {
         final List<Task> tasks = makeTasks(seed ^ 0xCA11B4A7L,n,Scenario.S0_STATIONARY);
         final int[] missionRank = calibrationRanks(seed,tasks);
 
-        final CloudSimPlus sim = new CloudSimPlus();
+        final CloudSimPlus sim = new CloudSimPlus(0.0001);
         final List<Vm> vms = createInfrastructure(sim,nodes);
         final DatacenterBrokerSimple broker = new DatacenterBrokerSimple(sim);
         final IdentityHashMap<Cloudlet,Task> spec = new IdentityHashMap<>();
@@ -239,7 +239,7 @@ public final class E42Campaign {
         final List<Task> tasks=makeTasks(seed ^ 0xD3F10A77L,n,scenario);
         final boolean[] affected=affectedMask(seed,scenario);
 
-        final CloudSimPlus sim=new CloudSimPlus();
+        final CloudSimPlus sim=new CloudSimPlus(0.0001);
         final List<Vm> vms=createInfrastructure(sim,nodes);
         final DatacenterBrokerSimple broker=new DatacenterBrokerSimple(sim);
         final IdentityHashMap<Cloudlet,Task> spec=new IdentityHashMap<>();
