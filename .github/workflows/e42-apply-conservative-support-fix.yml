@@ -1,0 +1,28 @@
+name: E4.2 Apply Conservative Support Handling
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/e42_conservative_support_patch.py'
+      - '.github/workflows/e42-apply-conservative-support-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Preserve finite-sample +Infinity semantics under sparse support
+        run: python3 scripts/e42_conservative_support_patch.py
+      - name: Commit source correction
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/main/java/org/casperiiot/e42/E42Campaign.java
+          git commit -m 'E4.2: preserve conservative +Infinity under sparse health support'
+          git push origin main
