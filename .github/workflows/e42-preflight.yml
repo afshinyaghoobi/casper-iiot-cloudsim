@@ -1,4 +1,4 @@
-# final preflight: conservative +Infinity qhat semantics preserved under sparse health support
+# final preflight: +Infinity support preserved; CloudSim event resolution 0.001 ms
 name: E4.2 CloudSim Publication Preflight
 
 on:
