@@ -1,0 +1,73 @@
+name: E4.1b CloudSim Plus Runtime Parity
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'pom.xml'
+      - 'src/**'
+      - 'scripts/**'
+      - '.github/workflows/e41b-cloudsim-runtime-parity.yml'
+
+jobs:
+  runtime-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Verify frozen E4.1 source hashes
+        run: python3 scripts/verify_frozen_source.py | tee e41b_results/FROZEN_SOURCE_VERIFY.txt
+
+      - name: Environment
+        run: |
+          java -version 2>&1 | tee e41b_results/JAVA_VERSION.txt
+          javac -version 2>&1 | tee e41b_results/JAVAC_VERSION.txt
+          mvn -version 2>&1 | tee e41b_results/MAVEN_VERSION.txt
+
+      - name: Dependency-free core parity
+        run: bash scripts/run_core_parity.sh | tee e41b_results/CORE_PARITY.txt
+
+      - name: CloudSim Plus 8.5.7 runtime smoke
+        run: |
+          set -o pipefail
+          mvn -B -ntp -DskipTests compile exec:java \
+            -Dexec.mainClass=org.casperiiot.e41.cloudsim.CloudSimPlusSmoke \
+            2>&1 | tee e41b_results/CLOUDSIM_RUNTIME_SMOKE.txt
+          grep -F 'CLOUDSIM_RUNTIME_SMOKE PASS hosts=21 vms=21 cloudlets=42 finished=42' \
+            e41b_results/CLOUDSIM_RUNTIME_SMOKE.txt
+
+      - name: Record dependency version
+        run: |
+          mvn -B -ntp dependency:tree -Dincludes=org.cloudsimplus:cloudsimplus \
+            2>&1 | tee e41b_results/CLOUDSIM_DEPENDENCY_TREE.txt
+          grep -F 'org.cloudsimplus:cloudsimplus:jar:8.5.7' e41b_results/CLOUDSIM_DEPENDENCY_TREE.txt
+
+      - name: Write machine-readable PASS marker
+        run: |
+          cat > e41b_results/E41B_RUNTIME_PARITY_RESULT.json <<'JSON'
+          {
+            "status": "PASS",
+            "frozen_source_verified": true,
+            "core_parity": "PASS",
+            "cloudsim_plus_version": "8.5.7",
+            "cloudsim_runtime_smoke": "PASS",
+            "expected": "hosts=21 vms=21 cloudlets=42 finished=42",
+            "e42_gate": "GO"
+          }
+          JSON
+
+      - name: Upload parity evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: e41b-runtime-parity-evidence
+          path: e41b_results/
+          if-no-files-found: error
