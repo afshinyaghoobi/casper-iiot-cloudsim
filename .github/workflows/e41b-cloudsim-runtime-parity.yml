@@ -26,7 +26,7 @@ jobs:
           cache: maven
 
       - name: Verify frozen E4.1 source hashes
-        run: python3 scripts/verify_frozen_source.py | tee e41b_results/FROZEN_SOURCE_VERIFY.txt
+        run: mkdir -p e41b_results && python3 scripts/verify_frozen_source.py | tee e41b_results/FROZEN_SOURCE_VERIFY.txt
 
       - name: Environment
         run: |
