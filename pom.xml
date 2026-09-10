@@ -7,10 +7,12 @@
   <artifactId>casper-e41-cloudsim</artifactId>
   <version>0.1.0</version>
   <name>CASPER-IIoT E4.1 CloudSim Plus Port</name>
+
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.cloudsimplus</groupId>
@@ -18,6 +20,7 @@
       <version>8.5.7</version>
     </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
