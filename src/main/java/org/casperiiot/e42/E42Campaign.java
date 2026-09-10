@@ -13,6 +13,7 @@ import org.cloudsimplus.resources.PeSimple;
 import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerSpaceShared;
 import org.cloudsimplus.util.Log;
 import org.cloudsimplus.utilizationmodels.UtilizationModelFull;
+import org.cloudsimplus.utilizationmodels.UtilizationModelDynamic;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
 import org.casperiiot.e41.core.E17DualMemory;
@@ -148,7 +149,7 @@ public final class E42Campaign {
 
         final List<Cloudlet> cloudlets = new ArrayList<>(n);
         for (Task t: tasks) {
-            final Cloudlet c = new CloudletSimple(Math.max(1,Math.round(t.work()*12)),1,new UtilizationModelFull());
+            final Cloudlet c = cpuOnlyCloudlet(Math.max(1,Math.round(t.work()*12)));
             c.setSubmissionDelay(t.arrivalMs()/1000.0);
             spec.put(c,t);
             c.addOnFinishListener(evt -> {
@@ -257,7 +258,7 @@ public final class E42Campaign {
 
         final List<Cloudlet> cloudlets=new ArrayList<>(n);
         for(Task t:tasks){
-            final Cloudlet c=new CloudletSimple(Math.max(1,Math.round(t.work()*12)),1,new UtilizationModelFull());
+            final Cloudlet c=cpuOnlyCloudlet(Math.max(1,Math.round(t.work()*12)));
             c.setSubmissionDelay(t.arrivalMs()/1000.0);
             spec.put(c,t);
             c.addOnFinishListener(evt -> {
@@ -431,6 +432,21 @@ public final class E42Campaign {
 
     private static String csvHeader(){
         return "seed,scenario,policy,tasks,mission_n,post_mission_n,post_fwc,shock_fwc,late_fwc,post_air,late_air,post_far,late_far,post_dvr,late_dvr,p99_post_latency_ms,p99_late_latency_ms,late_eta,probe_rate,probe_dvr,compute_alarm_coverage,healthy_false_alarm_nodes,degraded_nodes_alarmed,mean_mapper_us,max_service_parity_error_ms,cloudsim_completion";
+    }
+
+    /**
+     * E4.2 CloudSim compute-only cloudlet. CPU demand is simulated by CloudSim;
+     * end-to-end network latency is modeled explicitly by the frozen algebraic
+     * endpoint model, and RAM contention is outside the frozen E3.12 model.
+     * Therefore RAM/BW utilization inside CloudSim is intentionally zero to
+     * prevent unintended CloudSim VMem/BW oversubscription delays.
+     */
+    private static Cloudlet cpuOnlyCloudlet(long length){
+        final Cloudlet c = new CloudletSimple(length,1);
+        c.setUtilizationModelCpu(new UtilizationModelFull());
+        c.setUtilizationModelRam(new UtilizationModelDynamic(0.0));
+        c.setUtilizationModelBw(new UtilizationModelDynamic(0.0));
+        return c;
     }
 
     private static List<Vm> createInfrastructure(CloudSimPlus sim,NodeParams[] nodes){
