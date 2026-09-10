@@ -9,6 +9,7 @@ import org.cloudsimplus.hosts.Host;
 import org.cloudsimplus.hosts.HostSimple;
 import org.cloudsimplus.resources.Pe;
 import org.cloudsimplus.resources.PeSimple;
+import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerSpaceShared;
 import org.cloudsimplus.utilizationmodels.UtilizationModelFull;
 import org.cloudsimplus.vms.Vm;
 import org.cloudsimplus.vms.VmSimple;
@@ -23,6 +24,10 @@ import java.util.Map;
  * Runtime binding smoke for CloudSim Plus 8.5.7.
  * This deliberately tests framework construction/mapping/completion only.
  * Scientific parity is asserted by the dependency-free core smoke plus the frozen config manifest.
+ *
+ * E4.1c harness correction: each VM uses a space-shared Cloudlet scheduler so the second smoke
+ * Cloudlet waits for the first instead of simultaneously requesting 100% RAM/BW. This changes
+ * smoke-test resource orchestration only; no CASPER algorithm, parameter, or scientific model.
  */
 public final class CloudSimPlusSmoke {
     public static void main(String[] args) {
@@ -71,7 +76,11 @@ public final class CloudSimPlusSmoke {
         final List<Vm> vms = new ArrayList<>();
         for (int i=0; i<FrozenConfig.TOTAL_NODES; i++) {
             final long mips = i < 12 ? 3_000 : (i < 18 ? 10_000 : 30_000);
-            vms.add(new VmSimple(mips,1).setRam(2048).setBw(1000).setSize(10_000));
+            vms.add(new VmSimple(mips,1)
+                    .setRam(2048)
+                    .setBw(1000)
+                    .setSize(10_000)
+                    .setCloudletScheduler(new CloudletSchedulerSpaceShared()));
         }
         return vms;
     }
