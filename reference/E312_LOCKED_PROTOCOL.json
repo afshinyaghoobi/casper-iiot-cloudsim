@@ -1,0 +1,54 @@
+{
+  "experiment": "E3.12 completely fresh frozen-architecture multi-shift holdout",
+  "backend": "stateful discrete-event mirror; NOT CloudSim Plus",
+  "fresh_root_seed": 41212026,
+  "runs": 10,
+  "calibration_events_per_run": 80000,
+  "calibration_burnin_events": 10000,
+  "deployment_events_per_run": 30000,
+  "change_task": 10000,
+  "scenarios": {
+    "S0_STATIONARY": {
+      "arrival_mult": 1.0,
+      "compute_retained": 1.0,
+      "bw_retained": 1.0
+    },
+    "S1_LAMBDA_X2": {
+      "arrival_mult": 2.0,
+      "compute_retained": 1.0,
+      "bw_retained": 1.0
+    },
+    "S2_HIDDEN_COMPUTE_40LOSS": {
+      "arrival_mult": 1.0,
+      "compute_retained": 0.6,
+      "bw_retained": 1.0
+    },
+    "S3_HIDDEN_NETWORK_50LOSS": {
+      "arrival_mult": 1.0,
+      "compute_retained": 1.0,
+      "bw_retained": 0.5
+    }
+  },
+  "affected_nodes_per_hidden_shift": 6,
+  "frozen_architecture": [
+    "dispatcher-side virtual queue",
+    "support-restored conformal calibration",
+    "fixed sigma=(3+0.10*predicted_latency)*tier_multiplier",
+    "E1.7 slow/fast adaptive conformal logic",
+    "tier-q99 service-health detector, 8-execution window, 5 exceedances",
+    "sticky health-gated candidate eligibility",
+    "sparse probing <=1% of Normal tasks, every 100th Normal arrival"
+  ],
+  "calibration_policy": "stationary 120/s with support-restored Mission rank randomization and sparse probing",
+  "health_detector_input": "actual executed service / nominal predicted service, all criticalities",
+  "shadow_outcomes_to_scheduler": false,
+  "test_set_tuning": false,
+  "primary_go_no_go_gates": {
+    "mean_late_mission_fwc_each_scenario": ">=0.99",
+    "mean_late_mission_air_each_scenario": "<0.20",
+    "mean_probe_rate_each_scenario": "<=0.01",
+    "healthy_false_alarms_each_scenario": "<=2 total across 10 runs",
+    "compute_degraded_alarm_coverage": ">=0.90"
+  },
+  "decision_rule": "GO only if every primary gate passes; otherwise NO-GO for publication campaign with this frozen architecture."
+}
