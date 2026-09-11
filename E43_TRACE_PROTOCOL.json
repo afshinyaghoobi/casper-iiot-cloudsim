@@ -1,0 +1,56 @@
+{
+  "stage": "E4.3_TRACE_ONLY",
+  "status": "LOCKED_BEFORE_TRACE_IMPLEMENTATION",
+  "purpose": "Identify the event-level mechanism behind inert health/adaptation behavior without changing E4.2 scientific decisions.",
+  "source_scientific_sha": "ee1600b808a9747bc0373489e8ce531bd6bfb5e0",
+  "diagnostic_focus_scenarios": [
+    "S2_HIDDEN_COMPUTE_40LOSS",
+    "S3_HIDDEN_NETWORK_50LOSS",
+    "S4_COMPOUND"
+  ],
+  "diagnostic_focus_policies": [
+    "RANKED_CP_STATIC",
+    "CASPER_ADAPT_NO_HEALTH",
+    "CASPER_HEALTH_STATIC",
+    "CASPER_FULL"
+  ],
+  "required_trace_fields": [
+    "seed",
+    "scenario",
+    "policy",
+    "task_index",
+    "criticality",
+    "arrival_ms",
+    "selected_node",
+    "selected_node_affected",
+    "candidate_family_nodes",
+    "candidate_family_affected_mask",
+    "alarm_mask_at_dispatch",
+    "selected_node_alarm_at_dispatch",
+    "probe",
+    "probe_target",
+    "eta_at_dispatch",
+    "e17_alarm_ever",
+    "e17_transition_age",
+    "certified",
+    "family_covered",
+    "actual_latency_ms",
+    "deadline_ms",
+    "deadline_violation"
+  ],
+  "derived_diagnostics": [
+    "first_alarm_task_per_node",
+    "time_from_change_to_first_alarm_per_affected_node",
+    "fraction_of_mission_dispatches_whose family contains affected nodes",
+    "fraction_of_mission_dispatches changed by health exclusion",
+    "fraction_of certification decisions changed by eta relative to eta=1 counterfactual",
+    "fraction_of probes landing on affected nodes before alarm",
+    "E1.7 detector trigger frequency and trigger task"
+  ],
+  "scientific_decision_logic_must_remain_identical": true,
+  "no_threshold_changes": true,
+  "no_seed_changes": true,
+  "no_workload_changes": true,
+  "no_gate_changes": true,
+  "no_result_driven_retuning": true
+}
