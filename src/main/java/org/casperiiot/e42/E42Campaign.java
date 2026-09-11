@@ -156,7 +156,7 @@ public final class E42Campaign {
                 final Cloudlet cl=evt.getCloudlet();
                 final DispatchMeta m=meta.get(cl);
                 if(m==null) return;
-                final double serviceMs=(cl.getFinishTime()-cl.getStartTime())*1000.0;
+                final double serviceMs=cl.getTotalExecutionTime()*1000.0;
                 final double actualLatency=m.actualNetworkMs + cl.getStartWaitTime()*1000.0 + serviceMs;
                 lastObserved[m.node]=finishOrdinal[0]++;
                 if(m.task.index()>=CAL_BURNIN) {
@@ -266,7 +266,7 @@ public final class E42Campaign {
                 final DispatchMeta m=meta.get(cl);
                 if(m==null)return;
                 acc.finished++;
-                final double serviceMs=(cl.getFinishTime()-cl.getStartTime())*1000.0;
+                final double serviceMs=cl.getTotalExecutionTime()*1000.0;
                 final double planned=lengthToMs(cl.getLength(),nodes[m.node].vmMips());
                 acc.maxServiceParityErrorMs=Math.max(acc.maxServiceParityErrorMs,Math.abs(serviceMs-planned));
                 final double actualLatency=m.actualNetworkMs+cl.getStartWaitTime()*1000.0+serviceMs;
