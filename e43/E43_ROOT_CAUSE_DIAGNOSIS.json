@@ -1,0 +1,56 @@
+{
+  "stage": "E4.3_TRACE_ONLY",
+  "status": "ROOT_CAUSE_DIAGNOSED",
+  "source_scientific_sha": "ee1600b808a9747bc0373489e8ce531bd6bfb5e0",
+  "trace_workflow_run_id": 34563553730,
+  "trace_rows": 584326,
+  "scientific_logic_changed": false,
+  "primary_finding": "Online health and E1.7 state updates occurred in completion callbacks, but the VM-mapper dispatch decisions never observed those updated states during the traced campaign.",
+  "evidence": {
+    "nonzero_alarm_mask_at_dispatch_rows": 0,
+    "e17_alarm_ever_true_at_dispatch_rows": 0,
+    "e17_transition_age_nonnegative_at_dispatch_rows": 0,
+    "eta_at_dispatch_not_equal_to_1_rows": 0,
+    "health_changed_dispatch_rows": 0,
+    "eta_changed_certification_rows": 0,
+    "health_alarm_triggers": {
+      "S2_HIDDEN_COMPUTE_40LOSS_CASPER_FULL": 67,
+      "S3_HIDDEN_NETWORK_50LOSS_CASPER_FULL": 0,
+      "S4_COMPOUND_CASPER_FULL": 74
+    },
+    "e17_trigger_seed_counts_CASPER_FULL": {
+      "S2_HIDDEN_COMPUTE_40LOSS": 20,
+      "S3_HIDDEN_NETWORK_50LOSS": 20,
+      "S4_COMPOUND": 22
+    },
+    "mission_family_contains_affected_fraction_CASPER_FULL": {
+      "S2_HIDDEN_COMPUTE_40LOSS": 0.5995474611238049,
+      "S3_HIDDEN_NETWORK_50LOSS": 0.6241708999755984,
+      "S4_COMPOUND": 0.5540051908871093
+    },
+    "selected_affected_mission_fraction_CASPER_FULL": {
+      "S2_HIDDEN_COMPUTE_40LOSS": 0.2449255751014885,
+      "S3_HIDDEN_NETWORK_50LOSS": 0.31604516515450654,
+      "S4_COMPOUND": 0.2293972803300872
+    }
+  },
+  "timing_diagnostics": {
+    "health_first_alarm_median_ms_after_change": {
+      "S2_HIDDEN_COMPUTE_40LOSS": 530.9636009800015,
+      "S4_COMPOUND": 220.21651167250093
+    },
+    "e17_trigger_median_task_offset_after_change_CASPER_FULL": {
+      "S2_HIDDEN_COMPUTE_40LOSS": 582.0,
+      "S3_HIDDEN_NETWORK_50LOSS": 513.0,
+      "S4_COMPOUND": 690.0
+    }
+  },
+  "interpretation": [
+    "The health detector itself is capable of alarming on compute degradation; all recorded first health alarms in S2 and S4 were on truly affected nodes.",
+    "The service-based health detector cannot detect pure hidden network degradation in S3, so zero health alarms there are expected under the frozen detector definition.",
+    "E1.7's detector can trigger in many seeds, but eta remains 1.0 at every dispatch and no certification decision changes.",
+    "Because alarm_mask_at_dispatch and E1.7 state are never nonzero/active at any dispatch, the traced execution does not realize the intended online feedback loop between completed outcomes and later scheduling decisions.",
+    "This is an implementation/event-ordering diagnosis, not evidence that the locked thresholds should be tuned."
+  ],
+  "methodological_guardrail": "Do not reinterpret E4.2 as passing and do not retune thresholds from these results. Any correction must be a new implementation-parity stage with predeclared invariants and exact reproduction checks."
+}
