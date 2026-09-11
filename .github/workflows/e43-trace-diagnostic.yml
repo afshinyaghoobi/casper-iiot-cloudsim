@@ -35,9 +35,21 @@ jobs:
           cache: maven
       - name: Restore exact frozen E4.2 scientific source
         run: |
-          git checkout "$SOURCE_SCIENTIFIC_SHA" -- pom.xml src/main/java/org/casperiiot/e41/core src/main/java/org/casperiiot/e42/E42Campaign.java src/main/java/org/casperiiot/e42/E42PublicationDatacenter.java
+          git cat-file -e "$SOURCE_SCIENTIFIC_SHA^{commit}"
+          git show "$SOURCE_SCIENTIFIC_SHA:pom.xml" > pom.xml
+          for f in \
+            src/main/java/org/casperiiot/e41/core/E17DualMemory.java \
+            src/main/java/org/casperiiot/e41/core/FrozenConfig.java \
+            src/main/java/org/casperiiot/e41/core/NodeHealthDetector.java \
+            src/main/java/org/casperiiot/e41/core/SparseProbeBudget.java \
+            src/main/java/org/casperiiot/e41/core/SparseProbeSelector.java \
+            src/main/java/org/casperiiot/e41/core/VirtualQueueEstimator.java \
+            src/main/java/org/casperiiot/e42/E42Campaign.java \
+            src/main/java/org/casperiiot/e42/E42PublicationDatacenter.java; do
+              git show "$SOURCE_SCIENTIFIC_SHA:$f" > "$f"
+          done
           test "$(git show "$SOURCE_SCIENTIFIC_SHA":src/main/java/org/casperiiot/e42/E42Campaign.java | sha256sum | cut -d' ' -f1)" = "$(sha256sum src/main/java/org/casperiiot/e42/E42Campaign.java | cut -d' ' -f1)"
-          grep -F 'org.cloudsimplus:cloudsimplus' pom.xml
+          grep -F 'org.cloudsimplus' pom.xml
       - name: Apply trace-only instrumentation
         run: |
           python scripts/e43_instrument_trace.py
