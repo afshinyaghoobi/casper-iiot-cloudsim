@@ -9,14 +9,14 @@ permissions:
   contents: read
 
 env:
-  TESTED_SHA: d6346ce455abd2a1aca6bf1a7f5482393ba2ecfc
+  TESTED_SHA: ee1600b808a9747bc0373489e8ce531bd6bfb5e0
   SCENARIOS: S0_STATIONARY,S1_LAMBDA_X2,S2_HIDDEN_COMPUTE_40LOSS,S3_HIDDEN_NETWORK_50LOSS,S4_COMPOUND
 
 jobs:
   publication-seeds:
     if: >-
       ${{ github.event.workflow_run.conclusion == 'success' &&
-          github.event.workflow_run.head_sha == 'd6346ce455abd2a1aca6bf1a7f5482393ba2ecfc' }}
+          github.event.workflow_run.head_sha == 'ee1600b808a9747bc0373489e8ce531bd6bfb5e0' }}
     strategy:
       fail-fast: false
       max-parallel: 10
