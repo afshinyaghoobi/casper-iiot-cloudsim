@@ -5,7 +5,6 @@ import org.cloudsimplus.brokers.DatacenterBrokerSimple;
 import org.cloudsimplus.cloudlets.Cloudlet;
 import org.cloudsimplus.cloudlets.CloudletSimple;
 import org.cloudsimplus.core.CloudSimPlus;
-import org.cloudsimplus.datacenters.DatacenterSimple;
 import org.cloudsimplus.hosts.Host;
 import org.cloudsimplus.hosts.HostSimple;
 import org.cloudsimplus.resources.Pe;
@@ -468,7 +467,7 @@ public final class E42Campaign {
                     .setRam(4096).setBw(10_000).setSize(100_000)
                     .setCloudletScheduler(new CloudletSchedulerSpaceShared()));
         }
-        new DatacenterSimple(sim,hosts);
+        new E42PublicationDatacenter(sim,hosts);
         return vms;
     }
 
