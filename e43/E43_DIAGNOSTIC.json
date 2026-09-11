@@ -1,0 +1,46 @@
+{
+  "stage": "E4.3",
+  "source_stage": "E4.2",
+  "source_rows": 1200,
+  "source_seeds": 30,
+  "source_artifact_id": 10183790808,
+  "source_artifact_sha256": "ad625e3581121b53ce5c93a7f2b71643fed924f32b64dd45967e1aee51680204",
+  "policy_outcome_equivalence_to_ranked_cp_static": true,
+  "adaptive_late_eta_identically_one": true,
+  "mean_full_late_fwc": {
+    "S0_STATIONARY": 0.9914666666666666,
+    "S1_LAMBDA_X2": 0.9894666666666665,
+    "S2_HIDDEN_COMPUTE_40LOSS": 0.5438666666666666,
+    "S3_HIDDEN_NETWORK_50LOSS": 0.4389333333333333,
+    "S4_COMPOUND": 0.45519999999999994
+  },
+  "seed_counts_meeting_late_fwc_0_99": {
+    "S0_STATIONARY": 18,
+    "S1_LAMBDA_X2": 14,
+    "S2_HIDDEN_COMPUTE_40LOSS": 0,
+    "S3_HIDDEN_NETWORK_50LOSS": 1,
+    "S4_COMPOUND": 0
+  },
+  "health_association": [
+    {
+      "scenario": "S2_HIDDEN_COMPUTE_40LOSS",
+      "corr_alarm_coverage_vs_late_fwc": -0.5727669124562248,
+      "corr_alarm_coverage_vs_late_dvr": 0.2829384657098335,
+      "mean_compute_alarm_coverage": 0.37222222226666657
+    },
+    {
+      "scenario": "S4_COMPOUND",
+      "corr_alarm_coverage_vs_late_fwc": -0.7287997717007766,
+      "corr_alarm_coverage_vs_late_dvr": 0.6396724466032749,
+      "mean_compute_alarm_coverage": 0.4111111110666667
+    }
+  ],
+  "diagnostic_findings": [
+    "CASPER_ADAPT_NO_HEALTH, CASPER_HEALTH_STATIC, and CASPER_FULL are exactly outcome-equivalent to RANKED_CP_STATIC across all frozen E4.2 seeds/scenarios for the reported FWC/AIR/FAR/DVR/P99 metrics.",
+    "For both adaptive policies, reported late_eta is exactly 1.0 in every frozen E4.2 run, so the E1.7 layer did not alter the late-window conformal multiplier.",
+    "Compute alarm coverage is far below the prelocked 0.90 target in S2 and S4 and, across these 30 seeds, higher final alarm coverage is not associated with improved late FWC.",
+    "Run-level aggregate evidence cannot determine whether the event-level cause is alarm latency, probe targeting, candidate-set composition, sticky exclusion timing, or adaptation-detector non-triggering."
+  ],
+  "next_action": "E4.3_TRACE_ONLY_INSTRUMENTATION",
+  "retuning_performed": false
+}
