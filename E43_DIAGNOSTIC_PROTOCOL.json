@@ -1,0 +1,38 @@
+{
+  "stage": "E4.3",
+  "name": "Post-hoc diagnosis of E4.2 publication-scale failures",
+  "status": "LOCKED_BEFORE_DIAGNOSTIC_CHANGES",
+  "source_stage": "E4.2",
+  "source_scientific_sha": "ee1600b808a9747bc0373489e8ce531bd6bfb5e0",
+  "source_publication_run_id": 34559237514,
+  "source_artifact_id": 10183790808,
+  "source_artifact_sha256": "ad625e3581121b53ce5c93a7f2b71643fed924f32b64dd45967e1aee51680204",
+  "objective": "Explain why CASPER_FULL loses Mission family-wise candidate coverage under S2/S3/S4 and why compute-health alarm coverage is low in S2/S4, without modifying or reinterpreting E4.2 outcomes.",
+  "diagnostic_questions": [
+    "Are adaptive and health-enabled policies behaviorally distinguishable from RANKED_CP_STATIC at the run-level outcome metrics?",
+    "Does E1.7 eta actually depart from 1.0 under any E4.2 seed/scenario?",
+    "Does higher compute alarm coverage associate with improved late Mission FWC or DVR within S2/S4?",
+    "Are failures dominated by network-hidden degradation, compute-hidden degradation, or both?",
+    "Do aggregate data suffice to establish causality, or is task/node-level instrumentation required?"
+  ],
+  "allowed_actions": [
+    "read immutable E4.2 artifacts",
+    "compute descriptive and paired diagnostics",
+    "inspect frozen source code",
+    "add observational instrumentation only in a new E4.3 experiment if aggregate evidence is insufficient"
+  ],
+  "forbidden_actions": [
+    "change E4.2 thresholds or gates",
+    "change E4.2 workload, seeds, scenarios, deadlines, noise, calibration, policy parameters, health thresholds, probe budget, or CloudSim runtime",
+    "overwrite E4.2 artifacts",
+    "present post-hoc changes as if they were prelocked E4.2"
+  ],
+  "initial_diagnostic_tests": {
+    "policy_outcome_equivalence": "exact/allclose comparison by seed and scenario across primary outcome metrics",
+    "adaptive_activation": "distribution of late_eta for adaptive policies",
+    "health_association": "within-scenario correlation of compute_alarm_coverage with late_fwc and late_dvr for CASPER_FULL",
+    "seed_gate_frequency": "count seeds meeting late_fwc >= 0.99 by scenario"
+  },
+  "decision_rule": "If aggregate diagnostics show inert or non-causal control layers but cannot identify the event-level mechanism, proceed to E4.3 trace-only instrumentation with the scientific decision rules frozen and no architecture tuning.",
+  "no_result_driven_retuning_of_e42": true
+}
