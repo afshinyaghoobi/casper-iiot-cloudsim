@@ -15,7 +15,6 @@ import org.cloudsimplus.vms.VmSimple;
 import org.casperiiot.e41.core.E17DualMemory;
 import org.casperiiot.e41.core.FrozenConfig;
 import org.casperiiot.e41.core.NodeHealthDetector;
-import org.casperiiot.e42.E42PublicationDatacenter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +42,7 @@ public final class E44OnlineDispatchParity {
         final CloudSimPlus sim = new CloudSimPlus(0.000001);
         final List<Pe> pes = List.of(new PeSimple(50_000));
         final List<Host> hosts = List.of(new HostSimple(16_384, 100_000, 10_000_000, pes));
-        new E42PublicationDatacenter(sim, hosts);
+        new E44ParityDatacenter(sim, hosts);
 
         final DatacenterBrokerSimple broker = new DatacenterBrokerSimple(sim);
         broker.setShutdownWhenIdle(false);
@@ -69,8 +68,6 @@ public final class E44OnlineDispatchParity {
         final AtomicInteger firstEtaAboveOneVisibleDispatch = new AtomicInteger(-1);
         final List<Integer> mapperOrder = new ArrayList<>();
         final List<Integer> finishOrder = new ArrayList<>();
-        final List<Boolean> healthAtDispatch = new ArrayList<>();
-        final List<Boolean> e17AtDispatch = new ArrayList<>();
         final List<Double> etaAtDispatch = new ArrayList<>();
 
         broker.setVmMapper(cloudlet -> {
@@ -79,8 +76,6 @@ public final class E44OnlineDispatchParity {
             final boolean e17Alarm = e17.alarmEver();
             final double eta = e17.etaBeforeOutcome();
             mapperOrder.add(idx);
-            healthAtDispatch.add(alarm);
-            e17AtDispatch.add(e17Alarm);
             etaAtDispatch.add(eta);
             if (alarm && firstHealthVisibleDispatch.get() < 0) firstHealthVisibleDispatch.set(idx);
             if (e17Alarm && firstE17AlarmVisibleDispatch.get() < 0) firstE17AlarmVisibleDispatch.set(idx);
