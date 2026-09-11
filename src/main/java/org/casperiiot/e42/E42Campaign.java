@@ -40,6 +40,13 @@ public final class E42Campaign {
     private static final double ARRIVAL_WARMUP_MS = 1_000.0;
     private static final int CAL_BURNIN = 10_000;
     private static final int LATE_MISSION = 250;
+    /**
+     * Simulator-resolution scale only. CloudSim Plus 8.5.7 truncates executed
+     * MI to long at every processing update. Scaling both VM MIPS and Cloudlet
+     * MI by the same constant preserves all service-time ratios and scientific
+     * parameters while suppressing accumulated integer-MI discretization drift.
+     */
+    private static final long CLOUDSIM_MI_SCALE = 1_000L;
 
     private enum Crit { NORMAL, HIGH, MISSION }
     private enum Scenario {
@@ -149,7 +156,7 @@ public final class E42Campaign {
 
         final List<Cloudlet> cloudlets = new ArrayList<>(n);
         for (Task t: tasks) {
-            final Cloudlet c = cpuOnlyCloudlet(Math.max(1,Math.round(t.work()*12)));
+            final Cloudlet c = cpuOnlyCloudlet(Math.max(1,Math.round(t.work()*12*CLOUDSIM_MI_SCALE)));
             c.setSubmissionDelay(t.arrivalMs()/1000.0);
             spec.put(c,t);
             c.addOnFinishListener(evt -> {
@@ -258,7 +265,7 @@ public final class E42Campaign {
 
         final List<Cloudlet> cloudlets=new ArrayList<>(n);
         for(Task t:tasks){
-            final Cloudlet c=cpuOnlyCloudlet(Math.max(1,Math.round(t.work()*12)));
+            final Cloudlet c=cpuOnlyCloudlet(Math.max(1,Math.round(t.work()*12*CLOUDSIM_MI_SCALE)));
             c.setSubmissionDelay(t.arrivalMs()/1000.0);
             spec.put(c,t);
             c.addOnFinishListener(evt -> {
@@ -453,10 +460,11 @@ public final class E42Campaign {
         final List<Host> hosts=new ArrayList<>(NODES);
         final List<Vm> vms=new ArrayList<>(NODES);
         for(int j=0;j<NODES;j++){
-            final long hostMips=Math.max(nodes[j].vmMips()+1000,Math.round(nodes[j].vmMips()*1.25));
+            final long simMips=Math.multiplyExact(nodes[j].vmMips(),CLOUDSIM_MI_SCALE);
+            final long hostMips=Math.max(simMips+1000L*CLOUDSIM_MI_SCALE,Math.round(simMips*1.25));
             final List<Pe> pes=List.of(new PeSimple(hostMips));
             hosts.add(new HostSimple(16_384,100_000,10_000_000,pes));
-            vms.add(new VmSimple(nodes[j].vmMips(),1)
+            vms.add(new VmSimple(simMips,1)
                     .setRam(4096).setBw(10_000).setSize(100_000)
                     .setCloudletScheduler(new CloudletSchedulerSpaceShared()));
         }
@@ -574,8 +582,12 @@ public final class E42Campaign {
     }
 
     private static int tier(int node){return node<12?0:(node<18?1:2);}
-    private static long lengthForMs(long mips,double ms){return Math.max(1,Math.round(mips*ms/1000.0));}
-    private static double lengthToMs(long len,long mips){return len*1000.0/mips;}
+    private static long lengthForMs(long mips,double ms){
+        return Math.max(1,Math.round(mips*CLOUDSIM_MI_SCALE*ms/1000.0));
+    }
+    private static double lengthToMs(long len,long mips){
+        return len*1000.0/(mips*CLOUDSIM_MI_SCALE);
+    }
 
     private static int argMin(double[] x,IntPredicate ok){
         int b=-1; double v=Double.POSITIVE_INFINITY;
