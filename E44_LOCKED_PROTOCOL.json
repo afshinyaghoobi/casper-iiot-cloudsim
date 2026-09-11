@@ -1,0 +1,33 @@
+{
+  "stage": "E4.4",
+  "name": "Online-Dispatch Feedback Parity",
+  "status": "LOCKED_BEFORE_IMPLEMENTATION",
+  "source_scientific_sha": "ee1600b808a9747bc0373489e8ce531bd6bfb5e0",
+  "triggering_diagnosis": "E4.3 showed health and E1.7 states were updated in completion callbacks but never visible at dispatch in E4.2 because all Cloudlets were mapped before runtime feedback could propagate.",
+  "purpose": "Validate runtime submission semantics in which completion feedback can causally affect later dispatch decisions without changing scientific parameters.",
+  "allowed_change": "submission/event scheduling semantics only",
+  "forbidden_changes": [
+    "health thresholds",
+    "E1.7 thresholds or windows",
+    "conformal quantiles",
+    "workload distributions",
+    "scenario definitions",
+    "deadlines",
+    "policy logic",
+    "probe budget",
+    "scientific seeds",
+    "publication gates"
+  ],
+  "parity_harness_requirements": {
+    "deterministic": true,
+    "dynamic_cloudlet_submission": true,
+    "mapper_runs_at_or_after_each_cloudlet_arrival": true,
+    "completion_callback_can_precede_later_dispatch": true,
+    "health_alarm_becomes_visible_to_later_dispatch": true,
+    "e17_alarm_becomes_visible_to_later_dispatch": true,
+    "eta_above_one_becomes_visible_to_later_dispatch": true,
+    "all_cloudlets_finish": true
+  },
+  "hard_gate": "All parity_harness_requirements must PASS before any E4.2 campaign implementation is replaced or rerun.",
+  "no_result_driven_retuning": true
+}
