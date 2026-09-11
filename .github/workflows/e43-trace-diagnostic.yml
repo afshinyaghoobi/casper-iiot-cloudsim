@@ -1,0 +1,102 @@
+name: E4.3 Trace-Only Diagnostic
+
+on:
+  push:
+    paths:
+      - '.github/workflows/e43-trace-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_SCIENTIFIC_SHA: ee1600b808a9747bc0373489e8ce531bd6bfb5e0
+  SCENARIOS: S2_HIDDEN_COMPUTE_40LOSS,S3_HIDDEN_NETWORK_50LOSS,S4_COMPOUND
+
+jobs:
+  trace-seeds:
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        seed: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29]
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout diagnostic orchestration
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Restore exact frozen E4.2 scientific source
+        run: |
+          git checkout "$SOURCE_SCIENTIFIC_SHA" -- pom.xml src/main/java/org/casperiiot/e41/core src/main/java/org/casperiiot/e42/E42Campaign.java src/main/java/org/casperiiot/e42/E42PublicationDatacenter.java
+          test "$(git show "$SOURCE_SCIENTIFIC_SHA":src/main/java/org/casperiiot/e42/E42Campaign.java | sha256sum | cut -d' ' -f1)" = "$(sha256sum src/main/java/org/casperiiot/e42/E42Campaign.java | cut -d' ' -f1)"
+          grep -F 'org.cloudsimplus:cloudsimplus' pom.xml
+      - name: Apply trace-only instrumentation
+        run: |
+          python scripts/e43_instrument_trace.py
+          python scripts/e43_instrument_change_time.py
+          git diff -- src/main/java/org/casperiiot/e42/E42Campaign.java > e43_instrumentation.patch
+          grep -F 'E43_TRACE_OUT' src/main/java/org/casperiiot/e42/E42Campaign.java
+          grep -F 'healthChangedDispatch' src/main/java/org/casperiiot/e42/E42Campaign.java
+          grep -F 'etaChangedCertification' src/main/java/org/casperiiot/e42/E42Campaign.java
+      - name: Compile instrumented frozen science
+        run: mvn -B -ntp -DskipTests compile
+      - name: Run trace seed ${{ matrix.seed }}
+        run: |
+          mkdir -p e43_seed_${{ matrix.seed }}
+          mvn -B -ntp -DskipTests exec:java \
+            -Dexec.mainClass=org.casperiiot.e42.E42Campaign \
+            -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios $SCENARIOS --out e43_seed_${{ matrix.seed }}/e43_summary_seed_${{ matrix.seed }}.csv --trace-out e43_seed_${{ matrix.seed }}/e43_trace_seed_${{ matrix.seed }}.csv" \
+            2>&1 | tee e43_seed_${{ matrix.seed }}/e43_seed_${{ matrix.seed }}.log
+          grep -F 'CALIBRATION_VALIDATION PASS' e43_seed_${{ matrix.seed }}/e43_seed_${{ matrix.seed }}.log
+          grep -F 'E42_SEED_COMPLETE seed=${{ matrix.seed }} rows=24' e43_seed_${{ matrix.seed }}/e43_seed_${{ matrix.seed }}.log
+          test "$(($(wc -l < e43_seed_${{ matrix.seed }}/e43_summary_seed_${{ matrix.seed }}.csv)-1))" -eq 24
+          test "$(($(wc -l < e43_seed_${{ matrix.seed }}/e43_trace_seed_${{ matrix.seed }}.csv)-1))" -gt 0
+      - name: Upload trace evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e43-trace-seed-${{ matrix.seed }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            e43_seed_${{ matrix.seed }}/
+            e43_instrumentation.patch
+
+  aggregate-traces:
+    needs: trace-seeds
+    if: ${{ needs.trace-seeds.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout analyzer
+        uses: actions/checkout@v4
+      - name: Download 30 trace artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: e43-trace-seed-*
+          path: e43_raw
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Analyze locked trace diagnostics
+        run: |
+          python -m pip install --disable-pip-version-check pandas tabulate
+          python scripts/e43_trace_analyze.py --input e43_raw --out e43_trace_diagnostic
+          grep -F '"scientific_logic_changed": false' e43_trace_diagnostic/E43_TRACE_DIAGNOSTIC.json
+          grep -F '"seeds": 30' e43_trace_diagnostic/E43_TRACE_DIAGNOSTIC.json
+          printf 'source_scientific_sha=%s\nworkflow_head_sha=%s\n' "$SOURCE_SCIENTIFIC_SHA" "${GITHUB_SHA}" > e43_trace_diagnostic/E43_TRACE_PROVENANCE.txt
+      - name: Upload E4.3 diagnostic package
+        uses: actions/upload-artifact@v4
+        with:
+          name: e43-trace-diagnostic-results
+          retention-days: 90
+          path: e43_trace_diagnostic/
