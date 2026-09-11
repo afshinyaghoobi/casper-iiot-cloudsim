@@ -1,0 +1,39 @@
+{
+  "stage": "E4.2",
+  "status": "CLOSED_FROZEN",
+  "publication_campaign_gate": "FAIL",
+  "execution_status": "VALID_COMPLETE",
+  "preflight_run_id": 34553407520,
+  "publication_run_id": 34559237514,
+  "scientific_sha": "ee1600b808a9747bc0373489e8ce531bd6bfb5e0",
+  "workflow_orchestration_sha": "8100d54f757e9041a06ac8f66d7c0615b4405491",
+  "publication_artifact": {
+    "name": "e42-publication-results",
+    "artifact_id": 10183790808,
+    "sha256": "ad625e3581121b53ce5c93a7f2b71643fed924f32b64dd45967e1aee51680204",
+    "rows": 1200,
+    "seeds": 30,
+    "scenarios": 5,
+    "policies": 8
+  },
+  "failed_prelocked_gates": [
+    {"scenario":"S1_LAMBDA_X2","gate":"late_fwc_at_least_99"},
+    {"scenario":"S2_HIDDEN_COMPUTE_40LOSS","gate":"late_fwc_at_least_99"},
+    {"scenario":"S2_HIDDEN_COMPUTE_40LOSS","gate":"compute_alarm_coverage_at_least_90"},
+    {"scenario":"S3_HIDDEN_NETWORK_50LOSS","gate":"late_fwc_at_least_99"},
+    {"scenario":"S4_COMPOUND","gate":"late_fwc_at_least_99"},
+    {"scenario":"S4_COMPOUND","gate":"compute_alarm_coverage_at_least_90"}
+  ],
+  "runtime_validity": {
+    "cloudsim_dependency": "org.cloudsimplus:cloudsimplus:8.5.7",
+    "all_cloudlets_finished": true,
+    "selected_service_parity_gate_ms": 2.0,
+    "selected_service_parity_passed": true
+  },
+  "scientific_integrity": {
+    "no_result_driven_retuning": true,
+    "e42_results_must_not_be_overwritten": true,
+    "future_changes_require_new_stage": true
+  },
+  "next_stage": "E4.3_POST_HOC_DIAGNOSIS"
+}
