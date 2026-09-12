@@ -1,0 +1,245 @@
+name: E4.6 Online-Dispatch Publication Campaign
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'E46_LOCKED_PROTOCOL.json'
+      - 'tools/e46_aggregate_generate.py'
+      - '.github/workflows/e46-online-dispatch-publication.yml'
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_SCIENTIFIC_SHA: ee1600b808a9747bc0373489e8ce531bd6bfb5e0
+  E45_PREFLIGHT_SHA: cd4727bf9125d43bbfe8c48aea61960d5eb3b2de
+  E45_PREFLIGHT_RUN_ID: '34677313227'
+  E45_GENERATED_GIT_BLOB: a06aca3ba50cd93bcf51a24dfaa61c26c28d5f85
+  E45_GENERATED_SHA256: 06bd524e9ab8f3a43dface0691efdd9f65741d0d157dd9a23e6e67ed10714646
+  E42_CAMPAIGN_BLOB: 34256ca7bff46f911cf20e8b94278fbd09175746
+  E42_DATACENTER_BLOB: aefd5e73f48b43d196f356b752bf82b598bd646f
+  E42_AGGREGATE_BLOB: 29c2d6649ee13a872f294721553b9394552886bf
+  E45_GENERATOR_BLOB: ce65cd96b36e1a2577b0748917f6aaaa18e8d80a
+  E45_ARRIVAL_BLOB: 5678541c4073be67d5877df78c09b4e48c3d5a00
+  E45_DATACENTER_BLOB: fbdb55ef0eba6b185b0ef4977d2e9e2dc3de2663
+  SCENARIOS: S0_STATIONARY,S1_LAMBDA_X2,S2_HIDDEN_COMPUTE_40LOSS,S3_HIDDEN_NETWORK_50LOSS,S4_COMPOUND
+
+jobs:
+  publication-seeds:
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        seed: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29]
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout exact E4.6 orchestration commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Verify locked science and E4.5 preflight baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          grep -F '"status": "LOCKED_BEFORE_CAMPAIGN"' E46_LOCKED_PROTOCOL.json
+          grep -F '"publication_runs": 30' E46_LOCKED_PROTOCOL.json
+          grep -F '"expected_rows": 1200' E46_LOCKED_PROTOCOL.json
+          grep -F '"no_result_driven_retuning": true' E46_LOCKED_PROTOCOL.json
+          grep -F '"campaign_results_must_be_written_as_new_e46_artifacts": true' E46_LOCKED_PROTOCOL.json
+          grep -F '"status": "CLOSED_FROZEN"' E45_CLOSURE.json
+          grep -F '"preflight_gate": "PASS"' E45_CLOSURE.json
+          grep -F '"preflight_workflow_sha": "'$E45_PREFLIGHT_SHA'"' E45_CLOSURE.json
+          grep -F '"preflight_run_id": '$E45_PREFLIGHT_RUN_ID E45_CLOSURE.json
+          grep -F '"generated_e45_git_blob": "'$E45_GENERATED_GIT_BLOB'"' E45_CLOSURE.json
+          grep -F '"generated_e45_sha256": "'$E45_GENERATED_SHA256'"' E45_CLOSURE.json
+          test "$(git cat-file -t "$SOURCE_SCIENTIFIC_SHA")" = commit
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = "$E42_CAMPAIGN_BLOB"
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42PublicationDatacenter.java)" = "$E42_DATACENTER_BLOB"
+          test "$(git hash-object scripts/e42_aggregate.py)" = "$E42_AGGREGATE_BLOB"
+          test "$(git hash-object tools/e45_generate.py)" = "$E45_GENERATOR_BLOB"
+          test "$(git hash-object src/main/java/org/casperiiot/e45/E45ArrivalSource.java)" = "$E45_ARRIVAL_BLOB"
+          test "$(git hash-object src/main/java/org/casperiiot/e45/E45PublicationDatacenter.java)" = "$E45_DATACENTER_BLOB"
+          git diff --exit-code "$SOURCE_SCIENTIFIC_SHA" -- \
+            src/main/java/org/casperiiot/e42/E42Campaign.java \
+            src/main/java/org/casperiiot/e42/E42PublicationDatacenter.java \
+            src/main/java/org/casperiiot/e41/core/FrozenConfig.java \
+            src/main/java/org/casperiiot/e41/core/NodeHealthDetector.java \
+            src/main/java/org/casperiiot/e41/core/E17DualMemory.java \
+            | tee e46_frozen_source_seed_${{ matrix.seed }}.diff
+          test ! -s e46_frozen_source_seed_${{ matrix.seed }}.diff
+
+      - name: Reproduce exact E4.5 runtime implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py | tee e46_e45_generator_seed_${{ matrix.seed }}.log
+          test "$(git hash-object src/main/java/org/casperiiot/e45/E45Campaign.java)" = "$E45_GENERATED_GIT_BLOB"
+          grep -F "generated_sha256=$E45_GENERATED_SHA256" e45_generation_manifest.txt
+          grep -F 'scientific_retuning=false' e45_generation_manifest.txt
+          test "$(grep -c 'new E45ArrivalSource' src/main/java/org/casperiiot/e45/E45Campaign.java)" -eq 2
+          test "$(grep -c 'setSubmissionDelay' src/main/java/org/casperiiot/e45/E45Campaign.java || true)" -eq 0
+
+      - name: Verify CloudSim Plus dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -ntp dependency:tree -Dincludes=org.cloudsimplus:cloudsimplus | tee e46_dependency_seed_${{ matrix.seed }}.txt
+          grep -F 'org.cloudsimplus:cloudsimplus:jar:8.5.7' e46_dependency_seed_${{ matrix.seed }}.txt
+
+      - name: Compile frozen E4.5 runtime
+        run: mvn -B -ntp -DskipTests compile
+
+      - name: Run publication seed ${{ matrix.seed }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p e46_seed_${{ matrix.seed }}
+          mvn -B -ntp -DskipTests exec:java \
+            -Dexec.mainClass=org.casperiiot.e45.E45Campaign \
+            -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios $SCENARIOS --out e46_seed_${{ matrix.seed }}/e46_seed_${{ matrix.seed }}.csv" \
+            2>&1 | tee e46_seed_${{ matrix.seed }}/e46_seed_${{ matrix.seed }}.log
+          grep -F 'CALIBRATION_VALIDATION PASS' e46_seed_${{ matrix.seed }}/e46_seed_${{ matrix.seed }}.log
+          grep -F 'E45_ONLINE_DISPATCH_RUNTIME PASS' e46_seed_${{ matrix.seed }}/e46_seed_${{ matrix.seed }}.log
+          grep -F 'E45_SEED_COMPLETE seed=${{ matrix.seed }} rows=40' e46_seed_${{ matrix.seed }}/e46_seed_${{ matrix.seed }}.log
+          test "$(($(wc -l < e46_seed_${{ matrix.seed }}/e46_seed_${{ matrix.seed }}.csv)-1))" -eq 40
+
+      - name: Verify seed runtime acceptance only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          seed = ${{ matrix.seed }}
+          p = Path(f'e46_seed_{seed}/e46_seed_{seed}.csv')
+          rows = list(csv.DictReader(p.open()))
+          assert len(rows) == 40, len(rows)
+          assert all(float(r['cloudsim_completion']) == 1.0 for r in rows)
+          assert max(float(r['max_service_parity_error_ms']) for r in rows) <= 2.0
+          print(f'E46_SEED_RUNTIME_ACCEPTANCE PASS seed={seed} rows=40')
+          PY
+
+      - name: Record seed provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            printf 'stage=E4.6\n'
+            printf 'workflow_sha=%s\n' "$GITHUB_SHA"
+            printf 'seed_index=%s\n' '${{ matrix.seed }}'
+            printf 'source_scientific_sha=%s\n' "$SOURCE_SCIENTIFIC_SHA"
+            printf 'e45_preflight_sha=%s\n' "$E45_PREFLIGHT_SHA"
+            printf 'e45_preflight_run_id=%s\n' "$E45_PREFLIGHT_RUN_ID"
+            printf 'e45_generated_git_blob=%s\n' "$E45_GENERATED_GIT_BLOB"
+            printf 'e45_generated_sha256=%s\n' "$E45_GENERATED_SHA256"
+            printf 'scientific_retuning=false\n'
+          } > e46_seed_${{ matrix.seed }}/E46_SEED_PROVENANCE.txt
+
+      - name: Upload seed evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e46-seed-${{ matrix.seed }}
+          if-no-files-found: error
+          retention-days: 90
+          path: |
+            e46_seed_${{ matrix.seed }}/
+            e46_dependency_seed_${{ matrix.seed }}.txt
+            e46_frozen_source_seed_${{ matrix.seed }}.diff
+            e46_e45_generator_seed_${{ matrix.seed }}.log
+            e45_generation_manifest.txt
+            e45_generated.diff
+
+  aggregate-publication-results:
+    needs: publication-seeds
+    if: ${{ needs.publication-seeds.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact E4.6 orchestration commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Download all 30 E4.6 seed artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: e46-seed-*
+          path: e46_raw
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate label-only E4.6 aggregation from frozen E4.2 statistics
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object scripts/e42_aggregate.py)" = "$E42_AGGREGATE_BLOB"
+          python3 tools/e46_aggregate_generate.py | tee e46_aggregate_generator.log
+          grep -F "source_git_blob=$E42_AGGREGATE_BLOB" e46_aggregate_generation_manifest.txt
+          grep -F 'statistical_logic_changed=false' e46_aggregate_generation_manifest.txt
+          grep -F 'publication_gates_changed=false' e46_aggregate_generation_manifest.txt
+          grep -F 'scientific_retuning=false' e46_aggregate_generation_manifest.txt
+
+      - name: Install locked analysis dependencies
+        run: python -m pip install --disable-pip-version-check numpy pandas scipy tabulate
+
+      - name: Validate 1,200 rows and run prelocked statistics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/e46_aggregate.py --input e46_raw --out e46_publication | tee e46_aggregation.log
+          test "$(($(wc -l < e46_publication/e46_all_runs.csv)-1))" -eq 1200
+          grep -F '"stage": "E4.6"' e46_publication/E46_DECISION.json
+          grep -F '"seeds": 30' e46_publication/E46_DECISION.json
+          grep -F '"scenario_policy_rows": 1200' e46_publication/E46_DECISION.json
+          grep -F '"no_result_driven_retuning": true' e46_publication/E46_DECISION.json
+          grep -F 'E46_AGGREGATION PASS rows=1200 seeds=30' e46_aggregation.log
+
+      - name: Preserve raw CSVs and record exact provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p e46_publication/raw
+          find e46_raw -type f -name 'e46_seed_*.csv' -print0 | sort -z | xargs -0 -I{} cp '{}' e46_publication/raw/
+          test "$(find e46_publication/raw -type f -name 'e46_seed_*.csv' | wc -l)" -eq 30
+          (cd e46_publication/raw && sha256sum e46_seed_*.csv) > e46_publication/E46_RAW_SHA256.txt
+          {
+            printf 'stage=E4.6\n'
+            printf 'campaign_workflow_sha=%s\n' "$GITHUB_SHA"
+            printf 'source_scientific_sha=%s\n' "$SOURCE_SCIENTIFIC_SHA"
+            printf 'e45_preflight_sha=%s\n' "$E45_PREFLIGHT_SHA"
+            printf 'e45_preflight_run_id=%s\n' "$E45_PREFLIGHT_RUN_ID"
+            printf 'e45_generated_git_blob=%s\n' "$E45_GENERATED_GIT_BLOB"
+            printf 'e45_generated_sha256=%s\n' "$E45_GENERATED_SHA256"
+            printf 'source_e42_aggregate_blob=%s\n' "$E42_AGGREGATE_BLOB"
+            printf 'generated_e46_aggregate_git_blob=%s\n' "$(git hash-object scripts/e46_aggregate.py)"
+            printf 'scientific_retuning=false\n'
+          } > e46_publication/E46_PROVENANCE.txt
+          cp E46_LOCKED_PROTOCOL.json e46_publication/
+          cp E45_CLOSURE.json e46_publication/
+          cp e46_aggregate_generated.diff e46_publication/
+          cp e46_aggregate_generation_manifest.txt e46_publication/
+
+      - name: Upload E4.6 publication package
+        uses: actions/upload-artifact@v4
+        with:
+          name: e46-publication-results
+          retention-days: 90
+          if-no-files-found: error
+          path: e46_publication/
