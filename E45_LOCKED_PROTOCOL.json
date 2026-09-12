@@ -1,0 +1,50 @@
+{
+  "stage": "E4.5",
+  "name": "Online-Dispatch Publication Preflight",
+  "status": "LOCKED_BEFORE_PREFLIGHT",
+  "source_scientific_sha": "ee1600b808a9747bc0373489e8ce531bd6bfb5e0",
+  "source_e42_campaign_blob": "34256ca7bff46f911cf20e8b94278fbd09175746",
+  "source_e42_datacenter_blob": "aefd5e73f48b43d196f356b752bf82b598bd646f",
+  "validated_e44_runtime_sha": "64da3668525a3e23856971d1e87d752b8a81edf7",
+  "validated_e44_run_id": 34676793319,
+  "validated_e44_artifact_sha256": "1e909296af2f3207e3b0e31582f37704e6273437a9dff446920d8b2afa39c944",
+  "purpose": "Apply the E4.4-passed true event-scheduled arrival semantics to the frozen E4.2 publication implementation and validate runtime correctness before any new publication campaign.",
+  "allowed_change": "runtime arrival/submission/event scheduling semantics only",
+  "forbidden_changes": [
+    "scientific seeds",
+    "workload distributions or generated arrival timestamps",
+    "scenario definitions",
+    "policy logic",
+    "health thresholds or windows",
+    "E1.7 thresholds or windows",
+    "conformal quantiles or alpha levels",
+    "deadlines",
+    "probe budget or selector logic",
+    "service or network scientific models",
+    "publication result gates",
+    "E4.2 frozen results"
+  ],
+  "preflight_fixture": {
+    "seed_index": 0,
+    "calibration_tasks": 80000,
+    "deployment_tasks": 12000,
+    "scenarios": ["S0_STATIONARY", "S2_HIDDEN_COMPUTE_40LOSS"],
+    "policies": 8,
+    "expected_csv_rows": 16
+  },
+  "hard_gates": {
+    "frozen_core_unchanged": true,
+    "e42_campaign_source_unchanged": true,
+    "cloudsim_dependency": "org.cloudsimplus:cloudsimplus:8.5.7",
+    "true_event_scheduled_arrivals": true,
+    "mapper_never_runs_before_task_arrival": true,
+    "all_calibration_cloudlets_finish": true,
+    "all_deployment_cloudlets_finish": true,
+    "max_service_parity_error_ms_at_most": 2.0,
+    "expected_csv_rows": 16
+  },
+  "scientific_result_gates_evaluated_in_preflight": false,
+  "no_result_driven_retuning": true,
+  "e42_results_must_not_be_overwritten": true,
+  "next_on_pass": "E4.6_ONLINE_DISPATCH_PUBLICATION_CAMPAIGN"
+}
