@@ -1,0 +1,83 @@
+{
+  "stage": "E4.6",
+  "name": "Online-Dispatch Publication Campaign",
+  "status": "LOCKED_BEFORE_CAMPAIGN",
+  "source_scientific_sha": "ee1600b808a9747bc0373489e8ce531bd6bfb5e0",
+  "source_e42_campaign_blob": "34256ca7bff46f911cf20e8b94278fbd09175746",
+  "source_e42_datacenter_blob": "aefd5e73f48b43d196f356b752bf82b598bd646f",
+  "source_e42_aggregate_blob": "29c2d6649ee13a872f294721553b9394552886bf",
+  "validated_e44_runtime_sha": "64da3668525a3e23856971d1e87d752b8a81edf7",
+  "validated_e45_preflight_sha": "cd4727bf9125d43bbfe8c48aea61960d5eb3b2de",
+  "validated_e45_preflight_run_id": 34677313227,
+  "validated_e45_generated_git_blob": "a06aca3ba50cd93bcf51a24dfaa61c26c28d5f85",
+  "validated_e45_generated_sha256": "06bd524e9ab8f3a43dface0691efdd9f65741d0d157dd9a23e6e67ed10714646",
+  "validated_e45_arrival_source_blob": "5678541c4073be67d5877df78c09b4e48c3d5a00",
+  "validated_e45_datacenter_blob": "fbdb55ef0eba6b185b0ef4977d2e9e2dc3de2663",
+  "campaign_design": {
+    "publication_runs": 30,
+    "seed_indices": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29],
+    "scientific_seed_formula": "4202202600 + seed_index",
+    "calibration_tasks_per_seed": 80000,
+    "deployment_tasks_per_scenario_policy": 30000,
+    "scenarios": [
+      "S0_STATIONARY",
+      "S1_LAMBDA_X2",
+      "S2_HIDDEN_COMPUTE_40LOSS",
+      "S3_HIDDEN_NETWORK_50LOSS",
+      "S4_COMPOUND"
+    ],
+    "policies": [
+      "CLOUD_ONLY",
+      "EDGE_FIRST",
+      "PRED_GREEDY",
+      "GLOBAL_CP",
+      "RANKED_CP_STATIC",
+      "CASPER_ADAPT_NO_HEALTH",
+      "CASPER_HEALTH_STATIC",
+      "CASPER_FULL"
+    ],
+    "expected_rows": 1200
+  },
+  "runtime_acceptance": {
+    "all_cloudsim_completions": true,
+    "max_selected_service_parity_error_ms": 2.0,
+    "true_event_scheduled_arrivals": true,
+    "mapper_must_not_run_before_arrival": true,
+    "cloudsim_dependency": "org.cloudsimplus:cloudsimplus:8.5.7"
+  },
+  "prelocked_publication_gates": {
+    "late_fwc_at_least_99": 0.99,
+    "late_air_under_20": 0.20,
+    "probe_rate_at_most_1pct": 0.01,
+    "healthy_false_alarm_nodes_across_30_at_most_6": 6,
+    "compute_alarm_coverage_at_least_90_for_S2_and_S4": 0.90,
+    "max_service_parity_error_at_most_2ms": 2.0,
+    "all_cloudsim_completions": true
+  },
+  "allowed_changes": [
+    "workflow orchestration",
+    "stage/output labeling",
+    "aggregation file naming"
+  ],
+  "forbidden_changes": [
+    "health thresholds",
+    "E1.7 thresholds or windows",
+    "conformal quantiles",
+    "workload distributions",
+    "scenario definitions",
+    "deadlines",
+    "policy logic",
+    "probe budget",
+    "scientific seeds",
+    "publication gates",
+    "calibration size",
+    "deployment task count"
+  ],
+  "scientific_integrity": {
+    "no_result_driven_retuning": true,
+    "e42_results_must_not_be_overwritten": true,
+    "e45_preflight_must_remain_frozen": true,
+    "campaign_results_must_be_written_as_new_e46_artifacts": true,
+    "campaign_outcome_must_be_frozen_even_if_scientific_gate_fails": true
+  }
+}
