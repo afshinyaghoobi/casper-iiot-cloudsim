@@ -1,0 +1,49 @@
+{
+  "stage": "E4.5",
+  "name": "Online-Dispatch Publication Preflight",
+  "status": "CLOSED_FROZEN",
+  "preflight_gate": "PASS",
+  "execution_status": "VALID_COMPLETE",
+  "source_scientific_sha": "ee1600b808a9747bc0373489e8ce531bd6bfb5e0",
+  "source_e42_campaign_blob": "34256ca7bff46f911cf20e8b94278fbd09175746",
+  "source_e42_datacenter_blob": "aefd5e73f48b43d196f356b752bf82b598bd646f",
+  "validated_e44_runtime_sha": "64da3668525a3e23856971d1e87d752b8a81edf7",
+  "preflight_workflow_sha": "cd4727bf9125d43bbfe8c48aea61960d5eb3b2de",
+  "preflight_run_id": 34677313227,
+  "generated_e45_git_blob": "a06aca3ba50cd93bcf51a24dfaa61c26c28d5f85",
+  "generated_e45_sha256": "06bd524e9ab8f3a43dface0691efdd9f65741d0d157dd9a23e6e67ed10714646",
+  "preflight_artifact": {
+    "name": "e45-online-dispatch-preflight",
+    "artifact_id": 10292378906,
+    "sha256": "44ee86e396474ad65d6dbd22ec0e765797d8e969fb9b300a6d67edbb375a4850"
+  },
+  "fixture": {
+    "seed_index": 0,
+    "calibration_tasks": 80000,
+    "deployment_tasks": 12000,
+    "scenarios": ["S0_STATIONARY", "S2_HIDDEN_COMPUTE_40LOSS"],
+    "policies": 8,
+    "csv_rows": 16
+  },
+  "runtime_evidence": {
+    "frozen_source_diff_bytes": 0,
+    "true_event_scheduled_arrivals": true,
+    "mapper_before_arrival_violations": 0,
+    "all_calibration_cloudlets_finished": true,
+    "all_deployment_cloudlets_finished": true,
+    "cloudsim_completion_all_rows": 1.0,
+    "max_observed_service_parity_error_ms": 0.034203,
+    "service_parity_gate_ms": 2.0,
+    "cloudsim_dependency": "org.cloudsimplus:cloudsimplus:8.5.7"
+  },
+  "scientific_integrity": {
+    "scientific_result_gates_evaluated_in_preflight": false,
+    "no_result_driven_retuning": true,
+    "frozen_e42_campaign_source_unchanged": true,
+    "frozen_core_unchanged": true,
+    "generated_diff_reviewed_as_runtime_only": true,
+    "e42_results_must_not_be_overwritten": true,
+    "future_publication_results_require_new_stage": true
+  },
+  "next_stage": "E4.6_ONLINE_DISPATCH_PUBLICATION_CAMPAIGN"
+}
