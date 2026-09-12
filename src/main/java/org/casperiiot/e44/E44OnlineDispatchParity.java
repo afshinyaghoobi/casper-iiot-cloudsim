@@ -40,7 +40,17 @@ public final class E44OnlineDispatchParity {
 
     public static void main(String[] args) {
         final CloudSimPlus sim = new CloudSimPlus(0.000001);
-        final List<Pe> pes = List.of(new PeSimple(50_000));
+
+        /*
+         * Runtime-fixture correction only: the parity harness submits two
+         * single-PE VMs. A single physical PE makes the fallback VM permanently
+         * unschedulable under the default space-shared VM scheduler, creating a
+         * zero-time allocation-retry storm that prevents runFor() from advancing
+         * between dynamic Cloudlet arrivals. Two identical PEs make both VMs
+         * allocatable without changing VM MIPS, service times, workload, policy,
+         * thresholds, seeds, or any frozen E4.2 scientific configuration.
+         */
+        final List<Pe> pes = List.of(new PeSimple(50_000), new PeSimple(50_000));
         final List<Host> hosts = List.of(new HostSimple(16_384, 100_000, 10_000_000, pes));
         new E44ParityDatacenter(sim, hosts);
 
@@ -111,7 +121,16 @@ public final class E44OnlineDispatchParity {
             sim.runFor(0.0001);
         }
 
-        while (sim.isRunning() && finished.get() < TASKS) sim.runFor(0.10);
+        /*
+         * Drain both the Cloudlet finish callback and the broker return event.
+         * The finish listener fires before the broker's finished-list bookkeeping,
+         * so gating only on the listener counter can observe the final Cloudlet one
+         * event too early. This changes no simulation inputs or scientific logic.
+         */
+        while (sim.isRunning()
+                && (finished.get() < TASKS || broker.getCloudletFinishedList().size() < TASKS)) {
+            sim.runFor(0.10);
+        }
 
         final boolean allFinished = finished.get() == TASKS && broker.getCloudletFinishedList().size() == TASKS;
         final boolean mappingComplete = mapperOrder.size() == TASKS;
