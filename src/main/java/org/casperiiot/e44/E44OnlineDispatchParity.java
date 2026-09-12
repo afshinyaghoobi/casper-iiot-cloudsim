@@ -53,16 +53,7 @@ public final class E44OnlineDispatchParity {
          */
         final List<Pe> pes = List.of(new PeSimple(50_000), new PeSimple(50_000));
         final List<Host> hosts = List.of(new HostSimple(16_384, 100_000, 10_000_000, pes));
-        final E44ParityDatacenter datacenter = new E44ParityDatacenter(sim, hosts);
-
-        /*
-         * This deterministic scheduling interval creates simulation clock events
-         * at the already-locked inter-arrival cadence. Cloudlets themselves are
-         * submitted from the clock listener below, at runtime, instead of being
-         * pushed through a synchronous host-language loop before the simulator
-         * can process completion feedback.
-         */
-        datacenter.setSchedulingInterval(INTERARRIVAL_SEC);
+        new E44ParityDatacenter(sim, hosts);
 
         final DatacenterBrokerSimple broker = new DatacenterBrokerSimple(sim);
         broker.setShutdownWhenIdle(false);
@@ -110,39 +101,28 @@ public final class E44OnlineDispatchParity {
         broker.submitVmList(vms);
 
         /*
-         * Event-scheduled runtime arrivals. CloudSim Plus invokes this listener
-         * only when simulation time advances. Each Cloudlet is therefore created
-         * and submitted from inside the simulation event timeline at or after its
-         * deterministic arrival instant. Earlier finish callbacks can execute
-         * before later mapper invocations and update the frozen health/E1.7 state.
+         * True simulation-native arrivals. The E44ArrivalSource places each
+         * arrival directly on CloudSim's future-event queue. This removes the
+         * need to use Datacenter.schedulingInterval as a clock generator, so
+         * Cloudlet-processing updates retain their exact runtime completion
+         * events while each later dispatch can observe earlier feedback.
          */
-        sim.addOnClockTickListener(info -> {
-            while (submitted.get() < TASKS) {
-                final int i = submitted.get();
-                final double arrival = FIRST_ARRIVAL_SEC + i * INTERARRIVAL_SEC;
-                if (info.getTime() + TIME_EPS < arrival) break;
-
-                final long length = Math.max(1L, Math.round(MIPS * ACTUAL_SERVICE_MS / 1000.0));
-                final Cloudlet c = new CloudletSimple(length, 1)
-                        .setUtilizationModelCpu(new UtilizationModelFull());
-                c.setId(i);
-                c.addOnFinishListener(evt -> {
-                    final Cloudlet done = evt.getCloudlet();
-                    final int task = (int) done.getId();
-                    finishOrder.add(task);
-                    final double serviceMs = done.getTotalExecutionTime() * 1000.0;
-                    health.observe(serviceMs, NOMINAL_SERVICE_MS);
-                    e17.observe(2.0);
-                    finished.incrementAndGet();
-                });
-
-                broker.submitCloudlet(c);
-                submitted.incrementAndGet();
-            }
-
-            if (submitted.get() == TASKS) {
-                sim.removeOnClockTickListener(info.getListener());
-            }
+        new E44ArrivalSource(sim, TASKS, FIRST_ARRIVAL_SEC, INTERARRIVAL_SEC, i -> {
+            final long length = Math.max(1L, Math.round(MIPS * ACTUAL_SERVICE_MS / 1000.0));
+            final Cloudlet c = new CloudletSimple(length, 1)
+                    .setUtilizationModelCpu(new UtilizationModelFull());
+            c.setId(i);
+            c.addOnFinishListener(evt -> {
+                final Cloudlet done = evt.getCloudlet();
+                final int task = (int) done.getId();
+                finishOrder.add(task);
+                final double serviceMs = done.getTotalExecutionTime() * 1000.0;
+                health.observe(serviceMs, NOMINAL_SERVICE_MS);
+                e17.observe(2.0);
+                finished.incrementAndGet();
+            });
+            broker.submitCloudlet(c);
+            submitted.incrementAndGet();
         });
 
         /* 10 s is the pre-existing parity safety horizon, not a scientific input. */
