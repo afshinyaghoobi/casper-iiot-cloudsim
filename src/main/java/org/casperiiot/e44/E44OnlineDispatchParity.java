@@ -17,6 +17,7 @@ import org.casperiiot.e41.core.FrozenConfig;
 import org.casperiiot.e41.core.NodeHealthDetector;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +36,7 @@ public final class E44OnlineDispatchParity {
     private static final double NOMINAL_SERVICE_MS = 10.0;
     private static final double ACTUAL_SERVICE_MS = 20.0;
     private static final long MIPS = 10_000L;
+    private static final double TIME_EPS = 1e-9;
 
     private E44OnlineDispatchParity() {}
 
@@ -44,23 +46,21 @@ public final class E44OnlineDispatchParity {
         /*
          * Runtime-fixture correction only: the parity harness submits two
          * single-PE VMs. A single physical PE makes the fallback VM permanently
-         * unschedulable under the default space-shared VM scheduler, creating a
-         * zero-time allocation-retry storm that prevents runFor() from advancing
-         * between dynamic Cloudlet arrivals. Two identical PEs make both VMs
-         * allocatable without changing VM MIPS, service times, workload, policy,
-         * thresholds, seeds, or any frozen E4.2 scientific configuration.
+         * unschedulable under the default space-shared VM scheduler. Two
+         * identical PEs make both VMs allocatable without changing VM MIPS,
+         * service times, workload, policy, thresholds, seeds, or frozen E4.2
+         * scientific configuration.
          */
         final List<Pe> pes = List.of(new PeSimple(50_000), new PeSimple(50_000));
         final List<Host> hosts = List.of(new HostSimple(16_384, 100_000, 10_000_000, pes));
         final E44ParityDatacenter datacenter = new E44ParityDatacenter(sim, hosts);
 
         /*
-         * Synchronous runFor() only advances while future events exist. The
-         * locked parity harness intentionally has no Cloudlet before the first
-         * runtime arrival, so a deterministic datacenter scheduling tick is
-         * required to carry simulation time across idle gaps. Reusing the
-         * already-locked inter-arrival interval changes only event scheduling
-         * semantics and does not alter any scientific input or decision logic.
+         * This deterministic scheduling interval creates simulation clock events
+         * at the already-locked inter-arrival cadence. Cloudlets themselves are
+         * submitted from the clock listener below, at runtime, instead of being
+         * pushed through a synchronous host-language loop before the simulator
+         * can process completion feedback.
          */
         datacenter.setSchedulingInterval(INTERARRIVAL_SEC);
 
@@ -79,9 +79,10 @@ public final class E44OnlineDispatchParity {
         final NodeHealthDetector health = new NodeHealthDetector(
                 1.05, FrozenConfig.HEALTH_WINDOW, FrozenConfig.HEALTH_EXCEEDANCES);
         final double[] reference = new double[FrozenConfig.E17_SLOW_WINDOW];
-        java.util.Arrays.fill(reference, 1.0);
+        Arrays.fill(reference, 1.0);
         final E17DualMemory e17 = new E17DualMemory(reference);
 
+        final AtomicInteger submitted = new AtomicInteger();
         final AtomicInteger finished = new AtomicInteger();
         final AtomicInteger firstHealthVisibleDispatch = new AtomicInteger(-1);
         final AtomicInteger firstE17AlarmVisibleDispatch = new AtomicInteger(-1);
@@ -89,6 +90,8 @@ public final class E44OnlineDispatchParity {
         final List<Integer> mapperOrder = new ArrayList<>();
         final List<Integer> finishOrder = new ArrayList<>();
         final List<Double> etaAtDispatch = new ArrayList<>();
+        final double[] mapperTime = new double[TASKS];
+        Arrays.fill(mapperTime, Double.NaN);
 
         broker.setVmMapper(cloudlet -> {
             final int idx = (int) cloudlet.getId();
@@ -96,6 +99,7 @@ public final class E44OnlineDispatchParity {
             final boolean e17Alarm = e17.alarmEver();
             final double eta = e17.etaBeforeOutcome();
             mapperOrder.add(idx);
+            mapperTime[idx] = sim.clock();
             etaAtDispatch.add(eta);
             if (alarm && firstHealthVisibleDispatch.get() < 0) firstHealthVisibleDispatch.set(idx);
             if (e17Alarm && firstE17AlarmVisibleDispatch.get() < 0) firstE17AlarmVisibleDispatch.set(idx);
@@ -104,60 +108,73 @@ public final class E44OnlineDispatchParity {
         });
 
         broker.submitVmList(vms);
-        sim.terminateAt(10.0);
-        sim.startSync();
-        sim.runFor(FIRST_ARRIVAL_SEC);
-
-        for (int i = 0; i < TASKS; i++) {
-            final double arrival = FIRST_ARRIVAL_SEC + i * INTERARRIVAL_SEC;
-            if (sim.clock() + 1e-12 < arrival) sim.runFor(arrival - sim.clock());
-
-            final long length = Math.max(1L, Math.round(MIPS * ACTUAL_SERVICE_MS / 1000.0));
-            final Cloudlet c = new CloudletSimple(length, 1)
-                    .setUtilizationModelCpu(new UtilizationModelFull());
-            c.setId(i);
-            c.addOnFinishListener(evt -> {
-                final Cloudlet done = evt.getCloudlet();
-                final int task = (int) done.getId();
-                finishOrder.add(task);
-                final double serviceMs = done.getTotalExecutionTime() * 1000.0;
-                health.observe(serviceMs, NOMINAL_SERVICE_MS);
-                e17.observe(2.0);
-                finished.incrementAndGet();
-            });
-            broker.submitCloudlet(c);
-
-            /* Process the runtime submission/mapping event at this simulation time. */
-            sim.runFor(0.0001);
-        }
 
         /*
-         * Drain both the Cloudlet finish callback and the broker return event.
-         * The finish listener fires before the broker's finished-list bookkeeping,
-         * so gating only on the listener counter can observe the final Cloudlet one
-         * event too early. This changes no simulation inputs or scientific logic.
+         * Event-scheduled runtime arrivals. CloudSim Plus invokes this listener
+         * only when simulation time advances. Each Cloudlet is therefore created
+         * and submitted from inside the simulation event timeline at or after its
+         * deterministic arrival instant. Earlier finish callbacks can execute
+         * before later mapper invocations and update the frozen health/E1.7 state.
          */
-        while (sim.isRunning()
-                && (finished.get() < TASKS || broker.getCloudletFinishedList().size() < TASKS)) {
-            sim.runFor(0.10);
+        sim.addOnClockTickListener(info -> {
+            while (submitted.get() < TASKS) {
+                final int i = submitted.get();
+                final double arrival = FIRST_ARRIVAL_SEC + i * INTERARRIVAL_SEC;
+                if (info.getTime() + TIME_EPS < arrival) break;
+
+                final long length = Math.max(1L, Math.round(MIPS * ACTUAL_SERVICE_MS / 1000.0));
+                final Cloudlet c = new CloudletSimple(length, 1)
+                        .setUtilizationModelCpu(new UtilizationModelFull());
+                c.setId(i);
+                c.addOnFinishListener(evt -> {
+                    final Cloudlet done = evt.getCloudlet();
+                    final int task = (int) done.getId();
+                    finishOrder.add(task);
+                    final double serviceMs = done.getTotalExecutionTime() * 1000.0;
+                    health.observe(serviceMs, NOMINAL_SERVICE_MS);
+                    e17.observe(2.0);
+                    finished.incrementAndGet();
+                });
+
+                broker.submitCloudlet(c);
+                submitted.incrementAndGet();
+            }
+
+            if (submitted.get() == TASKS) {
+                sim.removeOnClockTickListener(info.getListener());
+            }
+        });
+
+        /* 10 s is the pre-existing parity safety horizon, not a scientific input. */
+        sim.terminateAt(10.0);
+        sim.start();
+
+        final boolean allFinished = finished.get() == TASKS
+                && broker.getCloudletFinishedList().size() == TASKS;
+
+        boolean mapperAtOrAfterArrival = submitted.get() == TASKS && mapperOrder.size() == TASKS;
+        for (int i = 0; i < TASKS && mapperAtOrAfterArrival; i++) {
+            final double arrival = FIRST_ARRIVAL_SEC + i * INTERARRIVAL_SEC;
+            mapperAtOrAfterArrival = !Double.isNaN(mapperTime[i])
+                    && mapperTime[i] + TIME_EPS >= arrival;
         }
 
-        final boolean allFinished = finished.get() == TASKS && broker.getCloudletFinishedList().size() == TASKS;
-        final boolean mappingComplete = mapperOrder.size() == TASKS;
         final boolean healthVisible = firstHealthVisibleDispatch.get() >= 0;
         final boolean e17Visible = firstE17AlarmVisibleDispatch.get() >= 0;
         final boolean etaVisible = firstEtaAboveOneVisibleDispatch.get() >= 0;
-        final boolean feedbackPrecedesLaterDispatch = healthVisible && finishOrder.stream().anyMatch(x -> x < firstHealthVisibleDispatch.get());
-        final boolean fallbackUsedAfterAlarm = broker.getCloudletFinishedList().stream()
+        final boolean feedbackPrecedesLaterDispatch = healthVisible
+                && finishOrder.stream().anyMatch(x -> x < firstHealthVisibleDispatch.get());
+        final boolean fallbackUsedAfterAlarm = healthVisible
+                && broker.getCloudletFinishedList().stream()
                 .anyMatch(c -> c.getVm() == fallback && c.getId() >= firstHealthVisibleDispatch.get());
 
         System.out.printf(Locale.US,
-                "E44_PARITY healthVisibleAt=%d e17VisibleAt=%d etaVisibleAt=%d mapped=%d finished=%d etaMax=%.6f%n",
+                "E44_PARITY healthVisibleAt=%d e17VisibleAt=%d etaVisibleAt=%d submitted=%d mapped=%d finished=%d etaMax=%.6f%n",
                 firstHealthVisibleDispatch.get(), firstE17AlarmVisibleDispatch.get(),
-                firstEtaAboveOneVisibleDispatch.get(), mapperOrder.size(), finished.get(),
+                firstEtaAboveOneVisibleDispatch.get(), submitted.get(), mapperOrder.size(), finished.get(),
                 etaAtDispatch.stream().mapToDouble(Double::doubleValue).max().orElse(1.0));
 
-        require(mappingComplete, "mapper_runs_at_or_after_each_cloudlet_arrival");
+        require(mapperAtOrAfterArrival, "mapper_runs_at_or_after_each_cloudlet_arrival");
         require(allFinished, "all_cloudlets_finish");
         require(feedbackPrecedesLaterDispatch, "completion_callback_can_precede_later_dispatch");
         require(healthVisible, "health_alarm_becomes_visible_to_later_dispatch");
