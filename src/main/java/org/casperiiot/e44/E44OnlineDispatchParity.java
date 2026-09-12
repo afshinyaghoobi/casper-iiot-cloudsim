@@ -52,7 +52,17 @@ public final class E44OnlineDispatchParity {
          */
         final List<Pe> pes = List.of(new PeSimple(50_000), new PeSimple(50_000));
         final List<Host> hosts = List.of(new HostSimple(16_384, 100_000, 10_000_000, pes));
-        new E44ParityDatacenter(sim, hosts);
+        final E44ParityDatacenter datacenter = new E44ParityDatacenter(sim, hosts);
+
+        /*
+         * Synchronous runFor() only advances while future events exist. The
+         * locked parity harness intentionally has no Cloudlet before the first
+         * runtime arrival, so a deterministic datacenter scheduling tick is
+         * required to carry simulation time across idle gaps. Reusing the
+         * already-locked inter-arrival interval changes only event scheduling
+         * semantics and does not alter any scientific input or decision logic.
+         */
+        datacenter.setSchedulingInterval(INTERARRIVAL_SEC);
 
         final DatacenterBrokerSimple broker = new DatacenterBrokerSimple(sim);
         broker.setShutdownWhenIdle(false);
