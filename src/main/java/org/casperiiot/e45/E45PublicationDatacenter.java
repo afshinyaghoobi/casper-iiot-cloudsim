@@ -1,4 +1,4 @@
-package org.casperiiot.e42;
+package org.casperiiot.e45;
 
 import org.cloudsimplus.core.CloudSimPlus;
 import org.cloudsimplus.datacenters.DatacenterSimple;
@@ -7,20 +7,12 @@ import org.cloudsimplus.hosts.Host;
 import java.util.List;
 
 /**
- * E4.2 runtime-only correction for CloudSim Plus 8.5.7.
- *
- * DatacenterSimple.updateHostsProcessing() hard-codes an extra 0.01 seconds
- * on top of Simulation.getMinTimeBetweenEvents(). That floor delays short
- * Cloudlet completion events by about 10 ms and therefore contaminates the
- * selected-service parity audit and end-to-end latency measurements.
- *
- * This subclass preserves DatacenterSimple's host-processing logic and uses
- * exactly the simulation's configured minimum event spacing, without the
- * additional 10 ms padding. It changes no CASPER scientific parameter,
- * workload, policy, threshold, service model, or network model.
+ * E4.5 carries forward the E4.2 runtime-only CloudSim Plus processing-delay
+ * correction unchanged in behavior. No CASPER scientific parameter, workload,
+ * policy, threshold, service model, network model, seed, or gate is changed.
  */
-final class E42PublicationDatacenter extends DatacenterSimple {
-    E42PublicationDatacenter(final CloudSimPlus simulation, final List<? extends Host> hostList) {
+final class E45PublicationDatacenter extends DatacenterSimple {
+    E45PublicationDatacenter(final CloudSimPlus simulation, final List<? extends Host> hostList) {
         super(simulation, hostList);
     }
 
