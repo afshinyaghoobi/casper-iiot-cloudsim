@@ -1,0 +1,42 @@
+{
+  "stage": "E4.4",
+  "name": "Online-Dispatch Feedback Parity",
+  "status": "CLOSED_FROZEN",
+  "parity_gate": "PASS",
+  "execution_status": "VALID_COMPLETE",
+  "source_scientific_sha": "ee1600b808a9747bc0373489e8ce531bd6bfb5e0",
+  "validated_runtime_sha": "64da3668525a3e23856971d1e87d752b8a81edf7",
+  "parity_run_id": 34676793319,
+  "parity_artifact": {
+    "name": "e44-online-dispatch-parity",
+    "artifact_id": 10292363184,
+    "sha256": "1e909296af2f3207e3b0e31582f37704e6273437a9dff446920d8b2afa39c944"
+  },
+  "runtime_evidence": {
+    "submitted": 80,
+    "mapped": 80,
+    "finished": 80,
+    "health_visible_at_dispatch": 37,
+    "e17_visible_at_dispatch": 64,
+    "eta_above_one_visible_at_dispatch": 37,
+    "eta_max": 2.0,
+    "gate_pass_count": 7,
+    "frozen_core_diff_bytes": 0
+  },
+  "passed_gates": [
+    "mapper_runs_at_or_after_each_cloudlet_arrival",
+    "all_cloudlets_finish",
+    "completion_callback_can_precede_later_dispatch",
+    "health_alarm_becomes_visible_to_later_dispatch",
+    "e17_alarm_becomes_visible_to_later_dispatch",
+    "eta_above_one_becomes_visible_to_later_dispatch",
+    "health_state_changes_later_vm_mapping"
+  ],
+  "scientific_integrity": {
+    "no_result_driven_retuning": true,
+    "frozen_core_unchanged_from_source_scientific_sha": true,
+    "e42_results_must_not_be_overwritten": true,
+    "future_publication_campaign_requires_new_stage": true
+  },
+  "next_stage": "E4.5_ONLINE_DISPATCH_PUBLICATION_PREFLIGHT"
+}
