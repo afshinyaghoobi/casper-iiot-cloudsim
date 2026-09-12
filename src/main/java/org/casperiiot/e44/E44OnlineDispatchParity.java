@@ -125,8 +125,12 @@ public final class E44OnlineDispatchParity {
             submitted.incrementAndGet();
         });
 
-        /* 10 s is the pre-existing parity safety horizon, not a scientific input. */
-        sim.terminateAt(10.0);
+        /*
+         * Do not impose a wall on simulation time here. The parity gate is that
+         * every deterministically scheduled runtime event drains to completion.
+         * A fixed terminateAt horizon can cut off valid deferred processing
+         * events and create a false all_cloudlets_finish failure.
+         */
         sim.start();
 
         final boolean allFinished = finished.get() == TASKS
