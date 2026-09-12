@@ -1,0 +1,85 @@
+{
+  "stage": "E4.6",
+  "name": "Online-Dispatch Publication Campaign",
+  "status": "CLOSED_FROZEN",
+  "publication_campaign_gate": "FAIL",
+  "execution_status": "VALID_COMPLETE",
+  "campaign_workflow_sha": "fb8fab039886a98ba582541d15956bb4a01569ff",
+  "publication_run_id": 34677758057,
+  "source_scientific_sha": "ee1600b808a9747bc0373489e8ce531bd6bfb5e0",
+  "validated_e45_preflight_sha": "cd4727bf9125d43bbfe8c48aea61960d5eb3b2de",
+  "validated_e45_preflight_run_id": 34677313227,
+  "validated_e45_generated_git_blob": "a06aca3ba50cd93bcf51a24dfaa61c26c28d5f85",
+  "validated_e45_generated_sha256": "06bd524e9ab8f3a43dface0691efdd9f65741d0d157dd9a23e6e67ed10714646",
+  "publication_artifact": {
+    "name": "e46-publication-results",
+    "artifact_id": 10292758918,
+    "sha256": "d1cf8be940669f9551dec34505ee75784142b5d14eb5f6d7c737e0281bc2c1c9",
+    "rows": 1200,
+    "seeds": 30,
+    "scenarios": 5,
+    "policies": 8,
+    "raw_seed_csvs": 30
+  },
+  "failed_prelocked_gates": [
+    {
+      "scenario": "S3_HIDDEN_NETWORK_50LOSS",
+      "gate": "late_fwc_at_least_99",
+      "observed_casper_full_mean": 0.885733
+    }
+  ],
+  "casper_full_gate_summary": {
+    "S0_STATIONARY": {
+      "late_fwc": 0.992933,
+      "late_air": 0.027200,
+      "probe_rate": 0.00997937
+    },
+    "S1_LAMBDA_X2": {
+      "late_fwc": 0.992000,
+      "late_air": 0.059067,
+      "probe_rate": 0.00997937
+    },
+    "S2_HIDDEN_COMPUTE_40LOSS": {
+      "late_fwc": 0.990667,
+      "late_air": 0.050133,
+      "probe_rate": 0.00997937,
+      "compute_alarm_coverage": 1.0
+    },
+    "S3_HIDDEN_NETWORK_50LOSS": {
+      "late_fwc": 0.885733,
+      "late_air": 0.101867,
+      "probe_rate": 0.00997937
+    },
+    "S4_COMPOUND": {
+      "late_fwc": 0.991467,
+      "late_air": 0.117200,
+      "probe_rate": 0.00997937,
+      "compute_alarm_coverage": 1.0
+    }
+  },
+  "runtime_validity": {
+    "cloudsim_dependency": "org.cloudsimplus:cloudsimplus:8.5.7",
+    "all_30_seed_jobs_completed": true,
+    "all_cloudsim_completions": true,
+    "true_event_scheduled_arrivals": true,
+    "mapper_before_arrival_violations": 0,
+    "max_observed_service_parity_error_ms": 0.087182,
+    "service_parity_gate_ms": 2.0,
+    "aggregation_rows_validated": 1200
+  },
+  "aggregation_integrity": {
+    "source_e42_aggregate_blob": "29c2d6649ee13a872f294721553b9394552886bf",
+    "generated_e46_aggregate_git_blob": "fa8624e964b1a713e6aad1d333a50809aca5a519",
+    "statistical_logic_changed": false,
+    "publication_gates_changed": false
+  },
+  "scientific_integrity": {
+    "no_result_driven_retuning": true,
+    "e42_results_must_not_be_overwritten": true,
+    "e45_preflight_must_remain_frozen": true,
+    "e46_results_must_not_be_overwritten": true,
+    "campaign_outcome_frozen_despite_gate_failure": true,
+    "future_changes_require_new_stage": true
+  },
+  "next_stage": "E4.7_POST_HOC_NETWORK_DIAGNOSIS"
+}
