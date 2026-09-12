@@ -1,60 +1,69 @@
-package org.casperiiot.e44;
+package org.casperiiot.e45;
 
 import org.cloudsimplus.core.CloudSimEntity;
 import org.cloudsimplus.core.CloudSimPlus;
 import org.cloudsimplus.core.events.SimEvent;
 
+import java.util.Arrays;
 import java.util.function.IntConsumer;
 
 /**
- * Parity-only simulation entity that emits deterministic Cloudlet-arrival events.
+ * E4.5 runtime-only simulation entity that emits Cloudlet arrivals at the
+ * already-generated frozen publication timestamps.
  *
- * The entity exists solely to put each arrival on CloudSim's future-event queue.
- * It does not change workload parameters, service times, policy logic, detector
- * thresholds, seeds, or any frozen E4.2 scientific configuration.
+ * This is the publication-scale form of the event-scheduled arrival mechanism
+ * validated in E4.4. It changes no workload distribution, arrival timestamp,
+ * service time, policy logic, threshold, seed, deadline, or publication gate.
  */
-final class E44ArrivalSource extends CloudSimEntity {
+final class E45ArrivalSource extends CloudSimEntity {
     private static final int ARRIVAL_EVENT = 90_001;
 
-    private final int tasks;
-    private final double firstArrivalSec;
-    private final double interarrivalSec;
+    private final double[] arrivalSec;
     private final IntConsumer submitTask;
 
-    E44ArrivalSource(
+    E45ArrivalSource(
             final CloudSimPlus simulation,
-            final int tasks,
-            final double firstArrivalSec,
-            final double interarrivalSec,
+            final double[] arrivalSec,
             final IntConsumer submitTask) {
         super(simulation);
-        this.tasks = tasks;
-        this.firstArrivalSec = firstArrivalSec;
-        this.interarrivalSec = interarrivalSec;
+        this.arrivalSec = Arrays.copyOf(arrivalSec, arrivalSec.length);
         this.submitTask = submitTask;
-        setName("E44ArrivalSource");
+        validateArrivals(this.arrivalSec);
+        setName("E45ArrivalSource");
     }
 
     @Override
     protected void startInternal() {
-        if (tasks > 0) {
-            schedule(firstArrivalSec, ARRIVAL_EVENT, 0);
+        if (arrivalSec.length > 0) {
+            schedule(arrivalSec[0], ARRIVAL_EVENT, 0);
         }
     }
 
     @Override
     public void processEvent(final SimEvent evt) {
         if (evt.getTag() != ARRIVAL_EVENT || !(evt.getData() instanceof Integer task)) {
-            throw new IllegalStateException("Unexpected E4.4 arrival event: " + evt.getTag());
+            throw new IllegalStateException("Unexpected E4.5 arrival event: " + evt.getTag());
         }
 
         submitTask.accept(task);
 
         final int next = task + 1;
-        if (next < tasks) {
-            schedule(interarrivalSec, ARRIVAL_EVENT, next);
+        if (next < arrivalSec.length) {
+            final double delay = arrivalSec[next] - arrivalSec[task];
+            schedule(delay, ARRIVAL_EVENT, next);
         } else {
             shutdown();
+        }
+    }
+
+    private static void validateArrivals(final double[] arrivals) {
+        double previous = 0.0;
+        for (int i = 0; i < arrivals.length; i++) {
+            final double t = arrivals[i];
+            if (!Double.isFinite(t) || t < 0.0 || (i > 0 && t < previous)) {
+                throw new IllegalArgumentException("Invalid E4.5 arrival timestamp at task " + i + ": " + t);
+            }
+            previous = t;
         }
     }
 }
