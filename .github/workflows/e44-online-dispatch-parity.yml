@@ -18,6 +18,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # The frozen-core verification compares against the locked E4.2
+          # scientific SHA, so the runner must have that historical commit.
+          fetch-depth: 0
       - name: Set up Java 21
         uses: actions/setup-java@v5
         with:
@@ -26,14 +30,17 @@ jobs:
           cache: maven
       - name: Verify E4.4 lock and frozen scientific config
         run: |
+          set -euo pipefail
           grep -F '"status": "LOCKED_BEFORE_IMPLEMENTATION"' E44_LOCKED_PROTOCOL.json
           grep -F '"source_scientific_sha": "ee1600b808a9747bc0373489e8ce531bd6bfb5e0"' E44_LOCKED_PROTOCOL.json
+          test "$(git cat-file -t ee1600b808a9747bc0373489e8ce531bd6bfb5e0)" = commit
           git diff ee1600b808a9747bc0373489e8ce531bd6bfb5e0 -- src/main/java/org/casperiiot/e41/core/FrozenConfig.java src/main/java/org/casperiiot/e41/core/NodeHealthDetector.java src/main/java/org/casperiiot/e41/core/E17DualMemory.java | tee e44_frozen_core.diff
           test ! -s e44_frozen_core.diff
       - name: Compile
         run: mvn -B -ntp -DskipTests compile
       - name: Run deterministic online-dispatch parity
         run: |
+          set -euo pipefail
           mvn -B -ntp -DskipTests exec:java \
             -Dexec.mainClass=org.casperiiot.e44.E44OnlineDispatchParity \
             2>&1 | tee e44_parity.log
