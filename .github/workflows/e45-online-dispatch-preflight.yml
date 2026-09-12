@@ -1,0 +1,144 @@
+name: E4.5 Online-Dispatch Publication Preflight
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'E45_LOCKED_PROTOCOL.json'
+      - 'E44_CLOSURE.json'
+      - 'tools/e45_generate.py'
+      - 'src/main/java/org/casperiiot/e45/**'
+      - 'src/main/java/org/casperiiot/e42/E42Campaign.java'
+      - 'src/main/java/org/casperiiot/e42/E42PublicationDatacenter.java'
+      - 'src/main/java/org/casperiiot/e41/core/FrozenConfig.java'
+      - 'src/main/java/org/casperiiot/e41/core/NodeHealthDetector.java'
+      - 'src/main/java/org/casperiiot/e41/core/E17DualMemory.java'
+      - 'pom.xml'
+      - '.github/workflows/e45-online-dispatch-preflight.yml'
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout full provenance history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Verify E4.5 lock, E4.4 gate, and frozen scientific source
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F '"status": "LOCKED_BEFORE_PREFLIGHT"' E45_LOCKED_PROTOCOL.json
+          grep -F '"source_scientific_sha": "ee1600b808a9747bc0373489e8ce531bd6bfb5e0"' E45_LOCKED_PROTOCOL.json
+          grep -F '"validated_e44_runtime_sha": "64da3668525a3e23856971d1e87d752b8a81edf7"' E45_LOCKED_PROTOCOL.json
+          grep -F '"status": "CLOSED_FROZEN"' E44_CLOSURE.json
+          grep -F '"parity_gate": "PASS"' E44_CLOSURE.json
+          grep -F '"validated_runtime_sha": "64da3668525a3e23856971d1e87d752b8a81edf7"' E44_CLOSURE.json
+          test "$(git cat-file -t ee1600b808a9747bc0373489e8ce531bd6bfb5e0)" = commit
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42PublicationDatacenter.java)" = aefd5e73f48b43d196f356b752bf82b598bd646f
+          git diff --exit-code ee1600b808a9747bc0373489e8ce531bd6bfb5e0 -- \
+            src/main/java/org/casperiiot/e42/E42Campaign.java \
+            src/main/java/org/casperiiot/e42/E42PublicationDatacenter.java \
+            src/main/java/org/casperiiot/e41/core/FrozenConfig.java \
+            src/main/java/org/casperiiot/e41/core/NodeHealthDetector.java \
+            src/main/java/org/casperiiot/e41/core/E17DualMemory.java \
+            | tee e45_frozen_source.diff
+          test ! -s e45_frozen_source.diff
+
+      - name: Generate E4.5 from frozen E4.2 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py | tee e45_generator.log
+          grep -F 'E45_GENERATOR PASS source_blob=34256ca7bff46f911cf20e8b94278fbd09175746' e45_generator.log
+          test "$(grep -c 'new E45ArrivalSource' src/main/java/org/casperiiot/e45/E45Campaign.java)" -eq 2
+          test "$(grep -c 'setSubmissionDelay' src/main/java/org/casperiiot/e45/E45Campaign.java || true)" -eq 0
+          test "$(grep -c 'requireRuntimeArrival(sim,t)' src/main/java/org/casperiiot/e45/E45Campaign.java)" -eq 2
+          grep -F 'scientific_retuning=false' e45_generation_manifest.txt
+
+      - name: Verify CloudSim Plus dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -ntp dependency:tree -Dincludes=org.cloudsimplus:cloudsimplus | tee e45_dependency.txt
+          grep -F 'org.cloudsimplus:cloudsimplus:jar:8.5.7' e45_dependency.txt
+
+      - name: Compile E4.5
+        run: mvn -B -ntp -DskipTests compile
+
+      - name: Run online-dispatch publication preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p e45_preflight
+          mvn -B -ntp -DskipTests exec:java \
+            -Dexec.mainClass=org.casperiiot.e45.E45Campaign \
+            -Dexec.args='--seed 0 --cal 80000 --tasks 12000 --scenarios S0_STATIONARY,S2_HIDDEN_COMPUTE_40LOSS --out e45_preflight/preflight.csv' \
+            2>&1 | tee e45_preflight/preflight.log
+          grep -F 'CALIBRATION_VALIDATION PASS' e45_preflight/preflight.log
+          grep -F 'E45_ONLINE_DISPATCH_RUNTIME PASS' e45_preflight/preflight.log
+          grep -F 'E45_SEED_COMPLETE seed=0 rows=16' e45_preflight/preflight.log
+          test "$(($(wc -l < e45_preflight/preflight.csv)-1))" -eq 16
+
+      - name: Verify runtime-only acceptance gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          p = Path('e45_preflight/preflight.csv')
+          rows = list(csv.DictReader(p.open()))
+          assert len(rows) == 16, len(rows)
+          for i, row in enumerate(rows):
+              completion = float(row['cloudsim_completion'])
+              parity = float(row['max_service_parity_error_ms'])
+              assert completion == 1.0, (i, completion)
+              assert parity <= 2.0, (i, parity)
+          print('E45_RUNTIME_ACCEPTANCE PASS rows=16 completion=1.0 service_parity_ms<=2.0')
+          PY
+
+      - name: Record E4.5 provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            printf 'workflow_sha=%s\n' "$GITHUB_SHA"
+            printf 'source_scientific_sha=%s\n' 'ee1600b808a9747bc0373489e8ce531bd6bfb5e0'
+            printf 'source_e42_campaign_blob=%s\n' '34256ca7bff46f911cf20e8b94278fbd09175746'
+            printf 'validated_e44_runtime_sha=%s\n' '64da3668525a3e23856971d1e87d752b8a81edf7'
+            printf 'validated_e44_run_id=%s\n' '34676793319'
+            printf 'generated_e45_git_blob=%s\n' "$(git hash-object src/main/java/org/casperiiot/e45/E45Campaign.java)"
+          } > E45_PROVENANCE.txt
+          cat e45_generation_manifest.txt >> E45_PROVENANCE.txt
+
+      - name: Upload E4.5 preflight evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e45-online-dispatch-preflight
+          retention-days: 90
+          if-no-files-found: error
+          path: |
+            E45_LOCKED_PROTOCOL.json
+            E44_CLOSURE.json
+            E45_PROVENANCE.txt
+            e45_frozen_source.diff
+            e45_generated.diff
+            e45_generation_manifest.txt
+            e45_generator.log
+            e45_dependency.txt
+            e45_preflight/
+            src/main/java/org/casperiiot/e45/E45Campaign.java
+            src/main/java/org/casperiiot/e45/E45ArrivalSource.java
+            src/main/java/org/casperiiot/e45/E45PublicationDatacenter.java
