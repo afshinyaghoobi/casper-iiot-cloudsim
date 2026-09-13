@@ -1,0 +1,26 @@
+{
+  "title": "CASPER-IIoT: Frozen CloudSim Plus Online-Dispatch Publication Artifact",
+  "version": "1.0.0-casper-iiot-e46",
+  "upload_type": "software",
+  "publication_date": "2026-09-13",
+  "creators": [
+    {
+      "name": "Yaghoobi, Afshin",
+      "orcid": "0009-0006-4695-6018",
+      "affiliation": "Independent Researcher, Wichita, KS, USA"
+    }
+  ],
+  "description": "<p>This record archives the frozen CASPER-IIoT reproducibility package for a companion manuscript prepared for Future Generation Computer Systems. The artifact documents a publication-scale online-dispatch CloudSim Plus campaign with 30 seed replications, five scenarios, eight policy variants, and 1,200 scenario-policy-seed runs.</p><p>The release is metadata-only with respect to the scientific protocol: it does not retune parameters, alter workloads, change thresholds, change policies, or overwrite frozen E4.6 results. The hidden-network-loss scenario is preserved as a transparent robustness boundary rather than treated as an execution failure.</p><p>Key anchors: frozen scientific source SHA <code>ee1600b808a9747bc0373489e8ce531bd6bfb5e0</code>; E4.6 orchestration SHA <code>fb8fab039886a98ba582541d15956bb4a01569ff</code>; E4.6 closure SHA <code>896d7f01be26f70c9259b938aa1a3f67c2f757c6</code>; workflow run ID <code>34677758057</code>; publication artifact ID <code>10292758918</code>; artifact ZIP SHA-256 <code>d1cf8be940669f9551dec34505ee75784142b5d14eb5f6d7c737e0281bc2c1c9</code>.</p>",
+  "access_right": "open",
+  "license": "mit",
+  "keywords": [
+    "cloud-edge computing",
+    "Industrial Internet of Things",
+    "online dispatch",
+    "conformal prediction",
+    "adaptive scheduling",
+    "CloudSim Plus",
+    "reproducibility"
+  ],
+  "language": "eng"
+}
