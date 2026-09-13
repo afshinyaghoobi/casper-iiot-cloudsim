@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software or artifact, please cite it as below."
+title: "CASPER-IIoT: Frozen CloudSim Plus Online-Dispatch Publication Artifact"
+type: software
+authors:
+  - family-names: Yaghoobi
+    given-names: Afshin
+    orcid: "https://orcid.org/0009-0006-4695-6018"
+version: "1.0.0-casper-iiot-e46"
+date-released: "2026-09-13"
+repository-code: "https://github.com/afshinyaghoobi/casper-iiot-cloudsim"
+url: "https://github.com/afshinyaghoobi/casper-iiot-cloudsim"
+abstract: >-
+  Frozen reproducibility package for CASPER, a conformal adaptive scheduling
+  framework for robust online dispatch in cloud-edge IIoT. The release preserves
+  the E4.6 publication-scale CloudSim Plus campaign metadata, source anchors,
+  workflow identifiers, aggregation scripts, and 30-seed result artifacts used
+  by the companion FGCS manuscript.
+keywords:
+  - cloud-edge computing
+  - Industrial Internet of Things
+  - online dispatch
+  - conformal prediction
+  - CloudSim Plus
+  - reproducibility
+license: MIT
