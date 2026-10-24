@@ -1,0 +1,93 @@
+name: JPDC Seed 0 Reproduction (E4.6 frozen)
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-seed0-repro.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reproduce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v1.0.0-casper-iiot-e46
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Fetch and lock E4.6 archived reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p jpdc_repro
+          curl -fLsS --retry 3 -o jpdc_repro/e46-publication-results.zip "https://github.com/afshinyaghoobi/casper-iiot-cloudsim/releases/download/v1.0.0-casper-iiot-e46/e46-publication-results.zip"
+          python3 - <<'PY'
+          import hashlib,zipfile
+          from pathlib import Path
+          src=Path('jpdc_repro/e46-publication-results.zip')
+          with zipfile.ZipFile(src) as z:
+              b=z.read('raw/e46_seed_0.csv')
+          expected="004b66ccc393c0ebd54b82cef10aeffcf30251cb51eeb56f0ef41f01ac6185f3"
+          actual=hashlib.sha256(b).hexdigest()
+          assert actual==expected,(actual,expected)
+          Path('jpdc_repro/seed0_reference.csv').write_bytes(b)
+          print("FROZEN_REFERENCE_SHA256 PASS",actual)
+          PY
+      - name: Build frozen E4.5 runtime for E4.6
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py | tee jpdc_repro/generator.log
+          grep -F 'scientific_retuning=false' e45_generation_manifest.txt
+          mvn -B -ntp -DskipTests compile | tee jpdc_repro/compile.log
+      - name: Run complete frozen seed zero
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -ntp -DskipTests exec:java \
+            -Dexec.mainClass=org.casperiiot.e45.E45Campaign \
+            -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios S0_STATIONARY,S1_LAMBDA_X2,S2_HIDDEN_COMPUTE_40LOSS,S3_HIDDEN_NETWORK_50LOSS,S4_COMPOUND --out jpdc_repro/seed0_rerun.csv" \
+            2>&1 | tee jpdc_repro/seed0_rerun.log
+          grep -F 'CALIBRATION_VALIDATION PASS' jpdc_repro/seed0_rerun.log
+          grep -F 'E45_ONLINE_DISPATCH_RUNTIME PASS' jpdc_repro/seed0_rerun.log
+          grep -F 'E45_SEED_COMPLETE seed=0 rows=40' jpdc_repro/seed0_rerun.log
+      - name: Strict numerical comparison with archived seed zero
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import csv,math,json
+          from pathlib import Path
+          ref=Path("jpdc_repro/seed0_reference.csv")
+          new=Path("jpdc_repro/seed0_rerun.csv")
+          with ref.open(newline="") as f: a=list(csv.DictReader(f))
+          with new.open(newline="") as f: b=list(csv.DictReader(f))
+          failures=[]
+          if len(a)!=40 or len(b)!=40: failures.append(f"rows: reference={len(a)} rerun={len(b)}")
+          if a and b and list(a[0])!=list(b[0]): failures.append("column headers differ")
+          for i,(x,y) in enumerate(zip(a,b),1):
+              for key in x:
+                  v=x[key].strip();w=y.get(key,"").strip()
+                  if v==w: continue
+                  try:
+                      f=float(v);g=float(w)
+                      if math.isnan(f) and math.isnan(g):continue
+                      if math.isclose(f,g,rel_tol=1e-9,abs_tol=1e-10):continue
+                  except ValueError:pass
+                  failures.append(f"row {i}, {key}: {v!r} vs {w!r}")
+          report={"pass":not failures,"reference_rows":len(a),"rerun_rows":len(b),"mismatches":failures[:100]}
+          Path("jpdc_repro/validation.json").write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          if failures:raise SystemExit(1)
+          PY
+      - name: Preserve logs and validation result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-seed0-reproduction
+          path: jpdc_repro/
+          if-no-files-found: warn
