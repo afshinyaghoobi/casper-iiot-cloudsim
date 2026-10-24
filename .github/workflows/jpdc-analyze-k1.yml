@@ -1,0 +1,34 @@
+name: JPDC Analyze K1 vs Frozen K3 on 30 Seeds
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-analyze-k1.yml','jpdc/analyze_topk30.py']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install scipy
+      - name: Retrieve verified official E4.6 reference
+        run: |
+          mkdir -p jpdc_k_analysis/input
+          curl -fLsS --retry 3 -o jpdc_k_analysis/e46-publication-results.zip https://github.com/afshinyaghoobi/casper-iiot-cloudsim/releases/download/v1.0.0-casper-iiot-e46/e46-publication-results.zip
+      - name: Retrieve completed topK1 research seed artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 40140397328 --repo ${{ github.repository }} --dir jpdc_k_analysis/input
+      - name: Validate and compare thirty matched seeds
+        run: python jpdc/analyze_topk30.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-topk30-analysis
+          path: jpdc_k_analysis/topk30_summary.json
+          if-no-files-found: warn
