@@ -17,8 +17,8 @@ for p in paths:
     assert len({(x['scenario'],x['policy']) for x in r})==45,p
     rows.extend(r)
 assert len(rows)==1350
-assert {int(x['seed']) for x in rows}==set(range(30))
-idx={(int(r['seed']),r['scenario'],r['policy']):r for r in rows}
+assert {int(x['seed']) for x in rows}==set(range(4_202_202_600,4_202_202_630)), sorted({int(x['seed']) for x in rows})
+idx={(int(r['seed'])-4_202_202_600,r['scenario'],r['policy']):r for r in rows}
 out=[]
 for scenario in sorted({r['scenario'] for r in rows}):
   for competitor in ('PRED_GREEDY','DEADLINE_CAPACITY_PRESERVING'):
