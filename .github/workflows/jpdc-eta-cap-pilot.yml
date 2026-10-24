@@ -1,0 +1,54 @@
+name: JPDC Adaptive Eta Cap 1-2-3 Pilot
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-eta-cap-pilot.yml, jpdc/eta_cap_patch.py]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  etacap:
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        eta: [1, 2, 3]
+        seed: [0, 1, 2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Generate frozen science and apply deployment-only eta cap
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          grep -F 'scientific_retuning=false' e45_generation_manifest.txt
+          python3 jpdc/eta_cap_patch.py ${{ matrix.eta }}
+          mvn -B -ntp -DskipTests compile
+      - name: Run E4.6 comparable simulation
+        run: |
+          set -euo pipefail
+          mkdir -p jpdc_eta
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S0_STATIONARY,S1_LAMBDA_X2,S2_HIDDEN_COMPUTE_40LOSS,S3_HIDDEN_NETWORK_50LOSS,S4_COMPOUND --out jpdc_eta/eta${{ matrix.eta }}_seed${{ matrix.seed }}.csv" > jpdc_eta/run.log 2>&1
+          grep -F "E45_SEED_COMPLETE seed=${{ matrix.seed }} rows=40" jpdc_eta/run.log
+          python3 - <<'PY'
+          import csv,glob
+          p=glob.glob('jpdc_eta/*.csv')
+          assert len(p)==1
+          with open(p[0]) as f: a=list(csv.DictReader(f))
+          assert len(a)==40
+          for scenario in sorted({x['scenario'] for x in a}):
+              x=next(x for x in a if x['scenario']==scenario and x['policy']=='CASPER_FULL')
+              print('ETA_RESULT',scenario,x['late_dvr'],x['late_fwc'],x['late_eta'])
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-eta-${{ matrix.eta }}-seed-${{ matrix.seed }}
+          path: jpdc_eta/
+          if-no-files-found: warn
