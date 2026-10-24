@@ -1,0 +1,39 @@
+name: JPDC Aggregate 30 Seed Adaptive Eta
+on:
+  workflow_run:
+    workflows: ["JPDC Eta Caps 30 Seed Sensitivity"]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  analyze:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jpdc-seed0-repro-20261024
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy scipy
+      - name: Retrieve immutable reference and 90 seed artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p jpdc_eta_analysis/input
+          curl -fLsS --retry 3 -o jpdc_eta_analysis/e46-publication-results.zip https://github.com/afshinyaghoobi/casper-iiot-cloudsim/releases/download/v1.0.0-casper-iiot-e46/e46-publication-results.zip
+          gh run download 40141094929 --repo ${{ github.repository }} --dir jpdc_eta_analysis/input
+      - name: Verify source parity and compute matched statistics
+        run: python jpdc/analyze_eta30.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-eta30-statistical-analysis
+          path: |
+            jpdc_eta_analysis/eta30_report.json
+            jpdc_eta_analysis/eta30_comparisons.csv
+          if-no-files-found: warn
