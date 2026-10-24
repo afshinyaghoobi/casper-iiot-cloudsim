@@ -1,0 +1,43 @@
+name: JPDC Aggregate 30 Seed Frozen Baseline Results
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-aggregate-30seed.yml'
+      - 'jpdc/aggregate_30seed.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  aggregate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install statistic libraries
+        run: pip install numpy scipy
+      - name: Download 30 archived research seed results
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p jpdc_aggregate/input
+          gh run download 40137798859 --repo ${{ github.repository }} --dir jpdc_aggregate/input
+          find jpdc_aggregate/input -name 'seed_*.csv' | sort | wc -l
+      - name: Validate and analyze 30 paired seeds
+        run: python jpdc/aggregate_30seed.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-30seed-statistical-results
+          path: jpdc_aggregate/paired_results.csv
+          if-no-files-found: warn
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-30seed-summary-json
+          path: jpdc_aggregate/summary.json
+          if-no-files-found: warn
