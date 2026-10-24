@@ -1,0 +1,44 @@
+name: JPDC S4 Network Exposure Diagnostic
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-s4-exposure.yml','jpdc/s4_exposure_instrument.py']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exposure:
+    strategy:
+      fail-fast: false
+      matrix:
+        retained: [25, 50, 75]
+        seed: [0, 1]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Apply original source, network change and passive diagnostics
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          python3 jpdc/network_severity_patch.py ${{ matrix.retained }}
+          python3 jpdc/s4_exposure_instrument.py
+          mvn -B -ntp -DskipTests compile
+      - name: Record candidate and selected-node exposure
+        run: |
+          set -euo pipefail
+          mkdir -p jpdc_exposure
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS,S4_COMPOUND --out jpdc_exposure/output.csv" > jpdc_exposure/run.log 2>&1
+          grep "NETWORK_EXPOSURE" jpdc_exposure/run.log
+          grep -F "E45_SEED_COMPLETE seed=${{ matrix.seed }} rows=16" jpdc_exposure/run.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s4-exposure-${{ matrix.retained }}-${{ matrix.seed }}
+          path: jpdc_exposure/
+          if-no-files-found: warn
