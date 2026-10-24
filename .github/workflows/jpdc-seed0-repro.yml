@@ -67,11 +67,15 @@ jobs:
           with ref.open(newline="") as f: a=list(csv.DictReader(f))
           with new.open(newline="") as f: b=list(csv.DictReader(f))
           failures=[]
+          non_deterministic_timing=[]
           if len(a)!=40 or len(b)!=40: failures.append(f"rows: reference={len(a)} rerun={len(b)}")
           if a and b and list(a[0])!=list(b[0]): failures.append("column headers differ")
           for i,(x,y) in enumerate(zip(a,b),1):
               for key in x:
                   v=x[key].strip();w=y.get(key,"").strip()
+                  if key=='mean_mapper_us':
+                      if v!=w: non_deterministic_timing.append({'row':i,'reference_us':v,'rerun_us':w})
+                      continue
                   if v==w: continue
                   try:
                       f=float(v);g=float(w)
@@ -79,7 +83,7 @@ jobs:
                       if math.isclose(f,g,rel_tol=1e-9,abs_tol=1e-10):continue
                   except ValueError:pass
                   failures.append(f"row {i}, {key}: {v!r} vs {w!r}")
-          report={"pass":not failures,"reference_rows":len(a),"rerun_rows":len(b),"mismatches":failures[:100]}
+          report={"scientific_metrics_pass":not failures,"reference_rows":len(a),"rerun_rows":len(b),"deterministic_mismatches":failures[:100],"nondeterministic_timing_differences":non_deterministic_timing,"timing_field_excluded_from_exact_gate":"mean_mapper_us"}
           Path("jpdc_repro/validation.json").write_text(json.dumps(report,indent=2))
           print(json.dumps(report,indent=2))
           if failures:raise SystemExit(1)
