@@ -4,7 +4,7 @@ import csv, glob, json, math
 from collections import defaultdict
 from pathlib import Path
 import numpy as np
-from scipy.stats import t as student_t
+from scipy.stats import t as student_t, ttest_1samp
 
 paths=sorted(glob.glob('jpdc_aggregate/input/**/seed_*.csv',recursive=True))
 assert len(paths)==30, f"Expected 30 per-seed files, got {len(paths)}"
@@ -29,7 +29,7 @@ for scenario in sorted({r['scenario'] for r in rows}):
       diffs.append(a-b)
     vals=np.array(diffs);mean=float(vals.mean());se=float(vals.std(ddof=1)/np.sqrt(len(vals)))
     ci=float(student_t.ppf(.975,29))*se
-    tt=student_t.ttest_1samp(vals,0)
+    tt=ttest_1samp(vals,0)
     p=float(tt.pvalue) if np.isfinite(tt.pvalue) else (1.0 if np.all(vals==0) else 0.0)
     out.append(dict(scenario=scenario,comparison='CASPER_FULL minus '+competitor,n=30,
       mean_difference=mean,ci95_low=mean-ci,ci95_high=mean+ci,p_value=p,
