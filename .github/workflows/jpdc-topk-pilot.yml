@@ -1,0 +1,53 @@
+name: JPDC Controlled TopK 1-vs-3 Pilot
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-topk-pilot.yml, jpdc/topk_controlled_patch.py]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  topk:
+    strategy:
+      fail-fast: false
+      matrix:
+        k: [1, 3]
+        seed: [0, 1, 2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Generate exact E4.5 source and change only deployment shortlist size
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          grep -F 'scientific_retuning=false' e45_generation_manifest.txt
+          python3 jpdc/topk_controlled_patch.py ${{ matrix.k }}
+          mvn -B -ntp -DskipTests compile
+      - name: Run full E4.6 scenarios
+        run: |
+          set -euo pipefail
+          mkdir -p jpdc_topk
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S0_STATIONARY,S1_LAMBDA_X2,S2_HIDDEN_COMPUTE_40LOSS,S3_HIDDEN_NETWORK_50LOSS,S4_COMPOUND --out jpdc_topk/k${{ matrix.k }}_seed${{ matrix.seed }}.csv" > jpdc_topk/run.log 2>&1
+          grep -F "E45_SEED_COMPLETE seed=${{ matrix.seed }} rows=40" jpdc_topk/run.log
+          python3 - <<'PY'
+          import csv,glob
+          p=glob.glob('jpdc_topk/*.csv')
+          assert len(p)==1
+          with open(p[0]) as f: rows=list(csv.DictReader(f))
+          assert len(rows)==40
+          for s in sorted({r['scenario'] for r in rows}):
+              row=next(r for r in rows if r['scenario']==s and r['policy']=='CASPER_FULL')
+              print('TOPK_RESULT',s,row['late_dvr'],row['late_fwc'],row['late_air'])
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: topk-${{ matrix.k }}-seed-${{ matrix.seed }}
+          path: jpdc_topk/
+          if-no-files-found: warn
