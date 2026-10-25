@@ -1,0 +1,54 @@
+name: JPDC Aggregate Dual Normalized 30 Seed Study
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-dual30-aggregate.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  aggregate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy scipy
+      - name: Check source campaign completed successfully
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 100); do
+            status="$(gh api repos/${{ github.repository }}/actions/runs/40220265552 --jq '.status')"
+            conclusion="$(gh api repos/${{ github.repository }}/actions/runs/40220265552 --jq '.conclusion // "pending"')"
+            echo "Source campaign: $status / $conclusion"
+            if [ "$status" = "completed" ]; then
+              test "$conclusion" = "success"
+              break
+            fi
+            sleep 45
+          done
+          test "$(gh api repos/${{ github.repository }}/actions/runs/40220265552 --jq '.conclusion')" = "success"
+      - name: Download frozen E4.6 and 60 experiment archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p dual_analysis/input
+          curl -fLsS --retry 3 -o dual_analysis/e46-publication-results.zip https://github.com/afshinyaghoobi/casper-iiot-cloudsim/releases/download/v1.0.0-casper-iiot-e46/e46-publication-results.zip
+          gh run download 40220265552 --repo ${{ github.repository }} --dir dual_analysis/input
+      - name: Validate and perform paired statistical analysis
+        run: python3 jpdc/analyze_dual30.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-dual30-complete-statistics
+          path: |
+            dual_analysis/dual30_results.csv
+            dual_analysis/dual30_results.json
+          if-no-files-found: warn
