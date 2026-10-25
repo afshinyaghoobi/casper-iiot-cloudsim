@@ -1,0 +1,28 @@
+name: JPDC Aggregate S4 Audit 30 Seeds
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-s4-aggregate30.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  aggregate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download completed audit archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 40146194772 --repo ${{ github.repository }} --dir s4_audit_archive
+      - name: Calculate complete audit
+        run: python3 jpdc/s4_audit_30_aggregate.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s4-audit-thirty-seed-summary
+          path: |
+            s4_audit_summary.csv
+            s4_audit_summary.json
+          if-no-files-found: warn
