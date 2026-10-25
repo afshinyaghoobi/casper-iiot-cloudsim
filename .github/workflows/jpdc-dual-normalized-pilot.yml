@@ -1,0 +1,54 @@
+name: JPDC Compute and Bandwidth Normalized Topology Pilot
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-dual-normalized-pilot.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pilot:
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        nodes: [14, 28]
+        seed: [0, 1, 2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Construct independent dual-normalized variant
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          python3 jpdc/topology_patch.py ${{ matrix.nodes }}
+          python3 jpdc/normalize_compute_bandwidth.py ${{ matrix.nodes }}
+          mvn -B -ntp -DskipTests compile
+      - name: Run seed and capture five scenarios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dual_normalized
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S0_STATIONARY,S1_LAMBDA_X2,S2_HIDDEN_COMPUTE_40LOSS,S3_HIDDEN_NETWORK_50LOSS,S4_COMPOUND --out dual_normalized/dual${{ matrix.nodes }}_seed${{ matrix.seed }}.csv" > dual_normalized/run.log 2>&1
+          grep -F "E45_SEED_COMPLETE seed=${{ matrix.seed }} rows=40" dual_normalized/run.log
+          python3 - <<'PY'
+          import csv,glob
+          with open(glob.glob('dual_normalized/*.csv')[0]) as f: rows=list(csv.DictReader(f))
+          assert len(rows)==40
+          for r in rows:
+              if r['policy']=='CASPER_FULL':
+                  print('DUAL_NORMALIZED_RESULT',r['scenario'],r['late_dvr'],r['late_fwc'])
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dual-normalized-${{ matrix.nodes }}-${{ matrix.seed }}
+          path: dual_normalized/
+          if-no-files-found: warn
