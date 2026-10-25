@@ -1,0 +1,39 @@
+name: JPDC S4 Mission Criticality Audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-s4-criticality.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [0, 1, 2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build standalone diagnostic variant
+        run: |
+          python3 tools/e45_generate.py
+          python3 jpdc/s4_criticality_patch.py
+          mvn -B -ntp -DskipTests compile
+      - name: Run S4 diagnostic
+        run: |
+          mkdir -p jpdc_s4_diag
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S4_COMPOUND --out jpdc_s4_diag/output.csv" > jpdc_s4_diag/run.log 2>&1
+          grep 'JPDC_S4_AUDIT' jpdc_s4_diag/run.log
+          grep -F "E45_SEED_COMPLETE seed=${{ matrix.seed }} rows=8" jpdc_s4_diag/run.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s4-criticality-${{ matrix.seed }}
+          path: jpdc_s4_diag
