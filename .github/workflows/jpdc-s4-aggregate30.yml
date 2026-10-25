@@ -2,7 +2,7 @@ name: JPDC Aggregate S4 Audit 30 Seeds
 on:
   push:
     branches: [jpdc-seed0-repro-20261024]
-    paths: [.github/workflows/jpdc-s4-aggregate30.yml]
+    paths: [.github/workflows/jpdc-s4-aggregate30.yml, jpdc/s4_audit_30_aggregate.py]
   workflow_dispatch:
 permissions:
   contents: read
