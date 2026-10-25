@@ -2,7 +2,7 @@ import re,glob,csv,json
 from pathlib import Path
 logs=list(Path("s4_audit_archive").rglob("seed_*.log"))
 assert len(logs)==30, f"expected 30 logs; got {len(logs)}"
-pattern=re.compile(r"JPDC_S4_AUDIT seed=(\\d+) mission=(\\d+) high=(\\d+) normal=(\\d+) postMissionAffected=(\\d+) lateMissionAffected=(\\d+) lateMissionTotal=(\\d+)")
+pattern=re.compile(r"JPDC_S4_AUDIT seed=(\d+) mission=(\d+) high=(\d+) normal=(\d+) postMissionAffected=(\d+) lateMissionAffected=(\d+) lateMissionTotal=(\d+)")
 rows=[]
 for file in logs:
  matches=pattern.findall(file.read_text())
