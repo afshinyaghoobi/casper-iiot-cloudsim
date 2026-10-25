@@ -1,0 +1,31 @@
+name: JPDC Aggregate S4 Window 30 Seeds
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-window30-aggregate.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  analysis:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download window experiment archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p window_analysis/input
+          gh run download 40148067448 --repo ${{ github.repository }} --dir window_analysis/input
+      - name: Validate and aggregate 30 seeds
+        run: python3 jpdc/window30_aggregate.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-window30-verified-summary
+          path: |
+            window_analysis/s4_window30.csv
+            window_analysis/s4_window30_summary.json
+          if-no-files-found: warn
