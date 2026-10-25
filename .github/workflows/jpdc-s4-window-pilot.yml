@@ -1,0 +1,41 @@
+name: JPDC S4 Evaluation Window Pilot
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-s4-window-pilot.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  window:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [0, 1, 2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Instrument original reporting only
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          python3 jpdc/s4_window_patch.py
+          mvn -B -ntp -DskipTests compile
+      - name: Run S4 and report all nested evaluation windows
+        run: |
+          set -euo pipefail
+          mkdir -p jpdc_window
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S4_COMPOUND --out jpdc_window/seed.csv" > jpdc_window/run.log 2>&1
+          grep 'JPDC_WINDOW' jpdc_window/run.log
+          grep -F "E45_SEED_COMPLETE seed=${{ matrix.seed }} rows=8" jpdc_window/run.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s4-windows-${{ matrix.seed }}
+          path: jpdc_window/
