@@ -1,0 +1,51 @@
+name: JPDC Queue Weighted 30 Seed Paired Statistics
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-queue30-aggregate.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy scipy
+      - name: Confirm all source runs finished
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 100); do
+            conclusion="$(gh api repos/${{ github.repository }}/actions/runs/40280807901 --jq '.conclusion // "pending"')"
+            echo "Experiment conclusion: $conclusion"
+            if [ "$conclusion" != "pending" ]; then
+              test "$conclusion" = "success"
+              break
+            fi
+            sleep 45
+          done
+          test "$(gh api repos/${{ github.repository }}/actions/runs/40280807901 --jq '.conclusion')" = "success"
+      - name: Download exact matched seed artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p queue30_analysis/input
+          gh run download 40280807901 --repo ${{ github.repository }} --dir queue30_analysis/input
+      - name: Compute paired uncertainty and Holm tests
+        run: python3 jpdc/analyze_queue30.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-queue30-statistical-comparison
+          path: |
+            queue30_analysis/queue30_statistics.csv
+            queue30_analysis/queue30_statistics.json
+          if-no-files-found: warn
