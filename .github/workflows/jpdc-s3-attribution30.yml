@@ -1,0 +1,43 @@
+name: JPDC S3 Coverage Attribution 30 Seeds
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-s3-attribution30.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        seed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Compile passive S3 instrumentation
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          python3 jpdc/s3_attribution_patch.py
+          mvn -B -ntp -DskipTests compile
+      - name: Audit frozen-policy S3 behavior
+        run: |
+          set -euo pipefail
+          mkdir -p s3_audit30
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out s3_audit30/seed_${{ matrix.seed }}.csv" > s3_audit30/seed_${{ matrix.seed }}.log 2>&1
+          grep -F "E45_SEED_COMPLETE seed=${{ matrix.seed }} rows=8" s3_audit30/seed_${{ matrix.seed }}.log
+          grep '^S3_AUDIT seed=' s3_audit30/seed_${{ matrix.seed }}.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s3-attribution30-${{ matrix.seed }}
+          path: s3_audit30/
+          if-no-files-found: warn
