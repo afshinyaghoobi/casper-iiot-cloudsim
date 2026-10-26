@@ -1,0 +1,46 @@
+name: JPDC S3 Residual Thirty Seed Aggregation
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-s3-residual30-stats.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require all source experiment jobs successful
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 100); do
+            result="$(gh api repos/${{ github.repository }}/actions/runs/40414189982 --jq '.conclusion // "pending"')"
+            if [ "$result" != "pending" ]; then
+              test "$result" = "success"
+              break
+            fi
+            sleep 45
+          done
+          test "$(gh api repos/${{ github.repository }}/actions/runs/40414189982 --jq '.conclusion')" = "success"
+      - name: Retrieve exact experiment artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p residual30_analysis/input
+          gh run download 40414189982 --repo ${{ github.repository }} --dir residual30_analysis/input
+      - name: Aggregate thirty paired seeds
+        run: python3 jpdc/analyze_s3_residual30.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-s3-residual30-statistics
+          path: |
+            residual30_analysis/s3_residual30.json
+            residual30_analysis/s3_residual30.csv
+          if-no-files-found: warn
