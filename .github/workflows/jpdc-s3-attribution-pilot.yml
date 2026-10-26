@@ -1,0 +1,40 @@
+name: JPDC S3 Conformal Coverage Attribution Pilot
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-s3-attribution-pilot.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [0, 1, 2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          python3 jpdc/s3_attribution_patch.py
+          mvn -B -ntp -DskipTests compile
+      - run: |
+          set -euo pipefail
+          mkdir -p s3_audit
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out s3_audit/seed_${{ matrix.seed }}.csv" > s3_audit/seed_${{ matrix.seed }}.log 2>&1
+          grep -F "E45_SEED_COMPLETE seed=${{ matrix.seed }} rows=8" s3_audit/seed_${{ matrix.seed }}.log
+          grep '^S3_AUDIT' s3_audit/seed_${{ matrix.seed }}.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s3-attribution-seed-${{ matrix.seed }}
+          path: s3_audit/
+          if-no-files-found: warn
