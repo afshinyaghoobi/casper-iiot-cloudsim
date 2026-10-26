@@ -1,0 +1,50 @@
+name: JPDC Queue Challenger Independent Holdout Statistics
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-queue-holdout-statistics.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy scipy
+      - name: Confirm independent seed campaign succeeded
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 100); do
+            conclusion="$(gh api repos/${{ github.repository }}/actions/runs/40281748580 --jq '.conclusion // "pending"')"
+            if [ "$conclusion" != "pending" ]; then
+              test "$conclusion" = "success"
+              break
+            fi
+            sleep 45
+          done
+          test "$(gh api repos/${{ github.repository }}/actions/runs/40281748580 --jq '.conclusion')" = "success"
+      - name: Retrieve original disjoint seed outputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p queue_holdout_analysis/input
+          gh run download 40281748580 --repo ${{ github.repository }} --dir queue_holdout_analysis/input
+      - name: Independent thirty-seed paired comparison
+        run: python3 jpdc/analyze_queue_holdout.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-queue-independent-holdout-statistics
+          path: |
+            queue_holdout_analysis/queue_holdout_statistics.csv
+            queue_holdout_analysis/queue_holdout_statistics.json
+          if-no-files-found: warn
