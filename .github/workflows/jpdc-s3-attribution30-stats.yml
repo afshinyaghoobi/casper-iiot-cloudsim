@@ -1,0 +1,47 @@
+name: JPDC S3 Attribution 30 Seed Aggregation
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-s3-attribution30-stats.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  aggregate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for successful source experiment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 100); do
+            status="$(gh api repos/${{ github.repository }}/actions/runs/40350526730 --jq '.status')"
+            conclusion="$(gh api repos/${{ github.repository }}/actions/runs/40350526730 --jq '.conclusion // "pending"')"
+            if [ "$status" = "completed" ]; then
+              test "$conclusion" = "success"
+              break
+            fi
+            sleep 45
+          done
+          test "$(gh api repos/${{ github.repository }}/actions/runs/40350526730 --jq '.conclusion')" = "success"
+      - name: Download thirty seed audit logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p s3_attribution30_analysis/input
+          gh run download 40350526730 --repo ${{ github.repository }} --dir s3_attribution30_analysis/input
+      - name: Aggregate and validate thirty-seed post-shock mechanism
+        run: python3 jpdc/analyze_s3_attribution30.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-s3-attribution30-statistics
+          path: |
+            s3_attribution30_analysis/s3_attribution30.csv
+            s3_attribution30_analysis/s3_attribution30.json
+          if-no-files-found: warn
