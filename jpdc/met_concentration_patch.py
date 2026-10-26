@@ -6,7 +6,7 @@ assert s.count(needle)==1
 s=s.replace(needle,needle+"""
         final long[] metDispatchCounts=new long[NODES];
 """)
-needle="final double nominal=nominalServiceMs(t,nodes[j]);"
+needle="final double computeMult=(t.index()>=CHANGE_TASK"
 assert s.count(needle)==1
 s=s.replace(needle,"""if(policy==Policy.ONLINE_MET_ADAPTED && t.index()>=CHANGE_TASK) metDispatchCounts[j]++;
             """+needle)
