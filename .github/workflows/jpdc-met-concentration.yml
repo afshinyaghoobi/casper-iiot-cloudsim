@@ -2,7 +2,7 @@ name: JPDC Online MET Concentration Diagnostic
 on:
   push:
     branches: [jpdc-seed0-repro-20261024]
-    paths: [.github/workflows/jpdc-met-concentration.yml]
+    paths: [.github/workflows/jpdc-met-concentration.yml, jpdc/met_concentration_patch.py]
   workflow_dispatch:
 permissions:
   contents: read
