@@ -1,0 +1,43 @@
+name: JPDC Online MET Concentration Diagnostic
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-met-concentration.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [0, 1, 2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build unchanged decision logic with passive routing counters
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          python3 jpdc/online_met_patch.py
+          python3 jpdc/met_concentration_patch.py
+          mvn -B -ntp -DskipTests compile
+      - name: Execute five scenarios and validate exposure
+        run: |
+          set -euo pipefail
+          mkdir -p met_diagnostic
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S0_STATIONARY,S1_LAMBDA_X2,S2_HIDDEN_COMPUTE_40LOSS,S3_HIDDEN_NETWORK_50LOSS,S4_COMPOUND --out met_diagnostic/seed_${{ matrix.seed }}.csv" > met_diagnostic/seed_${{ matrix.seed }}.log 2>&1
+          grep -F "E45_SEED_COMPLETE seed=${{ matrix.seed }} rows=45" met_diagnostic/seed_${{ matrix.seed }}.log
+          grep 'MET_CONCENTRATION scenario=' met_diagnostic/seed_${{ matrix.seed }}.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: met-concentration-${{ matrix.seed }}
+          path: met_diagnostic/
+          if-no-files-found: warn
