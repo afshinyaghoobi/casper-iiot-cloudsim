@@ -1,0 +1,46 @@
+name: JPDC S3 All Candidate Thirty Seed Statistics
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-s3-all30-stats.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  aggregate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require complete source experiment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 100); do
+            conclusion="$(gh api repos/${{ github.repository }}/actions/runs/40517282086 --jq '.conclusion // "pending"')"
+            if [ "$conclusion" != "pending" ]; then
+              test "$conclusion" = "success"
+              break
+            fi
+            sleep 45
+          done
+          test "$(gh api repos/${{ github.repository }}/actions/runs/40517282086 --jq '.conclusion')" = "success"
+      - name: Download exact original audit logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p s3_all30_analysis/input
+          gh run download 40517282086 --repo ${{ github.repository }} --dir s3_all30_analysis/input
+      - name: Validate and aggregate all candidate windows
+        run: python3 jpdc/analyze_s3_all30.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-s3-all30-windowed-summary
+          path: |
+            s3_all30_analysis/s3_all30_summary.json
+            s3_all30_analysis/s3_all30_by_seed.csv
+          if-no-files-found: warn
