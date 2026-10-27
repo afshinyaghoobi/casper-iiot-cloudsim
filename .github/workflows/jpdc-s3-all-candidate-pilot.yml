@@ -1,0 +1,43 @@
+name: JPDC S3 All Candidate Eta Pilot
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: [.github/workflows/jpdc-s3-all-candidate-pilot.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [0, 1, 2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build passively instrumented model
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          python3 jpdc/s3_all_candidate_patch.py
+          mvn -B -ntp -DskipTests compile
+      - name: S3 windowed full candidate experiment
+        run: |
+          set -euo pipefail
+          mkdir -p all_candidates
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out all_candidates/seed_${{ matrix.seed }}.csv" > all_candidates/seed_${{ matrix.seed }}.log 2>&1
+          grep -F "E45_SEED_COMPLETE seed=${{ matrix.seed }} rows=8" all_candidates/seed_${{ matrix.seed }}.log
+          test "$(grep -c '^S3_ALL seed=' all_candidates/seed_${{ matrix.seed }}.log)" = 3
+          grep '^S3_ALL seed=' all_candidates/seed_${{ matrix.seed }}.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s3-all-candidates-${{ matrix.seed }}
+          path: all_candidates/
+          if-no-files-found: warn
