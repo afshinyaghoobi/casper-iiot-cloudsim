@@ -1,0 +1,59 @@
+name: JPDC S3 stratified pilot and parity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - 'jpdc/s3_stratified_candidate_patch.py'
+      - '.github/workflows/jpdc-s3-stratified-pilot.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Generate and build existing candidate audit
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          python3 jpdc/s3_all_candidate_patch.py
+          mvn -B -ntp -DskipTests compile
+          mkdir -p pilot
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out pilot/before.csv" >pilot/before.log 2>&1
+      - name: Add passive stratification and rerun same seed
+        run: |
+          set -euo pipefail
+          python3 jpdc/s3_stratified_candidate_patch.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out pilot/after.csv" >pilot/after.log 2>&1
+          cmp pilot/before.csv pilot/after.csv
+          diff -u <(grep '^S3_ALL ' pilot/before.log) <(grep '^S3_ALL ' pilot/after.log)
+          test "$(grep -c '^S3_STRATA ' pilot/after.log)" = 3
+          grep '^S3_STRATA ' pilot/after.log
+          python3 - <<'PY'
+          import re
+          before=open('pilot/after.log').read().splitlines()
+          allrows=[s for s in before if s.startswith('S3_ALL ')]
+          strata=[s for s in before if s.startswith('S3_STRATA ')]
+          assert len(allrows)==len(strata)==3
+          def fields(s):
+              return dict((k,int(v)) for k,v in re.findall(r'(window|count|affected|misses|unaffectedN|unaffectedMiss|affectedN|affectedMiss)=(\d+)',s))
+          for a,b in zip(allrows,strata):
+              a,b=fields(a),fields(b)
+              assert a['window']==b['window']
+              assert b['affectedN']+b['unaffectedN']==a['count']
+              assert b['affectedN']==a['affected']
+              assert b['affectedMiss']+b['unaffectedMiss']==a['misses']
+          print('S3_STRATA_PILOT_PARITY_PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-s3-strata-seed0-parity
+          path: pilot/
+          if-no-files-found: error
