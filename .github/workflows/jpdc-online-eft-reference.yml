@@ -1,0 +1,17 @@
+name: JPDC standalone online-EFT reference tests
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - 'jpdc/online_eft_reference.py'
+      - 'jpdc/test_online_eft_reference.py'
+      - '.github/workflows/jpdc-online-eft-reference.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reference-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 jpdc/test_online_eft_reference.py
