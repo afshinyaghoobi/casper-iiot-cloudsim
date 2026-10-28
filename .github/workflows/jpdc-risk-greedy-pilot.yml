@@ -5,6 +5,7 @@ on:
     branches: [jpdc-seed0-repro-20261024]
     paths:
       - 'jpdc/uncertainty_penalized_greedy_patch.py'
+      - 'jpdc/verify_risk_greedy_pilot_parity.py'
       - '.github/workflows/jpdc-risk-greedy-pilot.yml'
 permissions:
   contents: read
@@ -22,6 +23,9 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/e45_generate.py
+          mkdir -p pilot
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios ALL --out pilot/before.csv" > pilot/before.log 2>&1
           python3 jpdc/uncertainty_penalized_greedy_patch.py
           mvn -B -ntp -DskipTests compile
       - name: Run five scenarios for seed 0
@@ -40,6 +44,7 @@ jobs:
               assert any('UNCERTAINTY_PENALIZED_GREEDY' in str(r) for r in group)
           print('RISK_GREEDY_PILOT_CSV_PASS',len(rows))
           PY
+          python3 jpdc/verify_risk_greedy_pilot_parity.py --before pilot/before.csv --after pilot/results.csv
       - name: Preserve logs on failures
         if: always()
         uses: actions/upload-artifact@v4
