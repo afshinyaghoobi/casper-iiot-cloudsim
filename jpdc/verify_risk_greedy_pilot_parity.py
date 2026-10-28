@@ -4,6 +4,7 @@ import argparse,csv
 from pathlib import Path
 NEW="UNCERTAINTY_PENALIZED_GREEDY"
 SCENARIOS={"S0_STATIONARY","S1_LAMBDA_X2","S2_HIDDEN_COMPUTE_40LOSS","S3_HIDDEN_NETWORK_50LOSS","S4_COMPOUND"}
+OLD_POLICIES={"CLOUD_ONLY","EDGE_FIRST","PRED_GREEDY","GLOBAL_CP","RANKED_CP_STATIC","CASPER_ADAPT_NO_HEALTH","CASPER_HEALTH_STATIC","CASPER_FULL"}
 def read(path):
     with Path(path).open(newline="") as f:
         reader=csv.DictReader(f)
@@ -20,7 +21,8 @@ def audit(before,after):
     c0,b=read(before);c1,a=read(after)
     if c0!=c1:raise ValueError("schema changed")
     old=set(b)
-    if len(old)!=40 or {k[1] for k in old}!=SCENARIOS or any(k[2]==NEW for k in old):
+    expected_old={("4202202600",sc,p) for sc in SCENARIOS for p in OLD_POLICIES}
+    if old!=expected_old:
         raise ValueError("unexpected baseline sample")
     if not old.issubset(set(a)):raise ValueError("missing original baseline policy rows")
     if set(a)-old!={("4202202600",scenario,NEW) for scenario in SCENARIOS}:
