@@ -1,0 +1,33 @@
+name: JPDC S3 paired temporal audit (frozen source)
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - 'jpdc/analyze_s3_paired_temporal.py'
+      - '.github/workflows/jpdc-s3-paired-temporal.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  paired-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download exact successful aggregation artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p s3_all30_analysis/source
+          test "$(gh api repos/${{ github.repository }}/actions/runs/40517387076 --jq '.conclusion')" = success
+          gh run download 40517387076 --repo "${{ github.repository }}" --name jpdc-s3-all30-windowed-summary --dir s3_all30_analysis/source
+          test -s s3_all30_analysis/source/s3_all30_by_seed.csv
+      - name: Analyze paired 30-seed temporal changes
+        run: |
+          python3 jpdc/analyze_s3_paired_temporal.py s3_all30_analysis/source/s3_all30_by_seed.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-s3-paired-temporal-audit
+          path: s3_all30_analysis/s3_paired_temporal_audit.json
+          if-no-files-found: error
