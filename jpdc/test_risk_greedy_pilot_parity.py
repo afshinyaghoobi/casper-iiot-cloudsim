@@ -25,7 +25,8 @@ with tempfile.TemporaryDirectory() as tmp:
         ("scientific drift",[dict(x) for x in base+extra]),
         ("missing old row",base[1:]+extra),
         ("duplicate new row",base+extra+extra[:1]),
-        ("missing new row",base+extra[:-1])
+        ("missing new row",base+extra[:-1]),
+        ("wrong legacy policy",[{**base[0],"policy":"UNKNOWN_POLICY"}]+base[1:]+extra)
     ]:
         if label=="scientific drift":records[0]["late_dvr"]="0.5"
         write(after,records)
