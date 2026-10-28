@@ -4,6 +4,7 @@ on:
     branches: [jpdc-seed0-repro-20261024]
     paths:
       - 'jpdc/test_validate_s3_strata30.py'
+      - 'jpdc/test_s3_reference_hash_gate.py'
       - 'jpdc/validate_s3_strata30.py'
       - '.github/workflows/jpdc-s3-validator-tests.yml'
   workflow_dispatch:
@@ -15,4 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Exercise valid and invalid synthetic 30-seed fixtures
-        run: python3 jpdc/test_validate_s3_strata30.py
+        run: |
+          python3 jpdc/test_validate_s3_strata30.py
+          python3 jpdc/test_s3_reference_hash_gate.py
