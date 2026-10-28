@@ -3,8 +3,15 @@
 Validates 30 original seeds, every window, original published counts and
 affected/unaffected partitions. No re-evaluation of frozen E4.6.
 """
-import argparse,csv,glob,json,re
+import argparse,csv,glob,json,re,hashlib
 from pathlib import Path
+
+REFERENCE_SHA256="78fd57691aa3fabd7a3d84fddac28903c66b173f7165def809b7ec374685321c"
+def verify_reference(path):
+    actual=hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    if actual!=REFERENCE_SHA256:
+        raise ValueError(f"unexpected source reference digest: {actual}")
+    return actual
 
 def parse(logs, reference):
     source={}
@@ -60,8 +67,10 @@ def main():
     args=p.parse_args()
     files=sorted(glob.glob(args.logs,recursive=True))
     if not files: raise ValueError("no logs")
+    digest=verify_reference(args.reference)
     rows=parse(files,args.reference)
     result=report(rows)
+    result['reference_sha256']=digest
     Path(args.out).parent.mkdir(parents=True,exist_ok=True)
     Path(args.out).write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
     print("S3_STRATA30_VALIDATION_PASS",json.dumps(result,sort_keys=True))
