@@ -7,6 +7,7 @@ on:
       - 'jpdc/uncertainty_penalized_greedy_patch.py'
       - 'jpdc/verify_risk_greedy_pilot_parity.py'
       - 'jpdc/test_risk_greedy_pilot_parity.py'
+      - 'jpdc/java_tests/RiskGreedyScoringTest.java'
       - '.github/workflows/jpdc-risk-greedy-pilot.yml'
 permissions:
   contents: read
@@ -20,6 +21,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Compile and run isolated Java selection tests
+        run: |
+          javac jpdc/java_tests/RiskGreedyScoringTest.java
+          java -cp jpdc/java_tests RiskGreedyScoringTest
       - name: Test scientific parity validator with synthetic mutations
         run: python3 jpdc/test_risk_greedy_pilot_parity.py
       - name: Generate isolated experiment and compile
