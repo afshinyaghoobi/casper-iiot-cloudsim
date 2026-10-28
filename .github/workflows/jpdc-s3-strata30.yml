@@ -4,6 +4,7 @@ on:
     branches: [jpdc-seed0-repro-20261024]
     paths:
       - 'jpdc/validate_s3_strata30.py'
+      - 'jpdc/verify_s3_legacy_30.py'
       - '.github/workflows/jpdc-s3-strata30.yml'
   workflow_dispatch:
 permissions:
@@ -80,6 +81,7 @@ jobs:
       - name: Validate all seed-window counts against original audit
         run: |
           set -euo pipefail
+          python3 jpdc/verify_s3_legacy_30.py --logs 'strata/**/*.log' --reference source/s3_all30_by_seed.csv
           python3 jpdc/validate_s3_strata30.py --logs 'strata/**/*.log' --reference source/s3_all30_by_seed.csv --out strata30_report.json
       - uses: actions/upload-artifact@v4
         with:
