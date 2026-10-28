@@ -5,6 +5,8 @@ on:
     paths:
       - 'jpdc/test_validate_s3_strata30.py'
       - 'jpdc/test_s3_reference_hash_gate.py'
+      - 'jpdc/verify_s3_legacy_30.py'
+      - 'jpdc/test_verify_s3_legacy_30.py'
       - 'jpdc/validate_s3_strata30.py'
       - '.github/workflows/jpdc-s3-validator-tests.yml'
   workflow_dispatch:
@@ -19,3 +21,4 @@ jobs:
         run: |
           python3 jpdc/test_validate_s3_strata30.py
           python3 jpdc/test_s3_reference_hash_gate.py
+          python3 jpdc/test_verify_s3_legacy_30.py
