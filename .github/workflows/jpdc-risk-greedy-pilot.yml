@@ -6,6 +6,7 @@ on:
     paths:
       - 'jpdc/uncertainty_penalized_greedy_patch.py'
       - 'jpdc/verify_risk_greedy_pilot_parity.py'
+      - 'jpdc/test_risk_greedy_pilot_parity.py'
       - '.github/workflows/jpdc-risk-greedy-pilot.yml'
 permissions:
   contents: read
@@ -19,6 +20,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Test scientific parity validator with synthetic mutations
+        run: python3 jpdc/test_risk_greedy_pilot_parity.py
       - name: Generate isolated experiment and compile
         run: |
           set -euo pipefail
