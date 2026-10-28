@@ -36,6 +36,13 @@ jobs:
           diff -u <(grep '^S3_ALL ' parity/before.log) <(grep '^S3_ALL ' parity/after.log)
           test "$(grep -c '^S3_STRATA ' parity/after.log)" -eq 3
           echo "PARITY_PASS"
+      - name: Preserve parity diagnostics even if checks fail
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s3-strata-parity-diagnostics
+          path: parity/
+          if-no-files-found: warn
   seeds:
     needs: parity
     runs-on: ubuntu-latest
@@ -64,7 +71,8 @@ jobs:
         with:
           name: s3-strata-seed-${{ matrix.seed }}
           path: strata/*.log
-          if-no-files-found: error
+          if-no-files-found: warn
+        if: always()
   aggregate:
     needs: seeds
     runs-on: ubuntu-latest
