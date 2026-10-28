@@ -22,6 +22,7 @@ def audit(before,after):
     old=set(b)
     if len(old)!=40 or {k[1] for k in old}!=SCENARIOS or any(k[2]==NEW for k in old):
         raise ValueError("unexpected baseline sample")
+    if not old.issubset(set(a)):raise ValueError("missing original baseline policy rows")
     if set(a)-old!={("4202202600",scenario,NEW) for scenario in SCENARIOS}:
         raise ValueError("missing/new unexpected policies")
     if len(a)!=45:raise ValueError("expected 45 output rows")
