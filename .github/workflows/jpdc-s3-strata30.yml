@@ -1,0 +1,88 @@
+name: JPDC S3 affected-strata 30-seed validation
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - 'jpdc/validate_s3_strata30.py'
+      - '.github/workflows/jpdc-s3-strata30.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Seed-zero passive measurement parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          python3 jpdc/s3_all_candidate_patch.py
+          mvn -B -ntp -DskipTests compile
+          mkdir -p parity
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out parity/before.csv" > parity/before.log 2>&1
+          python3 jpdc/s3_stratified_candidate_patch.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out parity/after.csv" > parity/after.log 2>&1
+          cmp parity/before.csv parity/after.csv
+          diff -u <(grep '^S3_ALL ' parity/before.log) <(grep '^S3_ALL ' parity/after.log)
+          test "$(grep -c '^S3_STRATA ' parity/after.log)" -eq 3
+          echo "PARITY_PASS"
+  seeds:
+    needs: parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Reproduce same generated campaign with passive stratification
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          python3 jpdc/s3_all_candidate_patch.py
+          python3 jpdc/s3_stratified_candidate_patch.py
+          mvn -B -ntp -DskipTests compile
+          mkdir -p strata
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out strata/seed_${{ matrix.seed }}.csv" > strata/seed_${{ matrix.seed }}.log 2>&1
+          test "$(grep -c '^S3_STRATA ' strata/seed_${{ matrix.seed }}.log)" -eq 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: s3-strata-seed-${{ matrix.seed }}
+          path: strata/*.log
+          if-no-files-found: error
+  aggregate:
+    needs: seeds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download exact original published aggregation and new stratum logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p source strata
+          gh run download 40517387076 --repo "${{ github.repository }}" --name jpdc-s3-all30-windowed-summary --dir source
+          gh run download "${{ github.run_id }}" --repo "${{ github.repository }}" --pattern 's3-strata-seed-*' --dir strata
+      - name: Validate all seed-window counts against original audit
+        run: |
+          set -euo pipefail
+          python3 jpdc/validate_s3_strata30.py --logs 'strata/**/*.log' --reference source/s3_all30_by_seed.csv --out strata30_report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-s3-strata30-validated
+          path: strata30_report.json
+          if-no-files-found: error
