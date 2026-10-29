@@ -1,0 +1,49 @@
+name: JPDC deadline pilot manual launcher
+run-name: JPDC deadline pilot — research branch
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deadline-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out fixed research branch
+        uses: actions/checkout@v4
+        with:
+          ref: jpdc-seed0-repro-20261024
+          persist-credentials: false
+      - name: Confirm experimental branch and test selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          test -f jpdc/deadline_feasible_min_uncertainty_patch.py
+          python3 jpdc/test_deadline_feasible_min_uncertainty.py
+          python3 jpdc/test_deadline_patch_reversibility.py
+      - name: Run original E45 for seed zero
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p pilot
+          python3 tools/e45_generate.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios ALL --out pilot/before.csv" > pilot/before.log 2>&1
+      - name: Run deadline-feasible E45 and validate parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/deadline_feasible_min_uncertainty_patch.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios ALL --out pilot/after.csv" > pilot/after.log 2>&1
+          grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' pilot/after.log
+          python3 jpdc/verify_deadline_feasible_pilot_parity.py --before pilot/before.csv --after pilot/after.csv
+          python3 jpdc/analyze_deadline_feasible_pilot.py --csv pilot/after.csv --out pilot/descriptive_results.json
+      - name: Preserve artifacts on success or failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-deadline-feasible-manual-seed0
+          path: pilot/
+          if-no-files-found: warn
