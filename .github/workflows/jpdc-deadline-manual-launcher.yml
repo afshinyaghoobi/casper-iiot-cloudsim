@@ -2,6 +2,10 @@ name: JPDC deadline pilot manual launcher
 run-name: JPDC deadline pilot — research branch
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/jpdc-deadline-manual-launcher.yml'
 permissions:
   contents: read
 jobs:
