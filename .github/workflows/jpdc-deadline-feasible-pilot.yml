@@ -6,6 +6,7 @@ on:
     paths:
       - 'jpdc/deadline_feasible_min_uncertainty_patch.py'
       - 'jpdc/test_deadline_feasible_min_uncertainty.py'
+      - 'jpdc/test_deadline_patch_reversibility.py'
       - 'jpdc/verify_deadline_feasible_pilot_parity.py'
       - '.github/workflows/jpdc-deadline-feasible-pilot.yml'
 permissions:
@@ -21,7 +22,9 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Validate standalone deadline-aware policy semantics
-        run: python3 jpdc/test_deadline_feasible_min_uncertainty.py
+        run: |
+          python3 jpdc/test_deadline_feasible_min_uncertainty.py
+          python3 jpdc/test_deadline_patch_reversibility.py
       - name: Generate and run original E45 policy set
         shell: bash
         run: |
