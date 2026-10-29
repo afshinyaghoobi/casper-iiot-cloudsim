@@ -14,6 +14,12 @@ jobs:
         with:
           ref: jpdc-seed0-repro-20261024
           persist-credentials: false
+      - name: Use the project's pinned Java runtime
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
       - name: Confirm experimental branch and test selection
         shell: bash
         run: |
