@@ -13,6 +13,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: jpdc-seed0-repro-20261024
+          fetch-depth: 0
+          fetch-tags: true
           persist-credentials: false
       - name: Use the project's pinned Java runtime
         uses: actions/setup-java@v4
