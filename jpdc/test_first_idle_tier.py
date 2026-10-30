@@ -25,12 +25,24 @@ def test():
     assert choose(p,b)==0
     b[0]=1e-8
     assert choose(p,b)==22
+    # Within E45 node parameter ranges, first-idle edge can miss a deadline
+    # even though the idle cloud option meets it. This is a semantics fixture,
+    # NOT a result from a simulated workload or an empirical miss rate.
+    work=18.0; data_mb=0.06; deadline=60.0
+    edge_latency=10.0+data_mb*8000.0/80.0+work/2.5*12.0
+    cloud_latency=30.0+data_mb*8000.0/1200.0+work/70.0*12.0
+    assert abs(edge_latency-102.4)<1e-10
+    assert abs(cloud_latency-33.48571428571428)<1e-10
+    p=[200.0]*24; p[0]=edge_latency; p[18]=cloud_latency
+    b=[10.0]*24; b[0]=0.0; b[18]=0.0
+    assert choose(p,b)==0 and min(range(24),key=lambda i:p[i])==18
+    assert p[choose(p,b)]>deadline>p[18]
     source=Path("src/main/java/org/casperiiot/e42/E42Campaign.java").read_text()
     patch=Path("jpdc/first_idle_tier_patch.py").read_text()
     assert source.count("        PRED_GREEDY(false,false,false,false),")==1
     assert source.count("            if(!policy.cp){\n                j=argMin(pred,eligible);\n            }else{")==1
     assert "vq.predictedBacklogMs(node,now)<=1e-9" in patch
     ast.parse(patch)
-    print("FIRST_IDLE_TIER_SEMANTICS_PASS 5 fixtures and 2 unique anchors")
+    print("FIRST_IDLE_TIER_SEMANTICS_PASS 5 basic fixtures, 1 deadline counterexample, 2 unique anchors")
 
 if __name__=="__main__": test()
