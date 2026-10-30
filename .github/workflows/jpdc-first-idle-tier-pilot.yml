@@ -7,6 +7,7 @@ on:
       - 'jpdc/first_idle_tier_patch.py'
       - 'jpdc/instrument_first_idle_assignments.py'
       - 'jpdc/verify_first_idle_assignment_log.py'
+      - 'jpdc/test_verify_first_idle_assignment_log.py'
       - 'jpdc/test_first_idle_tier.py'
       - 'jpdc/verify_first_idle_tier_pilot_parity.py'
       - '.github/workflows/jpdc-first-idle-tier-pilot.yml'
@@ -31,6 +32,7 @@ jobs:
           mkdir -p pilot_first_idle
           git rev-parse HEAD > pilot_first_idle/research_sha.txt
           python3 jpdc/test_first_idle_tier.py
+          python3 jpdc/test_verify_first_idle_assignment_log.py
       - name: Generate original E45 and collect unchanged policies
         shell: bash
         run: |
