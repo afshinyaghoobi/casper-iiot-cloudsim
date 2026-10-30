@@ -1,0 +1,51 @@
+name: JPDC FIRST_IDLE_TIER manual launcher
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jpdc-seed0-repro-20261024
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Record source provenance and validate semantic fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain=v1)"
+          mkdir -p pilot_first_idle
+          git rev-parse HEAD > pilot_first_idle/research_sha.txt
+          python3 jpdc/test_first_idle_tier.py
+      - name: Generate original E45 and collect unchanged policies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/e45_generate.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios ALL --out pilot_first_idle/before.csv" > pilot_first_idle/before.log 2>&1
+          grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' pilot_first_idle/before.log
+      - name: Run FIRST_IDLE_TIER and verify preserved original science
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/first_idle_tier_patch.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios ALL --out pilot_first_idle/after.csv" > pilot_first_idle/after.log 2>&1
+          grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' pilot_first_idle/after.log
+          python3 jpdc/verify_first_idle_tier_pilot_parity.py --before pilot_first_idle/before.csv --after pilot_first_idle/after.csv
+      - name: Upload outcomes or failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-first-idle-tier-seed0
+          path: pilot_first_idle/
+          if-no-files-found: warn
