@@ -38,6 +38,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 jpdc/first_idle_tier_patch.py
+          python3 jpdc/instrument_first_idle_assignments.py
           mvn -B -ntp -DskipTests compile
           mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios ALL --out pilot_first_idle/after.csv" > pilot_first_idle/after.log 2>&1
           grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' pilot_first_idle/after.log
