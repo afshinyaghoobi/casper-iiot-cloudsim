@@ -43,6 +43,7 @@ jobs:
           mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios ALL --out pilot_first_idle/after.csv" > pilot_first_idle/after.log 2>&1
           grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' pilot_first_idle/after.log
           python3 jpdc/verify_first_idle_tier_pilot_parity.py --before pilot_first_idle/before.csv --after pilot_first_idle/after.csv
+          python3 jpdc/verify_first_idle_assignment_log.py --log pilot_first_idle/after.log
       - name: Upload outcomes or failure diagnostics
         if: always()
         uses: actions/upload-artifact@v4
