@@ -6,7 +6,7 @@ from pathlib import Path
 p=Path("src/main/java/org/casperiiot/e45/E45Campaign.java")
 s=p.read_text()
 a="        final Acc acc=new Acc();"
-b="            return vms.get(j);"
+b="            meta.put(cl,new DispatchMeta(t,chosenRank,j,predj,sigma,nominal,actualNet,eta,\\n                    certified,familyCovered,probe));\\n            return vms.get(j);"
 c="        return summarize(seed,n,scenario,policy,acc,affected);"
 for anchor in (a,b,c):
     if s.count(anchor)!=1:
