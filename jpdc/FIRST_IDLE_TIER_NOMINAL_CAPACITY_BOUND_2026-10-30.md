@@ -11,7 +11,7 @@ This is **not** CloudSim output. It is an expectation-level nominal CPU demand c
 
 ## Exact expectation formula under generator distribution
 
-`E[work] = .80*25*exp(.45²/2)+.15*45*exp(.50²/2)+.05*18*exp(.35²/2) = 30.736671... `.
+`E[work] = .80*25*exp(.45²/2)+.15*45*exp(.50²/2)+.05*18*exp(.35²/2) = 30.736665173... `.
 
 Nominal CPU capacity demand in `cap` units is `lambda*12*E[work]`.
 
