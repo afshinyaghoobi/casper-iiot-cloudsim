@@ -9,7 +9,12 @@ POLICIES={"CLOUD_ONLY","EDGE_FIRST","PRED_GREEDY","GLOBAL_CP","RANKED_CP_STATIC"
 PATTERN=re.compile(r"^JPDC_NODE_ASSIGNMENTS scenario=(\w+) policy=(\w+) seed=(\d+) counts=\[([\d, ]+)\]$", re.M)
 def audit(text, tasks=30000, seed=4202202600):
     found={}
-    for match in PATTERN.finditer(text):
+    for line in text.splitlines():
+        if not line.startswith("JPDC_NODE_ASSIGNMENTS"):
+            continue
+        match=PATTERN.fullmatch(line)
+        if match is None:
+            raise ValueError(f"malformed assignment record: {line[:200]}")
         scenario,policy,seed_text,numbers=match.groups()
         key=(scenario,policy)
         if key in found: raise ValueError(f"duplicate assignment line {key}")
