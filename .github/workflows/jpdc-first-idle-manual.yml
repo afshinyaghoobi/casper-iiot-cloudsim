@@ -46,6 +46,7 @@ jobs:
           python3 jpdc/verify_first_idle_tier_pilot_parity.py --before pilot_first_idle/before.csv --after pilot_first_idle/after.csv
           python3 jpdc/verify_first_idle_assignment_log.py --log pilot_first_idle/after.log
           python3 jpdc/crosscheck_first_idle_artifacts.py --csv pilot_first_idle/after.csv --log pilot_first_idle/after.log
+          python3 jpdc/summarize_first_idle_allocations.py --csv pilot_first_idle/after.csv --log pilot_first_idle/after.log --out pilot_first_idle/allocation_summary.json
       - name: Upload outcomes or failure diagnostics
         if: always()
         uses: actions/upload-artifact@v4
