@@ -7,6 +7,7 @@ routing can also produce unequal counts. Always retain the original log/CSV.
 import argparse
 import csv
 import json
+import math
 from pathlib import Path
 from verify_first_idle_assignment_log import audit
 from crosscheck_first_idle_artifacts import check
@@ -27,6 +28,14 @@ def summarize(csv_path,log_path):
         # Normalized node-level concentration (0 uniform; 1 single-node).
         norm=(hhi-1/24)/(1-1/24)
         row=rows[(scenario,policy)]
+        dvr=float(row["late_dvr"])
+        latency=float(row["p99_late_latency_ms"])
+        if not math.isfinite(dvr) or not 0.0<=dvr<=1.0:
+            raise ValueError(f"invalid deadline violation rate {scenario} {policy}")
+        if not math.isfinite(latency) or latency<0.0:
+            raise ValueError(f"invalid tail latency {scenario} {policy}")
+        if not 0.0<=norm<=1.0+1e-12:
+            raise ValueError(f"invalid normalized HHI {scenario} {policy}")
         result.append({
             "scenario":scenario, "policy":policy,
             "edge_count":layer["edge"], "fog_count":layer["fog"],"cloud_count":layer["cloud"],
@@ -34,8 +43,8 @@ def summarize(csv_path,log_path):
             "node_hhi":hhi,"node_hhi_normalized":norm,
             "top_node":max(range(24),key=lambda i:counts[i]),
             "top_node_count":max(counts),
-            "late_dvr":float(row["late_dvr"]),
-            "p99_late_latency_ms":float(row["p99_late_latency_ms"])
+            "late_dvr":dvr,
+            "p99_late_latency_ms":latency
         })
     if len(result)!=15: raise ValueError("expected 3 policies x 5 scenarios")
     return result
