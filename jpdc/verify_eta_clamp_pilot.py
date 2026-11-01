@@ -17,6 +17,16 @@ def verify(before,after):
     for key,row in a.items():
         if float(row["cloudsim_completion"])!=1.0 or int(row["tasks"])!=30000:
             raise ValueError(f"incomplete run {key}")
+    # Positive control: with dispatch eta clamped to 1, CASPER_FULL must
+    # reproduce the pre-existing CASPER_HEALTH_STATIC scientific outputs.
+    # Different policy labels and wall-clock mapper timing are excluded.
+    for scenario in SCENARIOS:
+        static_key=("4202202600",scenario,"CASPER_HEALTH_STATIC")
+        clamp_key=("4202202600",scenario,"CASPER_FULL")
+        for col in cols:
+            if col in ("policy","mean_mapper_us"): continue
+            if a[static_key][col]!=a[clamp_key][col]:
+                raise ValueError(f"eta-clamp positive-control mismatch: {scenario} {col}")
     result=[]
     for s in sorted(SCENARIOS):
         k=("4202202600",s,"CASPER_FULL")
