@@ -1,0 +1,45 @@
+name: JPDC CASPER_FULL eta clamp paired seed0 pilot
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jpdc-seed0-repro-20261024
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Provenance and original E45
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p pilot_eta
+          git rev-parse HEAD > pilot_eta/research_sha.txt
+          python3 tools/e45_generate.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios ALL --out pilot_eta/before.csv" > pilot_eta/before.log 2>&1
+          grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' pilot_eta/before.log
+      - name: Intervention and paired verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/eta_clamp_casper_full_patch.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 0 --cal 80000 --tasks 30000 --scenarios ALL --out pilot_eta/after.csv" > pilot_eta/after.log 2>&1
+          grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' pilot_eta/after.log
+          python3 jpdc/verify_eta_clamp_pilot.py --before pilot_eta/before.csv --after pilot_eta/after.csv | tee pilot_eta/paired_check.txt
+      - name: Upload complete results or failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-eta-clamp-seed0
+          path: pilot_eta/
+          if-no-files-found: warn
