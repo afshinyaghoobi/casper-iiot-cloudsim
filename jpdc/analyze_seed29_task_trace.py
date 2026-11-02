@@ -32,7 +32,7 @@ def read_trace(path,label,count):
     if len(out)!=2*count or any((p,t) not in out for p in POLICIES for t in range(count)):
         raise ValueError("missing tasks")
     return out
-def analyze(dispatch,outcome,count=30000):
+def analyze(dispatch,outcome,count=30000,results_csv=None):
     d=read_trace(dispatch,"JPDC_TASK_DISPATCH",count)
     o=read_trace(outcome,"JPDC_TASK_OUTCOME",count)
     for key in d:
@@ -52,6 +52,20 @@ def analyze(dispatch,outcome,count=30000):
     if len(late)!=250:raise ValueError("not enough post-change mission tasks")
     rate=lambda p:sum(o[(p,t)][3] for t in late)/len(late)
     distinct=set(different)
+    if results_csv is not None:
+        with Path(results_csv).open(newline="") as file:
+            official=list(csv.DictReader(file))
+        expected={p for p in POLICIES}
+        matched=[r for r in official if r.get("policy") in expected]
+        if len(matched)!=2 or {r["policy"] for r in matched}!=expected:
+            raise ValueError("missing/duplicate official policy rows")
+        for row in matched:
+            if row.get("seed")!=SEED or row.get("scenario")!=SCENARIO or int(row["tasks"])!=count:
+                raise ValueError("official task metadata mismatch")
+            computed=rate(row["policy"])
+            official_rate=float(row["late_dvr"])
+            if not math.isfinite(official_rate) or abs(computed-official_rate)>5e-9:
+                raise ValueError(f"late_dvr trace/official mismatch {row['policy']}: {computed} != {official_rate}")
     return {"seed":int(SEED),"scenario":SCENARIO,"tasks_per_policy":count,
       "different_node_count":len(different),"different_node_rate":len(different)/count,
       "mission_deadline_disagreements":len(changed),"late_mission_count":len(late),
@@ -63,7 +77,7 @@ def analyze(dispatch,outcome,count=30000):
 if __name__=="__main__":
     p=argparse.ArgumentParser()
     p.add_argument("--dispatch",required=True);p.add_argument("--outcome",required=True)
-    p.add_argument("--out",required=True);p.add_argument("--tasks",type=int,default=30000)
-    a=p.parse_args();result=analyze(a.dispatch,a.outcome,a.tasks)
+    p.add_argument("--out",required=True);p.add_argument("--tasks",type=int,default=30000)\n    p.add_argument("--results",help="Official CloudSim result CSV for outcome reconciliation")
+    a=p.parse_args();result=analyze(a.dispatch,a.outcome,a.tasks,a.results)
     Path(a.out).write_text(json.dumps(result,indent=2)+"\n")
     print("SEED29_TASK_TRACE_AUDIT_PASS",result["different_node_count"],result["late_dvr_delta_full_minus_static"])
