@@ -43,6 +43,23 @@ with tempfile.TemporaryDirectory() as td:
     # Simulate a true miss whose 9-decimal CSV latency rounds to the deadline.
     # The logged miss flag remains authoritative at the rounding boundary.
     assert result["late_mission_disagreements"] == 1
+    # A false "no miss" flag must not be accepted when the rounded latency exceeds deadline.
+    bad_outcome = Path(td) / "bad_outcome.csv"
+    with outcome.open(newline="") as source, bad_outcome.open("w", newline="") as dest:
+        rdr, wtr = csv.reader(source), csv.writer(dest)
+        changed = False
+        for row in rdr:
+            if not changed and row[3] == POLICIES[0] and int(row[4]) == 10249:
+                row[6], row[8] = "10.000000001", "false"
+                changed = True
+            wtr.writerow(row)
+    assert changed
+    try:
+        analyze(dispatch, bad_outcome, N)
+    except ValueError as exc:
+        assert "dispatch/outcome mismatch" in str(exc), str(exc)
+    else:
+        raise AssertionError("false no-miss accepted above deadline")
     # Reject a trace with an incorrect coverage boolean rather than silently accepting it.
     broken = Path(td) / "broken.csv"
     rows = dispatch.read_text().splitlines()
