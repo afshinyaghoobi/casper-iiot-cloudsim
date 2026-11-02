@@ -116,12 +116,30 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
                      5e-9 if metric.endswith(("dvr","air","far")) else 1e-5)
                 if not math.isfinite(official_value) or abs(computed-official_value)>tol:
                     raise ValueError(f"{metric} trace/official mismatch {policy}: {computed} != {official_value}")
+    # Descriptive task-paired latency, carefully not labeled as a causal effect.
+    # Even on the same selected node, queue history can differ by policy.
+    late_same_node=[t for t in late if d[(POLICIES[0],t)][0]==d[(POLICIES[1],t)][0]]
+    late_diff_node=[t for t in late if d[(POLICIES[0],t)][0]!=d[(POLICIES[1],t)][0]]
+    def paired_latency_summary(tasks):
+        deltas=[o[(POLICIES[0],t)][1]-o[(POLICIES[1],t)][1] for t in tasks]
+        return {"count":len(tasks),
+                "full_slower_count":sum(x>1e-9 for x in deltas),
+                "static_slower_count":sum(x< -1e-9 for x in deltas),
+                "near_equal_latency_count":sum(abs(x)<=1e-9 for x in deltas),
+                "mean_delta_ms":sum(deltas)/len(deltas) if deltas else None,
+                "max_absolute_delta_ms":max(map(abs,deltas)) if deltas else None}
+    paired_latency={
+        "late_same_node":paired_latency_summary(late_same_node),
+        "late_different_node":paired_latency_summary(late_diff_node)}
+    if sum(v["count"] for v in paired_latency.values())!=250:
+        raise AssertionError("late-node partition mismatch")
     joint={
         name:{"count":len(ids),
               "full_deadline_misses":sum(o[(POLICIES[0],t)][3] for t in ids),
               "static_deadline_misses":sum(o[(POLICIES[1],t)][3] for t in ids)}
         for name,ids in cert_groups.items()}
-    return {"late_fwc":coverage_late,
+    return {"late_paired_latency_by_node":paired_latency,
+      "late_fwc":coverage_late,
       "late_mapper_us_mean":mapper_late,"all_mapper_us_mean":mapper_all,
       "late_mapper_us_delta_full_minus_static":mapper_late[POLICIES[0]]-mapper_late[POLICIES[1]],
       "certification_overlap":joint,"certification_by_policy":cert_audit,
