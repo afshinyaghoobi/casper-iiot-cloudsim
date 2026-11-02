@@ -15,6 +15,16 @@ def verify(before,after):
             if col=="mean_mapper_us": continue
             if b[key][col]!=a[key][col]:
                 raise ValueError(f"non-intervened science changed: {key} {col}")
+    for origin,grid in (("before",b),("after",a)):
+        for key,row in grid.items():
+            for field in ("late_dvr","post_dvr"):
+                value=float(row[field])
+                if not math.isfinite(value) or not 0<=value<=1:
+                    raise ValueError(f"invalid {origin} {field}: {key}")
+            for field in ("p99_late_latency_ms","p99_post_latency_ms"):
+                value=float(row[field])
+                if not math.isfinite(value) or value<0:
+                    raise ValueError(f"invalid {origin} {field}: {key}")
     for key,row in a.items():
         if float(row["cloudsim_completion"])!=1.0 or int(row["tasks"])!=30000:
             raise ValueError(f"incomplete run {key}")
