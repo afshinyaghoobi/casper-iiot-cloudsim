@@ -17,6 +17,8 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
+      - name: Test trace parser contract before CloudSim
+        run: python3 jpdc/test_seed29_trace_contract.py
       - name: Generate E45, instrument trace, run seed29
         shell: bash
         run: |
