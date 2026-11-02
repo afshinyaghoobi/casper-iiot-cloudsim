@@ -52,6 +52,12 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
     if len(late)!=250:raise ValueError("not enough post-change mission tasks")
     rate=lambda p:sum(o[(p,t)][3] for t in late)/len(late)
     distinct=set(different)
+    disagreement=set(changed)
+    direct_overlap=disagreement & distinct
+    same_node_disagreements=disagreement - distinct
+    late_disagreement={t for t in late if o[(POLICIES[0],t)][3]!=o[(POLICIES[1],t)][3]}
+    if len(direct_overlap)+len(same_node_disagreements)!=len(disagreement):
+        raise AssertionError("disagreement partition does not reconcile")
     if results_csv is not None:
         with Path(results_csv).open(newline="") as file:
             official=list(csv.DictReader(file))
@@ -73,6 +79,11 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
       "late_dvr_delta_full_minus_static":rate(POLICIES[0])-rate(POLICIES[1]),
       "late_mission_disagreements":sum(o[(POLICIES[0],t)][3]!=o[(POLICIES[1],t)][3] for t in late),
       "late_mission_different_nodes":sum(t in distinct for t in late),
+      "mission_disagreements_different_node":len(direct_overlap),
+      "mission_disagreements_same_node":len(same_node_disagreements),
+      "late_disagreements_different_node":len(late_disagreement & distinct),
+      "late_disagreements_same_node":len(late_disagreement - distinct),
+      "example_same_node_mission_disagreements":sorted(same_node_disagreements)[:20],
       "example_different_tasks":different[:20],"example_mission_disagreements":changed[:20]}
 if __name__=="__main__":
     p=argparse.ArgumentParser()
