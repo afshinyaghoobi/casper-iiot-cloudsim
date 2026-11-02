@@ -1,0 +1,26 @@
+name: JPDC seed29 trace contract CI
+on:
+  push:
+    branches:
+      - jpdc-seed0-repro-20261024
+    paths:
+      - 'jpdc/analyze_seed29_task_trace.py'
+      - 'jpdc/test_seed29_trace_contract.py'
+      - '.github/workflows/jpdc-trace-contract-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify frozen source
+        shell: bash
+        run: |
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = "34256ca7bff46f911cf20e8b94278fbd09175746"
+      - name: Syntax check
+        run: python3 -m py_compile jpdc/analyze_seed29_task_trace.py jpdc/test_seed29_trace_contract.py
+      - name: Execute actual regression test
+        run: python3 jpdc/test_seed29_trace_contract.py
