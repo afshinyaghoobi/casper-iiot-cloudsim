@@ -68,10 +68,22 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
         for row in matched:
             if row.get("seed")!=SEED or row.get("scenario")!=SCENARIO or int(row["tasks"])!=count:
                 raise ValueError("official task metadata mismatch")
-            computed=rate(row["policy"])
-            official_rate=float(row["late_dvr"])
-            if not math.isfinite(official_rate) or abs(computed-official_rate)>5e-9:
-                raise ValueError(f"late_dvr trace/official mismatch {row['policy']}: {computed} != {official_rate}")
+            policy=row["policy"]
+            post_tasks=[t for t in missions]
+            late_tasks=post_tasks[-250:]
+            def p99(tasks):
+                v=sorted(o[(policy,t)][1] for t in tasks)
+                return v[math.ceil((len(v)-1)*.99)]
+            observed={
+                "late_dvr":rate(policy),
+                "post_dvr":sum(o[(policy,t)][3] for t in post_tasks)/len(post_tasks),
+                "p99_late_latency_ms":p99(late_tasks),
+                "p99_post_latency_ms":p99(post_tasks)}
+            for metric,computed in observed.items():
+                official_value=float(row[metric])
+                tol=5e-9 if metric.endswith("dvr") else 1e-5
+                if not math.isfinite(official_value) or abs(computed-official_value)>tol:
+                    raise ValueError(f"{metric} trace/official mismatch {policy}: {computed} != {official_value}")
     return {"seed":int(SEED),"scenario":SCENARIO,"tasks_per_policy":count,
       "different_node_count":len(different),"different_node_rate":len(different)/count,
       "mission_deadline_disagreements":len(changed),"late_mission_count":len(late),
