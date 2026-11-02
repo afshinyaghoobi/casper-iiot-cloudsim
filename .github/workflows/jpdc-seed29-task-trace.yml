@@ -30,6 +30,8 @@ jobs:
           grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' pilot_seed29/run.log
           grep '^JPDC_TASK_DISPATCH,' pilot_seed29/run.log > pilot_seed29/task_dispatch.csv
           test "$(wc -l < pilot_seed29/task_dispatch.csv)" -eq 60000
+          grep '^JPDC_TASK_OUTCOME,' pilot_seed29/run.log > pilot_seed29/task_outcome.csv
+          test "$(wc -l < pilot_seed29/task_outcome.csv)" -eq 60000
       - name: Upload trace and diagnostic files
         if: always()
         uses: actions/upload-artifact@v4
