@@ -64,3 +64,12 @@ Expand *matched* S2/S3 intervention seeds by e.g. 10 more currently unused indic
 - New generator-only E45 patch `jpdc/patch_full_q_sensitivity.py` commit `df0c392`: scales conformal q multiplier inside `upper[p]` for CASPER_FULL only, x0.9 or x1.1. Not altering calibration data, E42 or E4.6. Important nuance: tests *scaling decision bounds* not fitting/recalibrating from alternative calibration sets.
 - Workflow `.github/workflows/jpdc-q-sensitivity-pilot-once.yml` commit `f498aab`, GitHub Actions run `41534252067`, S3 seed18, 3 sequential executions (baseline, x0.9, x1.1) with 30k tasks; guarded invariant on seven other policies. At last inspection run IN_PROGRESS and no artifact; results NOT YET KNOWN. Do not claim executed successfully until verified.
 - Next turn: inspect run status and artifact `jpdc-s3-q-seed18-pilot`. Analyze q sensitivity `late_far`, `late_air`, `late_dvr`, `late_fwc` without overgeneralizing one seed.
+
+## VERIFIED S3 seed18 q-bound sensitivity pilot — completed
+- GitHub Actions run `41534252067` completed SUCCESS; artifact `13183775928` `jpdc-s3-q-seed18-pilot`, three actual CloudSim executions and seven other policies' scientific outputs identical by workflow gate.
+- Generated E45 patch `jpdc/patch_full_q_sensitivity.py` scales decision-time q term for CASPER_FULL x0.9 or x1.1. DOES NOT refit conformal calibration; E42/E4.6 unchanged.
+- Baseline S3 seed18: late_far=.020, late_air=.176, late_fwc=.772, late_dvr=.128, late P99=83.202342ms.
+- q x0.9: late_far=.028, late_air=.156, late_fwc=.592, late_dvr=.128, P99=83.202342ms.
+- q x1.1: late_far=.016, late_air=.192, late_fwc=.780, late_dvr=.128, P99=83.202342ms.
+- In final 250 mission tasks, false certificates are 7,5,4 (x0.9,baseline,x1.1); abstentions 39,44,48. Do not claim significance from one seed.
+- Next useful technical step: replicate q perturbations on a few independent S3 seed indices with unchanged policy parity, then quantify whether the trend is consistent without significance chasing.
