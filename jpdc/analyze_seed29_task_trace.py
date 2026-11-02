@@ -9,9 +9,11 @@ def read_trace(path,label,count):
     out={}
     with Path(path).open(newline="") as f:
         for row in csv.reader(f):
-            if len(row)!=10 or row[0]!=label: raise ValueError("malformed trace row")
+            if len(row)!=(11 if label=="JPDC_TASK_DISPATCH" else 10) or row[0]!=label: raise ValueError("malformed trace row")
             if label=="JPDC_TASK_DISPATCH":
-                _,seed,scenario,policy,task,node,eta,value,deadline,flag=row
+                _,seed,scenario,policy,task,node,eta,value,deadline,flag,mapper_us=row
+                mapper_us=float(mapper_us)
+                if not math.isfinite(mapper_us) or mapper_us<0: raise ValueError("invalid mapper duration")
                 extra="false"
                 if not math.isfinite(float(eta)) or not 1<=float(eta)<=3:
                     raise ValueError("invalid eta")
@@ -28,7 +30,7 @@ def read_trace(path,label,count):
                 raise ValueError("invalid boolean")
             key=(policy,task)
             if key in out:raise ValueError("duplicate task")
-            out[key]=(node,v,d,flag=="true",extra=="true")
+            out[key]=(node,v,d,flag=="true",extra=="true",mapper_us if label=="JPDC_TASK_DISPATCH" else None)
     if len(out)!=2*count or any((p,t) not in out for p in POLICIES for t in range(count)):
         raise ValueError("missing tasks")
     return out
@@ -51,6 +53,8 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
     late=missions[-250:]
     if len(late)!=250:raise ValueError("not enough post-change mission tasks")
     rate=lambda p:sum(o[(p,t)][3] for t in late)/len(late)
+    mapper_late={policy:sum(d[(policy,t)][5] for t in late)/len(late) for policy in POLICIES}
+    mapper_all={policy:sum(d[(policy,t)][5] for t in range(count))/count for policy in POLICIES}
     # Compare certification for the EXACT SAME mission-task indices.
     cert_groups={"both":[],"full_only":[],"static_only":[],"neither":[]}
     for t in late:
@@ -100,10 +104,12 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
                 "late_dvr":rate(policy),
                 "post_dvr":sum(o[(policy,t)][3] for t in post_tasks)/len(post_tasks),
                 "p99_late_latency_ms":p99(late_tasks),
-                "p99_post_latency_ms":p99(post_tasks)}
+                "p99_post_latency_ms":p99(post_tasks),
+                "mean_mapper_us":mapper_all[policy]}
             for metric,computed in observed.items():
                 official_value=float(row[metric])
-                tol=5e-9 if metric.endswith("dvr") else 1e-5
+                tol=(max(0.05,0.02*abs(official_value)) if metric=="mean_mapper_us" else
+                     5e-9 if metric.endswith(("dvr","air","far")) else 1e-5)
                 if not math.isfinite(official_value) or abs(computed-official_value)>tol:
                     raise ValueError(f"{metric} trace/official mismatch {policy}: {computed} != {official_value}")
     joint={
@@ -111,7 +117,9 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
               "full_deadline_misses":sum(o[(POLICIES[0],t)][3] for t in ids),
               "static_deadline_misses":sum(o[(POLICIES[1],t)][3] for t in ids)}
         for name,ids in cert_groups.items()}
-    return {"certification_overlap":joint,"certification_by_policy":cert_audit,
+    return {"late_mapper_us_mean":mapper_late,"all_mapper_us_mean":mapper_all,
+      "late_mapper_us_delta_full_minus_static":mapper_late[POLICIES[0]]-mapper_late[POLICIES[1]],
+      "certification_overlap":joint,"certification_by_policy":cert_audit,
       "seed":int(SEED),"scenario":SCENARIO,"tasks_per_policy":count,
       "different_node_count":len(different),"different_node_rate":len(different)/count,
       "mission_deadline_disagreements":len(changed),"late_mission_count":len(late),
