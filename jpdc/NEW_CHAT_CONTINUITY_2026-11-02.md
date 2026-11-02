@@ -43,3 +43,11 @@ If local paths are missing, recover from listed GitHub Actions artifacts; file p
 
 ## Next most valuable technical step
 Expand *matched* S2/S3 intervention seeds by e.g. 10 more currently unused indices in 0..29; run matched pairs with strict scientific parity and assess interaction with confidence interval and leave-one-seed-out sensitivity, explicitly mark expanded testing as exploratory or define held-out confirmation. To avoid unbounded repeated exploratory testing, ideally pre-register and run a disjoint 30..59 holdout with S2/S3 pair. Ensure same seed in both scenarios, and avoid mixing fixed 10 with new seeds for an unqualified confirmatory p-value. Use GitHub Actions jobs with generated E45 and frozen blob guard; do not edit E42/E4.6.
+
+## New November 2 research step — PRE-REGISTERED DISJOINT HOLDOUT STARTED
+- Pre-registered BEFORE launch: `jpdc/PREREG_S2_S3_DISJOINT_HOLDOUT_2026-11-02.md`, commit `2520adb`.
+- New workflow `.github/workflows/jpdc-s2-s3-holdout-10seed-once.yml` commit `8254c58`.
+- Real GitHub Actions run: **41524202008**, 10 parallel jobs, seed indices 30..39, each runs S2 and S3 *before and after* eta-clamp, 4 simulations/seed, total 40 simulations. At last inspection all 10 jobs were `in_progress`; NO results have been verified; do not claim any outcomes until checking the run, downloading artifacts and validating `paired_summary.json` and pass checks.
+- Workflow verifies frozen E42 SHA, non-intervened policy parity across before/after, and exact clamp CASPER_FULL=CASPER_HEALTH_STATIC science. Each job uploads `jpdc-holdout-seed-<seed>` with two before CSV, two after CSV and `paired_summary.json`.
+- Primary preregistered test: paired seed-level interaction S3-minus-S2 for `late_far` (adaptive FULL minus eta=1), exact TWO-SIDED sign test excluding ties, unadjusted alpha=.05 because one prespecified primary test. Secondary `late_air` and `late_dvr` exploratory. No pooling with original 10 seed exploratory study for confirmatory p.
+- On next user "ادامه", FIRST inspect run 41524202008, download all success artifacts, check all parity gates, compute holdout results and scientific caveats, then update this continuity file again.
