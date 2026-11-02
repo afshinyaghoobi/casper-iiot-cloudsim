@@ -12,8 +12,8 @@ if s.count(anchor)!=1:
     raise SystemExit("TASK_TRACE_FAIL: deployment anchor mismatch")
 trace='''            if(policy==Policy.CASPER_FULL || policy==Policy.CASPER_HEALTH_STATIC){
                 System.out.printf(Locale.US,
-                    "JPDC_TASK_DISPATCH,%d,%s,%s,%d,%d,%.9f,%.9f,%.9f,%b,%.3f%n",
-                    seed,scenario,policy,t.index(),j,eta,predj,t.deadlineMs(),certified,ns/1000.0);
+                    "JPDC_TASK_DISPATCH,%d,%s,%s,%d,%d,%.9f,%.9f,%.9f,%b,%.3f,%b%n",
+                    seed,scenario,policy,t.index(),j,eta,predj,t.deadlineMs(),certified,ns/1000.0,familyCovered);
             }
 '''
 s=s.replace(anchor,anchor.replace('            meta.put(',trace+'            meta.put('))
