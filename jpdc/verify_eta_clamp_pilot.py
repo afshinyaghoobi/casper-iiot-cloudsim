@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed paired audit for CASPER_FULL eta=1 intervention; no effect claims."""
 import argparse
+import math
 from verify_first_idle_tier_pilot_parity import load, SCENARIOS, ORIGINAL
 
 def verify(before,after):
@@ -23,6 +24,9 @@ def verify(before,after):
     for scenario in SCENARIOS:
         static_key=("4202202600",scenario,"CASPER_HEALTH_STATIC")
         clamp_key=("4202202600",scenario,"CASPER_FULL")
+        eta=float(a[clamp_key]["late_eta"])
+        if not math.isfinite(eta) or abs(eta-1.0)>1e-9:
+            raise ValueError(f"eta clamp not reflected in output: {scenario} eta={eta}")
         for col in cols:
             if col in ("policy","mean_mapper_us"): continue
             if a[static_key][col]!=a[clamp_key][col]:
