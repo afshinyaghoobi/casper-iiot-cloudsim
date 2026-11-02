@@ -1,0 +1,39 @@
+name: JPDC task28313 candidate diagnostic
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-task28313-candidates-once.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Run actual targeted task diagnosis
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p pilot_task28313
+          git rev-parse HEAD > pilot_task28313/research_sha.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = "34256ca7bff46f911cf20e8b94278fbd09175746"
+          python3 tools/e45_generate.py
+          python3 jpdc/instrument_task28313_candidates.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 29 --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out pilot_task28313/results.csv" > pilot_task28313/run.log 2>&1
+          grep '^JPDC_28313_CANDIDATE,' pilot_task28313/run.log > pilot_task28313/candidates.csv
+          test "$(wc -l < pilot_task28313/candidates.csv)" -eq 6
+          grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' pilot_task28313/run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jpdc-task28313-candidate-diagnostic
+          path: pilot_task28313/
+          if-no-files-found: warn
