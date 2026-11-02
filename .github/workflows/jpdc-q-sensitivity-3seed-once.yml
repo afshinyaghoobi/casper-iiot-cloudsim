@@ -1,0 +1,58 @@
+name: JPDC S3 conformal q three-seed replication
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-q-sensitivity-3seed-once.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qpilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [0, 7, 29]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Q perturbation pilot on seed-${{ matrix.seed }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qpilot
+          git rev-parse HEAD > qpilot/research_sha.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          for scale in baseline 0.9 1.1; do
+            python3 tools/e45_generate.py
+            if [ "$scale" != baseline ]; then python3 jpdc/patch_full_q_sensitivity.py --scale "$scale"; fi
+            mvn -B -ntp -DskipTests compile
+            mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out qpilot/$scale.csv" > "qpilot/$scale.log" 2>&1
+            grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' "qpilot/$scale.log"
+          done
+          python3 - <<'PY'
+          import csv,json
+          rows={q:{r['policy']:r for r in csv.DictReader(open(f'qpilot/{q}.csv'))} for q in ('baseline','0.9','1.1')}
+          assert all(len(v)==8 for v in rows.values())
+          b=rows['baseline']
+          for scale in ('0.9','1.1'):
+              for policy,base in b.items():
+                  if policy=='CASPER_FULL':continue
+                  for metric,val in base.items():
+                      if metric=='mean_mapper_us':continue
+                      assert val==rows[scale][policy][metric],(scale,policy,metric)
+          summary={q:{k:rows[q]['CASPER_FULL'][k] for k in ('late_far','late_air','late_dvr','late_fwc','p99_late_latency_ms')} for q in rows}
+          open('qpilot/summary.json','w').write(json.dumps(summary,indent=2))
+          print('JPDC_Q_SENSITIVITY_PARITY_PASS',json.dumps(summary))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jpdc-s3-q-seed-${{ matrix.seed }}-pilot
+          path: qpilot/
+          if-no-files-found: warn
