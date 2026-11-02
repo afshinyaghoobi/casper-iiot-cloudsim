@@ -1,0 +1,68 @@
+name: JPDC S2 seed29 matched interaction
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-s2-seed29-eta-once.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  replicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [29]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Run seed-specific before and after
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p pilot_eta
+          git rev-parse HEAD > pilot_eta/research_sha.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = "34256ca7bff46f911cf20e8b94278fbd09175746"
+          python3 tools/e45_generate.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S2_HIDDEN_COMPUTE_40LOSS --out pilot_eta/before.csv" > pilot_eta/before.log 2>&1
+          grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' pilot_eta/before.log
+          python3 jpdc/eta_clamp_casper_full_patch.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S2_HIDDEN_COMPUTE_40LOSS --out pilot_eta/after.csv" > pilot_eta/after.log 2>&1
+          grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' pilot_eta/after.log
+          python3 - <<'PY'
+          import csv,json
+          b=list(csv.DictReader(open('pilot_eta/before.csv')))
+          a=list(csv.DictReader(open('pilot_eta/after.csv')))
+          assert len(b)==len(a)==8
+          x={r['policy']:r for r in b};y={r['policy']:r for r in a}
+          assert x.keys()==y.keys()
+          for p in x:
+              for c in x[p]:
+                  if c=='mean_mapper_us' or p=='CASPER_FULL':continue
+                  assert x[p][c]==y[p][c],(p,c,x[p][c],y[p][c])
+          for c in y['CASPER_FULL']:
+              if c in ('policy','mean_mapper_us'):continue
+              assert y['CASPER_FULL'][c]==y['CASPER_HEALTH_STATIC'][c],(c,y['CASPER_FULL'][c],y['CASPER_HEALTH_STATIC'][c])
+          result={'seed':x['CASPER_FULL']['seed'],
+            'original_late_dvr':x['CASPER_FULL']['late_dvr'],
+            'clamped_late_dvr':y['CASPER_FULL']['late_dvr'],
+            'original_late_far':x['CASPER_FULL']['late_far'],
+            'clamped_late_far':y['CASPER_FULL']['late_far'],
+            'original_late_air':x['CASPER_FULL']['late_air'],
+            'clamped_late_air':y['CASPER_FULL']['late_air']}
+          open('pilot_eta/paired_summary.json','w').write(json.dumps(result,indent=2))
+          print('S3_ETA_CLAMP_REPLICATION_PASS',json.dumps(result))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jpdc-s2-eta-clamp-seed-${{ matrix.seed }}
+          path: pilot_eta/
+          if-no-files-found: warn
