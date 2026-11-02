@@ -59,3 +59,8 @@ Expand *matched* S2/S3 intervention seeds by e.g. 10 more currently unused indic
 - Secondary exploratory interaction late_air +4.56 pp, exact sign p=.0703125; late_dvr +.08 pp, p=1. Bootstrap paired percentile 95% for FAR interaction [-2.60,-.32] pp, exploratory and not to override the registered primary test.
 - Locally created artifact `/mnt/data/jpdc_holdout_30_39_2026_11_02.zip` and CSV `/mnt/data/jpdc_holdout_30_39_2026_11_02/holdout_matched_effects.csv`; recover from GitHub Actions artifacts if unavailable in new chat.
 - Next: explicitly report replication in direction but no formal confirmation. Investigate low-power/ties without post hoc claiming significance; consider manuscript-ready statistical transparency and independent-simulator/generalization rather than repeatedly searching for significant p.
+
+## New exploratory calibration sensitivity pilot (2026-11-02)
+- New generator-only E45 patch `jpdc/patch_full_q_sensitivity.py` commit `df0c392`: scales conformal q multiplier inside `upper[p]` for CASPER_FULL only, x0.9 or x1.1. Not altering calibration data, E42 or E4.6. Important nuance: tests *scaling decision bounds* not fitting/recalibrating from alternative calibration sets.
+- Workflow `.github/workflows/jpdc-q-sensitivity-pilot-once.yml` commit `f498aab`, GitHub Actions run `41534252067`, S3 seed18, 3 sequential executions (baseline, x0.9, x1.1) with 30k tasks; guarded invariant on seven other policies. At last inspection run IN_PROGRESS and no artifact; results NOT YET KNOWN. Do not claim executed successfully until verified.
+- Next turn: inspect run status and artifact `jpdc-s3-q-seed18-pilot`. Analyze q sensitivity `late_far`, `late_air`, `late_dvr`, `late_fwc` without overgeneralizing one seed.
