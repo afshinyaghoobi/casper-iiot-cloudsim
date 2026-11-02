@@ -78,3 +78,12 @@ Expand *matched* S2/S3 intervention seeds by e.g. 10 more currently unused indic
 - Workflow `.github/workflows/jpdc-q-sensitivity-3seed-once.yml`, commit `8137680`; GitHub Actions run `41541558291` launched on S3 seed indices 0,7,29 (three sequential scales baseline, q*0.9, q*1.1 in each job), plus earlier confirmed seed18 in run `41534252067`.
 - At last inspection, all three jobs were in_progress with no completed artifacts. **No experimental outcomes may be claimed until all jobs and parity assertions succeed.**
 - Next turn: check run 41541558291, obtain artifacts, compare FAR/AIR/DVR/FWC against each other and prior seed18, preserve limits of four-seed exploratory pilot. Frozen E42/E4.6 unchanged.
+
+## VERIFIED four-seed S3 conformal q sensitivity (2026-11-02)
+- GitHub Actions run `41541558291` completed SUCCESS (seed indices 0,7,29), artifacts 13186582133, 13186292396, 13185952527. Prior seed18 run `41534252067` SUCCESS artifact 13183775928. All original policies excluding FULL match across three scale runs per seed.
+- Effective generated-E45 decision conformal bound scale q × {0.9,1.0,1.1} for FULL; NOT retrained calibration. 250 late mission tasks/seed, 1000/scale.
+- Pooled late_far incorrect certificates: 23,17,13 at ×0.9,baseline,×1.1 respectively; late_air abstentions 75,93,106; late_fwc family upper-bound coverage 662,757,826 (out of 1000); late_dvr misses 70,71,70. Changes are descriptive counts on paired workloads, not independent task inferences.
+- Four-seed paired sign (×1.1 minus ×0.9) for late_far 0 positive/3 negative/1 tie, two-sided p=.25; late_air 3 positive/0 negative/1 tie p=.25; late_fwc 3 positive/0 negative/1 tie p=.25; late_dvr 4 ties, p=1. NO statistical significance claim; low n.
+- Seed29 late_dvr baseline .124, ×0.9=.120 and ×1.1=.120; changed decision bounds can affect deadline outcomes; other seeds' DVR unchanged. P99 unchanged all four.
+- Local reproducibility archive `/mnt/data/jpdc_q_sensitivity_4seed_2026_11_02.zip`; recover via GitHub Actions artifacts if new session cannot access.
+- Recommended next move: independent calibration quality/alternative simulator rather than repeatedly tuning p-values on S3.
