@@ -1,0 +1,39 @@
+name: JPDC seed29 task dispatch trace
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jpdc-seed0-repro-20261024
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Generate E45, instrument trace, run seed29
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p pilot_seed29
+          git rev-parse HEAD > pilot_seed29/research_sha.txt
+          python3 tools/e45_generate.py
+          python3 jpdc/instrument_seed29_task_dispatch.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 29 --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out pilot_seed29/results.csv" > pilot_seed29/run.log 2>&1
+          grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' pilot_seed29/run.log
+          grep '^JPDC_TASK_DISPATCH,' pilot_seed29/run.log > pilot_seed29/task_dispatch.csv
+          test "$(wc -l < pilot_seed29/task_dispatch.csv)" -eq 60000
+      - name: Upload trace and diagnostic files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-seed29-task-trace
+          path: pilot_seed29/
+          if-no-files-found: warn
