@@ -17,6 +17,14 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
+      - name: Verify frozen E42 scientific source
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)"
+          expected="34256ca7bff46f911cf20e8b94278fbd09175746"
+          test "$actual" = "$expected" || { echo "FROZEN_E42_SOURCE_MISMATCH: $actual"; exit 1; }
+          echo "FROZEN_E42_SOURCE_PASS $actual"
       - name: Test trace parser contract before CloudSim
         run: python3 jpdc/test_seed29_trace_contract.py
       - name: Generate E45, instrument trace, run seed29
