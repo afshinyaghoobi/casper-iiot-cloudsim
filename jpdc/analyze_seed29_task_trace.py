@@ -77,7 +77,8 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
 if __name__=="__main__":
     p=argparse.ArgumentParser()
     p.add_argument("--dispatch",required=True);p.add_argument("--outcome",required=True)
-    p.add_argument("--out",required=True);p.add_argument("--tasks",type=int,default=30000)\n    p.add_argument("--results",help="Official CloudSim result CSV for outcome reconciliation")
+    p.add_argument("--out",required=True);p.add_argument("--tasks",type=int,default=30000)
+    p.add_argument("--results",help="Official CloudSim result CSV for outcome reconciliation")
     a=p.parse_args();result=analyze(a.dispatch,a.outcome,a.tasks,a.results)
     Path(a.out).write_text(json.dumps(result,indent=2)+"\n")
     print("SEED29_TASK_TRACE_AUDIT_PASS",result["different_node_count"],result["late_dvr_delta_full_minus_static"])
