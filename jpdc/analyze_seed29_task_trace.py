@@ -51,6 +51,26 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
     late=missions[-250:]
     if len(late)!=250:raise ValueError("not enough post-change mission tasks")
     rate=lambda p:sum(o[(p,t)][3] for t in late)/len(late)
+    # Compare certification for the EXACT SAME mission-task indices.
+    cert_groups={"both":[],"full_only":[],"static_only":[],"neither":[]}
+    for t in late:
+        fc=d[(POLICIES[0],t)][3]
+        sc=d[(POLICIES[1],t)][3]
+        group=("both" if fc and sc else "full_only" if fc else
+               "static_only" if sc else "neither")
+        cert_groups[group].append(t)
+    if sum(len(v) for v in cert_groups.values())!=250:
+        raise AssertionError("certification partition mismatch")
+    cert_audit={}
+    for policy in POLICIES:
+        certified=[t for t in late if d[(policy,t)][3]]
+        false_cert=sum(o[(policy,t)][3] for t in certified)
+        cert_audit[policy]={
+            "certified":len(certified),
+            "false_certified":false_cert,
+            "air":1-len(certified)/250,
+            "far":false_cert/250,
+            "conditional_error":false_cert/len(certified) if certified else None}
     distinct=set(different)
     disagreement=set(changed)
     direct_overlap=disagreement & distinct
@@ -75,6 +95,8 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
                 v=sorted(o[(policy,t)][1] for t in tasks)
                 return v[math.ceil((len(v)-1)*.99)]
             observed={
+                "late_air":cert_audit[policy]["air"],
+                "late_far":cert_audit[policy]["far"],
                 "late_dvr":rate(policy),
                 "post_dvr":sum(o[(policy,t)][3] for t in post_tasks)/len(post_tasks),
                 "p99_late_latency_ms":p99(late_tasks),
@@ -84,7 +106,13 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
                 tol=5e-9 if metric.endswith("dvr") else 1e-5
                 if not math.isfinite(official_value) or abs(computed-official_value)>tol:
                     raise ValueError(f"{metric} trace/official mismatch {policy}: {computed} != {official_value}")
-    return {"seed":int(SEED),"scenario":SCENARIO,"tasks_per_policy":count,
+    joint={
+        name:{"count":len(ids),
+              "full_deadline_misses":sum(o[(POLICIES[0],t)][3] for t in ids),
+              "static_deadline_misses":sum(o[(POLICIES[1],t)][3] for t in ids)}
+        for name,ids in cert_groups.items()}
+    return {"certification_overlap":joint,"certification_by_policy":cert_audit,
+      "seed":int(SEED),"scenario":SCENARIO,"tasks_per_policy":count,
       "different_node_count":len(different),"different_node_rate":len(different)/count,
       "mission_deadline_disagreements":len(changed),"late_mission_count":len(late),
       "late_dvr_full":rate(POLICIES[0]),"late_dvr_static":rate(POLICIES[1]),
