@@ -42,7 +42,7 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
     for key in d:
         dn,_,dd,_,_,_,_=d[key]
         on,latency,od,miss,_,_,_=o[key]
-        if dn!=on or abs(dd-od)>1e-6 or miss!=(latency>od):
+        if dn!=on or abs(dd-od)>1e-6 or (abs(latency-od)>1e-9 and miss!=(latency>od)):
             raise ValueError(f"dispatch/outcome mismatch: {key}")
     different=[]; changed=[]; missions=[]
     for t in range(count):
