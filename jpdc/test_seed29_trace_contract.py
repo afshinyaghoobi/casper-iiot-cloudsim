@@ -27,7 +27,7 @@ with tempfile.TemporaryDirectory() as td:
                              str(certified).lower(), 4.0 if is_full else 2.0,
                              str(covered).lower()])
                 ow.writerow(["JPDC_TASK_OUTCOME", SEED, SCENARIO, policy,
-                             task, node, 11.0 if missed else 5.0, 10.0,
+                             task, node, 10.0 if missed else 5.0, 10.0,
                              str(missed).lower(), str(mission).lower()])
     result = analyze(dispatch, outcome, N)
     assert result["different_node_count"] == 1
@@ -40,6 +40,9 @@ with tempfile.TemporaryDirectory() as td:
     assert result["late_fwc"][POLICIES[1]] == 1.0
     assert result["late_mapper_us_mean"][POLICIES[0]] == 4.0
     assert result["late_mapper_us_mean"][POLICIES[1]] == 2.0
+    # Simulate a true miss whose 9-decimal CSV latency rounds to the deadline.
+    # The logged miss flag remains authoritative at the rounding boundary.
+    assert result["late_mission_disagreements"] == 1
     # Reject a trace with an incorrect coverage boolean rather than silently accepting it.
     broken = Path(td) / "broken.csv"
     rows = dispatch.read_text().splitlines()
