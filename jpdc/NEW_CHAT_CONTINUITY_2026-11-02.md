@@ -73,3 +73,8 @@ Expand *matched* S2/S3 intervention seeds by e.g. 10 more currently unused indic
 - q x1.1: late_far=.016, late_air=.192, late_fwc=.780, late_dvr=.128, P99=83.202342ms.
 - In final 250 mission tasks, false certificates are 7,5,4 (x0.9,baseline,x1.1); abstentions 39,44,48. Do not claim significance from one seed.
 - Next useful technical step: replicate q perturbations on a few independent S3 seed indices with unchanged policy parity, then quantify whether the trend is consistent without significance chasing.
+
+## Latest q-bound sensitivity replication
+- Workflow `.github/workflows/jpdc-q-sensitivity-3seed-once.yml`, commit `8137680`; GitHub Actions run `41541558291` launched on S3 seed indices 0,7,29 (three sequential scales baseline, q*0.9, q*1.1 in each job), plus earlier confirmed seed18 in run `41534252067`.
+- At last inspection, all three jobs were in_progress with no completed artifacts. **No experimental outcomes may be claimed until all jobs and parity assertions succeed.**
+- Next turn: check run 41541558291, obtain artifacts, compare FAR/AIR/DVR/FWC against each other and prior seed18, preserve limits of four-seed exploratory pilot. Frozen E42/E4.6 unchanged.
