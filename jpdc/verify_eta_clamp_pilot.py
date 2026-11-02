@@ -25,9 +25,10 @@ def verify(before,after):
                 value=float(row[field])
                 if not math.isfinite(value) or value<0:
                     raise ValueError(f"invalid {origin} {field}: {key}")
-    for key,row in a.items():
-        if float(row["cloudsim_completion"])!=1.0 or int(row["tasks"])!=30000:
-            raise ValueError(f"incomplete run {key}")
+    for origin,grid in (("before",b),("after",a)):
+        for key,row in grid.items():
+            if float(row["cloudsim_completion"])!=1.0 or int(row["tasks"])!=30000:
+                raise ValueError(f"incomplete {origin} run {key}")
     # Positive control: with dispatch eta clamped to 1, CASPER_FULL must
     # reproduce the pre-existing CASPER_HEALTH_STATIC scientific outputs.
     # Different policy labels and wall-clock mapper timing are excluded.
