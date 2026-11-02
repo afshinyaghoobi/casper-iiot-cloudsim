@@ -38,8 +38,8 @@ def analyze(dispatch,outcome,count=30000,results_csv=None):
     d=read_trace(dispatch,"JPDC_TASK_DISPATCH",count)
     o=read_trace(outcome,"JPDC_TASK_OUTCOME",count)
     for key in d:
-        dn,_,dd,_,_=d[key]
-        on,latency,od,miss,_=o[key]
+        dn,_,dd,_,_,_=d[key]
+        on,latency,od,miss,_,_=o[key]
         if dn!=on or abs(dd-od)>1e-6 or miss!=(latency>od):
             raise ValueError(f"dispatch/outcome mismatch: {key}")
     different=[]; changed=[]; missions=[]
