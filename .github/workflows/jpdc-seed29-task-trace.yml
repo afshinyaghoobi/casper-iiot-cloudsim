@@ -32,7 +32,7 @@ jobs:
           test "$(wc -l < pilot_seed29/task_dispatch.csv)" -eq 60000
           grep '^JPDC_TASK_OUTCOME,' pilot_seed29/run.log > pilot_seed29/task_outcome.csv
           test "$(wc -l < pilot_seed29/task_outcome.csv)" -eq 60000
-          python3 jpdc/analyze_seed29_task_trace.py --dispatch pilot_seed29/task_dispatch.csv --outcome pilot_seed29/task_outcome.csv --out pilot_seed29/task_trace_analysis.json
+          python3 jpdc/analyze_seed29_task_trace.py --dispatch pilot_seed29/task_dispatch.csv --outcome pilot_seed29/task_outcome.csv --out pilot_seed29/task_trace_analysis.json --results pilot_seed29/results.csv
       - name: Upload trace and diagnostic files
         if: always()
         uses: actions/upload-artifact@v4
