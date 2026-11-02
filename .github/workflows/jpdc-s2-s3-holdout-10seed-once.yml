@@ -1,0 +1,78 @@
+name: JPDC preregistered disjoint S2 S3 holdout
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-s2-s3-holdout-10seed-once.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [30,31,32,33,34,35,36,37,38,39]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Frozen source and preregistration guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = "34256ca7bff46f911cf20e8b94278fbd09175746"
+          test -f jpdc/PREREG_S2_S3_DISJOINT_HOLDOUT_2026-11-02.md
+      - name: Run matched S2/S3 original and eta clamp
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p holdout
+          git rev-parse HEAD > holdout/research_sha.txt
+          python3 tools/e45_generate.py
+          mvn -B -ntp -DskipTests compile
+          for scen in S2_HIDDEN_COMPUTE_40LOSS S3_HIDDEN_NETWORK_50LOSS; do
+            mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios $scen --out holdout/before_$scen.csv" > "holdout/before_$scen.log" 2>&1
+            grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' "holdout/before_$scen.log"
+          done
+          python3 jpdc/eta_clamp_casper_full_patch.py
+          mvn -B -ntp -DskipTests compile
+          for scen in S2_HIDDEN_COMPUTE_40LOSS S3_HIDDEN_NETWORK_50LOSS; do
+            mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios $scen --out holdout/after_$scen.csv" > "holdout/after_$scen.log" 2>&1
+            grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' "holdout/after_$scen.log"
+          done
+          python3 - <<'PY'
+          import csv,json
+          results={}
+          for scen in ('S2_HIDDEN_COMPUTE_40LOSS','S3_HIDDEN_NETWORK_50LOSS'):
+              a=list(csv.DictReader(open(f'holdout/after_{scen}.csv')))
+              b=list(csv.DictReader(open(f'holdout/before_{scen}.csv')))
+              assert len(a)==len(b)==8,(scen,len(a),len(b))
+              A={r['policy']:r for r in a};B={r['policy']:r for r in b}
+              assert A.keys()==B.keys()
+              for pol in A:
+                  for col in A[pol]:
+                      if col=='mean_mapper_us' or pol=='CASPER_FULL':continue
+                      assert A[pol][col]==B[pol][col],(scen,pol,col)
+              for col in A['CASPER_FULL']:
+                  if col in ('policy','mean_mapper_us'):continue
+                  assert A['CASPER_FULL'][col]==A['CASPER_HEALTH_STATIC'][col],(scen,col)
+              results[scen]={'seed':A['CASPER_FULL']['seed']}
+              for metric in ('late_far','late_air','late_dvr'):
+                  results[scen][metric+'_adaptive']=float(B['CASPER_FULL'][metric])
+                  results[scen][metric+'_clamped']=float(A['CASPER_FULL'][metric])
+          assert len({v['seed'] for v in results.values()})==1
+          open('holdout/paired_summary.json','w').write(json.dumps(results,indent=2))
+          print('DISJOINT_HOLDOUT_PAIRED_PARITY_PASS',json.dumps(results))
+          PY
+      - name: Upload proof for all outcomes
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jpdc-holdout-seed-${{ matrix.seed }}
+          path: holdout/
+          if-no-files-found: warn
