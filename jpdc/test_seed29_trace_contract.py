@@ -31,6 +31,11 @@ with tempfile.TemporaryDirectory() as td:
                              str(missed).lower(), str(mission).lower()])
     result = analyze(dispatch, outcome, N)
     assert result["different_node_count"] == 1
+    # Exactly one late task changes node, so the other 249 share a node.
+    assert result["late_paired_latency_by_node"]["late_same_node"]["count"] == 249
+    assert result["late_paired_latency_by_node"]["late_different_node"]["count"] == 1
+    assert result["late_paired_latency_by_node"]["late_different_node"]["full_slower_count"] == 0
+    assert result["late_paired_latency_by_node"]["late_different_node"]["near_equal_latency_count"] == 1
     assert result["late_mission_disagreements"] == 1
     assert abs(result["late_dvr_delta_full_minus_static"] - 0.004) < 1e-12
     assert result["certification_overlap"]["full_only"]["count"] == 0
