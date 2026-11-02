@@ -29,7 +29,7 @@ finish_trace='''                if(policy==Policy.CASPER_FULL || policy==Policy.
 '''
 if s.count(finish_anchor)!=1:
     raise SystemExit("TASK_TRACE_FAIL: finish anchor mismatch")
-s=s.replace(finish_anchor,finish_anchor+"\\n"+finish_trace)
+s=s.replace(finish_anchor,finish_anchor+"\n"+finish_trace)
 
 p.write_text(s)
 print("TASK_TRACE_INSTRUMENTATION_PASS")
