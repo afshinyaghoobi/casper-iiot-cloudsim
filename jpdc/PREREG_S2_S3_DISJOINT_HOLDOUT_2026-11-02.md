@@ -1,0 +1,9 @@
+# JPDC S2/S3 disjoint holdout analysis plan — registered before running
+Date: 2026-11-02. Exploratory prior seeds: 0,1,5,7,9,13,18,21,27,29.
+**New, disjoint holdout indices**: 30,31,32,33,34,35,36,37,38,39 (scientific seeds 4202202630..4202202639). No selection based on results.
+
+For each index run matched S2_HIDDEN_COMPUTE_40LOSS and S3_HIDDEN_NETWORK_50LOSS; each scenario has CASPER_FULL adaptive and CASPER_FULL effective dispatch eta clamped to 1 in generated E45. Verify all nonintervened policies scientifically unchanged and clamp-to-HEALTH_STATIC parity. Freeze E42 hash 34256ca7bff46f911cf20e8b94278fbd09175746. Each simulation uses cal=80000, tasks=30000. Exactly 250 late mission tasks/policy/scenario/seed.
+
+Primary estimand: S3 vs S2 paired interaction for late_far, defined [FULL adaptive - FULL eta-clamped] in S3 minus the same within-seed contrast in S2. Directional hypothesis: negative. Primary inferential analysis is two-sided exact sign test excluding zero differences, alpha=0.05 (one prespecified primary comparison, no post hoc selection). Secondary descriptive metrics: late_air and late_dvr, exact sign p unadjusted explicitly exploratory. Report effect in percentage points, counts, paired-seed bootstrap CI and leave-one-out sensitivity. Do not infer per-task independence. No pooling exploratory ten seeds into confirmatory p-value; such pooled analysis may be descriptively reported only.
+
+Ten seeds can at best give p=0.001953125 on 10 concordant nonzero signs; low event counts can reduce power. Zero observed false certs in S2 must not be interpreted as proof of zero risk. Failed jobs excluded only if infrastructure/contract fails; record all failures and rerun same seed unchanged, never replace based on its outcome. No claims prior to actual completed artifacts.
