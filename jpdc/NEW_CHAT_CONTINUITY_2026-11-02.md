@@ -87,3 +87,11 @@ Expand *matched* S2/S3 intervention seeds by e.g. 10 more currently unused indic
 - Seed29 late_dvr baseline .124, ×0.9=.120 and ×1.1=.120; changed decision bounds can affect deadline outcomes; other seeds' DVR unchanged. P99 unchanged all four.
 - Local reproducibility archive `/mnt/data/jpdc_q_sensitivity_4seed_2026_11_02.zip`; recover via GitHub Actions artifacts if new session cannot access.
 - Recommended next move: independent calibration quality/alternative simulator rather than repeatedly tuning p-values on S3.
+
+## Verified 2026-11-03 S3 pre/post phase multi-seed trace expansion
+- GitHub Actions **41652750267**, all three jobs SUCCESS for seeds 0,7,18; artifacts seed0 13237917384, seed7 13238761161, seed18 13238521488. Frozen E42/E4.6 unchanged.
+- New `jpdc/audit_phase_mission_trace.py` validates 60k dispatch + 60k outcome trace rows per seed and reconciles official post/late aggregate CSV; workflow `.github/workflows/jpdc-s3-phase-trace-3seed-once.yml`.
+- Detailed write-up `jpdc/S3_PHASE_REPLICATION_3SEED_2026-11-03.md`, commit `ea42d54`.
+- Across 3020 postshock mission tasks **per policy**, FULL vs STATIC: FWC 2439 vs 1033, false certificates 21 vs 115, abstentions 216 vs 54, deadline misses 163 vs 163. Before shock n=1529/policy, FULL vs STATIC FWC 1516 vs 1512, false certificates both zero, deadline misses both 11. Late 750/policy: FWC 622 vs 266; FAR 5 vs 30; AIR 59 vs 12; DVR both 40.
+- Per seed post FAR difference FULL-STATIC: seed0 -13, seed7 0, seed18 -81. Two-sided exact seed-paired sign p=.5 (only 2 nonzero seeds); **do not claim statistical significance** from 3-seed trace. Seed7 a meaningful identical-output case.
+- Local zip `/mnt/data/jpdc_phase_s3_multi_seed_2026_11_03.zip` may not transfer; GitHub Actions artifacts are durable. Original E42/E4.6 unchanged. Do not mix task counts as independent inferential n.
