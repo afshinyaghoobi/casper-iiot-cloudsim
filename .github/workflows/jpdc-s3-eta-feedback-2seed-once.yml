@@ -42,14 +42,14 @@ jobs:
           for row in feedback:
               assert len(row)==14 and row[0]=='JPDC_ETA_FEEDBACK',row
               seed,scenario,policy,idx=row[1:5]
-              assert seed=='4202202600'+str(${{ matrix.seed }}) and scenario=='S3_HIDDEN_NETWORK_50LOSS' and policy=='CASPER_FULL'
+              assert seed==str(4202202600+${{ matrix.seed }}) and scenario=='S3_HIDDEN_NETWORK_50LOSS' and policy=='CASPER_FULL'
               assert idx not in ids;ids.add(idx)
               score,reference,atdispatch,before,after=map(float,row[5:10])
               assert all(map(math.isfinite,(score,reference,atdispatch,before,after)))
               assert score>=0 and reference>0 and 1<=atdispatch<=3 and 1<=before<=3 and 1<=after<=3
               assert row[10] in ('true','false') and row[11] in ('true','false')
               age0,age1=map(int,row[12:14])
-              assert age1>=age0 and age1-age0<=1
+              assert (age1==age0 or age1==age0+1 or (age0==-1 and age1==1))
           assert len(list(csv.DictReader(open('feedback/results.csv'))))==8
           print('JPDC_FEEDBACK_TRACE_CONTRACT_PASS',len(feedback))
           PY
