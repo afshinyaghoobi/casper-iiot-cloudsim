@@ -5,7 +5,7 @@ Date 2026-11-03. This is a two-seed **mechanism diagnosis**, not population-leve
 ## Source and scientific controls
 - E42 frozen source git blob `34256ca7bff46f911cf20e8b94278fbd09175746` and E4.6 were unmodified. Generated E45 is instrumented only.
 - Real CloudSim run `41685432122` completed both simulations with Maven BUILD SUCCESS, original output produced, but validation FAILED because an incorrect assumption of 24 nodes was coded (actual `FrozenConfig.TOTAL_NODES=21`). The raw artifact files are valid and independently analyzed: seed7 artifact `13255495133`, seed18 artifact `13253273742`.
-- Validation corrected in workflow at commit `9cf1215`, triggering repeat run `41685852046`. Check its final status before describing it as successful.
+- Validation corrected in workflow at commit `9cf1215`, triggering repeat run `41685852046`. Both corrected rerun jobs subsequently **completed SUCCESS** with artifacts seed7 `13255386941` and seed18 `13253124265`.
 - Mechanism instrumentation: `jpdc/instrument_s3_network_exposure_generated_e45.py`, commit `a692056`; trace columns: scientific seed, scenario, policy, task index, chosen node, affected node flag, nominal network ms, actual network ms, network multiplier, predicted latency.
 - The S3 shock mask chooses 6 of 21 nodes via `affectedMask(seed,scenario)`; the network multiplier for a task dispatched to an affected node after task index 10000 is 2.0.
 
