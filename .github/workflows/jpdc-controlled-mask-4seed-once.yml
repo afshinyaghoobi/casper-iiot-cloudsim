@@ -1,0 +1,55 @@
+name: JPDC controlled S3 mask exposure four independent seeds
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-controlled-mask-4seed-once.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  intervention:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [40,41,42,43]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Frozen science, baseline route selection, LOW/HIGH controlled masks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p controlled
+          git rev-parse HEAD > controlled/research_sha.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/S3_CONTROLLED_MASK_EXPERIMENT_PROTOCOL_2026-11-03.md
+          for condition in baseline low high; do
+            mkdir -p "controlled/$condition"
+            python3 tools/e45_generate.py
+            if [ "$condition" != baseline ]; then
+              python3 jpdc/patch_s3_mask_generated_e45.py --nodes "$(cat controlled/${condition}_nodes.txt)"
+            fi
+            python3 jpdc/instrument_s3_network_exposure_generated_e45.py
+            mvn -B -ntp -DskipTests compile
+            mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out controlled/$condition/results.csv" > "controlled/$condition/run.log" 2>&1
+            grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' "controlled/$condition/run.log"
+            grep '^JPDC_SHOCK_MASK,' "controlled/$condition/run.log" > "controlled/$condition/mask.csv"
+            grep '^JPDC_NETWORK_EXPOSURE,' "controlled/$condition/run.log" > "controlled/$condition/mission_network.csv"
+            if [ "$condition" = baseline ]; then
+              python3 jpdc/controlled_mask_exposure_audit.py choose --baseline-exposure controlled/baseline/mission_network.csv --seed-index ${{ matrix.seed }} --out-dir controlled
+            fi
+          done
+          python3 jpdc/controlled_mask_exposure_audit.py verify --selected controlled/pre_node_counts.json --seed-index ${{ matrix.seed }} --out-dir controlled --output controlled/paired_results.json
+      - name: Upload all conditions even after a failed validation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-controlled-s3-seed-${{ matrix.seed }}
+          path: controlled/
+          if-no-files-found: warn
