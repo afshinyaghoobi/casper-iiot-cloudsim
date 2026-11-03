@@ -40,11 +40,11 @@ jobs:
           seed=str(4202202600+${{ matrix.seed }})
           m=list(csv.reader(open('exposure/mask.csv')))
           e=list(csv.reader(open('exposure/mission_network.csv')))
-          assert len(m)==24,(len(m),m[:2])
+          assert len(m)==21,(len(m),m[:2])
           affected=set()
           for r in m:
               assert len(r)==6 and r[0]=='JPDC_SHOCK_MASK' and r[1]==seed and r[2]=='S3_HIDDEN_NETWORK_50LOSS' and r[3]=='CASPER_FULL'
-              assert int(r[4]) in range(24) and r[5] in ('true','false')
+              assert int(r[4]) in range(21) and r[5] in ('true','false')
               if r[5]=='true':affected.add(int(r[4]))
           assert len(affected)==6,affected
           assert len(e)>1000
