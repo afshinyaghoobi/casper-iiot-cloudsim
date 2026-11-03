@@ -1,0 +1,48 @@
+name: JPDC S3 phase certificate multi-seed trace
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-s3-phase-trace-3seed-once.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  phase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [0,7,18]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Trace and verify each phase
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p phase
+          git rev-parse HEAD > phase/research_sha.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = "34256ca7bff46f911cf20e8b94278fbd09175746"
+          python3 tools/e45_generate.py
+          python3 jpdc/instrument_seed29_task_dispatch.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out phase/results.csv" > phase/run.log 2>&1
+          grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' phase/run.log
+          grep '^JPDC_TASK_DISPATCH,' phase/run.log > phase/dispatch.csv
+          grep '^JPDC_TASK_OUTCOME,' phase/run.log > phase/outcome.csv
+          test "$(wc -l < phase/dispatch.csv)" -eq 60000
+          test "$(wc -l < phase/outcome.csv)" -eq 60000
+          python3 jpdc/audit_phase_mission_trace.py --dispatch phase/dispatch.csv --outcome phase/outcome.csv --official phase/results.csv --seed-index ${{ matrix.seed }} --output phase/phase_metrics.csv
+          cat phase/phase_metrics.csv
+      - name: Upload verified output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-s3-phase-seed-${{ matrix.seed }}
+          path: phase/
+          if-no-files-found: warn
