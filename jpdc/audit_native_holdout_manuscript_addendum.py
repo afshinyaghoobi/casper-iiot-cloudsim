@@ -78,7 +78,7 @@ def main():
                 f"scenario {scenario}/{policy} original descriptive counts and rates")
     for name,rank2 in (("CASPER_FULL",39),("CASPER_HEALTH_STATIC",9),
                        ("CASPER_ADAPT_NO_HEALTH",63),("RANKED_CP_STATIC",10)):
-        require(f"{name} on **{rank2}" in d or f"{name} selected rank 2 on **{rank2}" in d,
+        require(f"{name} selected rank 2 on **{rank2}" in d or f"{name} on **{rank2}" in d,
                 f"original {name} rank2 count present")
     require("rank 3 was never selected" in d.lower(),
             "no imaginary real rank3 activation")
