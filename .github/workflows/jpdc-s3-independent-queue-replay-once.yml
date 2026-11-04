@@ -17,9 +17,16 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
-      - name: Synthetic independent queue contract
+      - name: Synthetic independent queue contract and complete criticality gate
         run: |
+          set -euo pipefail
           python3 -m py_compile jpdc/replay_s3_queues_independent.py jpdc/test_replay_s3_queues_independent.py
+          python3 - <<'PY'
+          from pathlib import Path
+          code = Path('jpdc/replay_s3_queues_independent.py').read_text()
+          assert '("MISSION","NORMAL","HIGH")' in code, 'HIGH_QUEUE_TRACE_SUPPORT_MISSING'
+          print('JPDC_ALL_THREE_CRITICALITY_CLASSES_PASS')
+          PY
           python3 jpdc/test_replay_s3_queues_independent.py
       - name: Paired CloudSim smoke and independent FCFS queue replay
         shell: bash
