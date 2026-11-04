@@ -86,7 +86,7 @@ with tempfile.TemporaryDirectory() as dirname:
     change_line(250, 16, "true")
     expect_reject(bad, results, "incorrect false-certificate flag")
     bad.write_text("\n".join(original[:-1]) + "\n", encoding="utf-8")
-    expect_reject(bad, results, "mission count mismatch")
+    expect_reject(bad, results, "cross-policy mission task ID mismatch")
     change_line(0, 1, "4202202641")
     expect_reject(bad, results, "seed identity mismatch")
     change_line(0, 13, "invalid")
