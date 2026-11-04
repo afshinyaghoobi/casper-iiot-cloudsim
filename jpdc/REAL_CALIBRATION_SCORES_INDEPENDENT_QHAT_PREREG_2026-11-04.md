@@ -1,0 +1,13 @@
+# JPDC independent real calibration score/health-threshold parity — prereg 2026-11-04
+
+## Fixed experiment and provenance
+This is an independent **statistical aggregation** check on the real original CloudSim calibration finish events, not independent simulation of their physical latencies. Frozen original E42 source Git blob 34256ca7bff46f911cf20e8b94278fbd09175746 and E4.6 untouched. Scientific seed index40 (4202202640), 80,000 calibration tasks, 30,000 deployment tasks and S3_HIDDEN_NETWORK_50LOSS with fixed six HIGH affected mask [9,12,14,15,17,18]. Pair observational generated-E45 calibration logger against original uninstrumented run; all eight official policy CSV scientific fields must be identical except non-scientific mapper timing.
+
+The logger is added to generated E45 ONLY, at the exact frozen original callback append points, to record every **post-burnin** (task index>=10000) observed service/nominal service ratio along with task/node/tier and every MISSION nonconformity score with task index, allocated rank and node. After calibration, emit **unrounded original Java** rank-specific q, qGlobal, tier health thresholds, rank-N and tier-N counts, before any deployment. No helper changes to event generation, rank allocation, acceptance or simulation internals.
+
+Independent Python reconstructs:
+- Every expected post-burnin calibration task index using independently generated 80k calibration workload and independent rank schedule. There must be exactly 70,000 unique recorded service ratios corresponding to indices 10000..79999 and exactly as many recorded MISSION scores as independently generated MISSION tasks, with task rank equal independently generated calibration rank. Node tiers = 0 for node0..11, 1 for node12..17, 2 for node18..20.
+- For each rank r=1,2,3, calculate `qhat(scores_r, 0.01*weight_r)` with weights [.60,.30,.10], using independently implemented qhat that passed separate original-method edge-case CI. Global qhat with alpha=.01, and three tier service threshold qhat with alpha=.01.
+- Compare each Java original unrounded quantile against the independent Python result with abs tolerance 1e-10 and exact counts. Check finite/nonnegative scores and positive physical service ratios. Require no missing, duplicate, invalid event or extra calibration summary.
+
+No retuning after measurement. The Python score input is the Java native simulator's residual and actual service time: this is conditional q aggregation parity, not independently generated physical queue/calibration scores or an external performance finding. Registered 10-seed holdout p=.0625 nonsignificant; exploratory factorial p=.125 nonsignificant; original independent strict FCFS physical queue gate FAILED max wait 9.1214ms>5ms, all unchanged.
