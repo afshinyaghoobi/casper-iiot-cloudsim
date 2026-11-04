@@ -25,6 +25,7 @@ jobs:
           git rev-parse HEAD > generator/source_commit.txt
           test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
           test -f jpdc/INDEPENDENT_WORKLOAD_GENERATOR_PARITY_PREREG_2026-11-04.md
+          test -f jpdc/INDEPENDENT_NOMINAL_PREDICTION_PARITY_PREREG_2026-11-04.md
           python3 -m py_compile jpdc/independent_workload_generator.py jpdc/audit_independent_workload_generation.py
           mvn -B -ntp -DskipTests compile
           mkdir -p target/jpdc-workload-classes
