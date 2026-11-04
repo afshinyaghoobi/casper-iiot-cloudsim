@@ -1,0 +1,20 @@
+name: JPDC observed-outcome validator regression
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - 'jpdc/audit_observed_outcome_sidecar.py'
+      - 'jpdc/test_observed_outcome_sidecar_contract.py'
+      - '.github/workflows/jpdc-observed-outcome-validator-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and run pure-Python synthetic trace tests
+        run: |
+          python3 -m py_compile jpdc/audit_observed_outcome_sidecar.py jpdc/test_observed_outcome_sidecar_contract.py
+          python3 jpdc/test_observed_outcome_sidecar_contract.py
