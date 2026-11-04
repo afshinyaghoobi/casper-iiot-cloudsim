@@ -50,6 +50,7 @@ jobs:
                   assert control[p][k]==observed[p][k],(p,k,control[p][k],observed[p][k])
           print('JPDC_FORENSIC_NONINTERFERENCE_PASS')
           PY
+          python3 -m py_compile jpdc/audit_node14_event_order_forensic.py
           python3 jpdc/audit_node14_event_order_forensic.py --log forensic/forensic.log --out forensic/event_audit.json | tee forensic/event_audit.log
       - name: Retain data even on failure
         if: always()
