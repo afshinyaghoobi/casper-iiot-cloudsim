@@ -29,7 +29,8 @@ jobs:
           mvn -B -ntp -DskipTests compile
           mkdir -p target/jpdc-workload-classes
           javac -cp target/classes -d target/jpdc-workload-classes jpdc/java_tests/OriginalWorkloadReferenceHarness.java
-          java -cp target/classes:target/jpdc-workload-classes OriginalWorkloadReferenceHarness > generator/original_java_reference.csv
+          mvn -B -ntp dependency:build-classpath -Dmdep.outputFile=generator/dependency-classpath.txt
+          java -cp "target/classes:target/jpdc-workload-classes:$(cat generator/dependency-classpath.txt)" OriginalWorkloadReferenceHarness > generator/original_java_reference.csv
           python3 jpdc/audit_independent_workload_generation.py --original-java generator/original_java_reference.csv | tee generator/independent_generator_stdout.log
           PYTHONPATH=jpdc python3 - <<'PY'
           from pathlib import Path
