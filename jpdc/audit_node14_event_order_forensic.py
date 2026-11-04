@@ -32,7 +32,7 @@ def audit(path):
                 t=int(tid)
                 if t in finished[policy]:raise ValueError("duplicate finish")
                 finished[policy][t]={"seed":seed,"node":int(node),"arrival_ms":float(arrival),
-                                     "exec_start_ms":float(start),"callback_clock_ms":float(end),
+                                     "derived_start_ms":float(start),"callback_clock_ms":float(end),
                                      "observed_wait_ms":float(wait),"service_ms":float(service),
                                      "actual_latency_ms":float(actual),"cloudlet_id":int(cl_id)}
     if set(arrivals)!=IDS or any(len(arrivals[i])!=8 for i in IDS):
@@ -53,7 +53,7 @@ def audit(path):
         details[p]={
             "planned_task_order":sorted(IDS,key=lambda t:(mapped[p][t]["arrival_ms"],t)),
             "mapper_event_order":order("mapper_clock_ms",mapped),
-            "exec_start_order":order("exec_start_ms",finished),
+            "derived_start_order":order("derived_start_ms",finished),
             "actual_wait_recorded":{str(t):finished[p][t]["observed_wait_ms"] for t in sorted(IDS)},
             "tasks":{str(t):{"mapper":mapped[p][t],"finish":finished[p][t]} for t in sorted(IDS)}}
     return {"origin":"actual logged event stages; diagnostic only", "arrival_events_by_task":dict(arrivals),
