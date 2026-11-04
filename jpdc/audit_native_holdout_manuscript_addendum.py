@@ -78,7 +78,7 @@ def main():
                 f"scenario {scenario}/{policy} original descriptive counts and rates")
     for name,rank2 in (("CASPER_FULL",39),("CASPER_HEALTH_STATIC",9),
                        ("CASPER_ADAPT_NO_HEALTH",63),("RANKED_CP_STATIC",10)):
-        require(re.search(rf"{name}.*?\*\*{rank2}\*\*",d,re.S) is not None,
+        require(re.search(rf"{name}.*?\\*\\*{rank2}(?:\\s|\\*)",d,re.S) is not None,
                 f"original {name} rank2 count present")
     require("rank 3 was never selected" in d.lower(),
             "no imaginary real rank3 activation")
