@@ -79,6 +79,18 @@ def audit(log_file, results_file, tasks):
     seed_expected = {r["seed"] for r in official.values()}
     if len(seed_expected) != 1 or any(row["seed"] not in seed_expected for policy_rows in traced.values() for row in policy_rows.values()):
         raise ValueError("seed identity mismatch")
+    # Both policies must evaluate the SAME generated MISSION task cohort.
+    # Counts alone cannot detect one missing task replaced with a different one.
+    task_sets = {policy: set(traced[policy]) for policy in POLICIES}
+    if task_sets[POLICIES[0]] != task_sets[POLICIES[1]]:
+        missing_full = sorted(task_sets[POLICIES[1]] - task_sets[POLICIES[0]])[:5]
+        missing_static = sorted(task_sets[POLICIES[0]] - task_sets[POLICIES[1]])[:5]
+        raise ValueError(f"cross-policy mission task ID mismatch: full missing={missing_full}; static missing={missing_static}")
+    for task in task_sets[POLICIES[0]]:
+        if not close(traced[POLICIES[0]][task]["deadline_ms"],
+                     traced[POLICIES[1]][task]["deadline_ms"], 1e-9):
+            raise ValueError(f"cross-policy deadline mismatch task {task}")
+
     for policy in POLICIES:
         rr = official[policy]
         all_rows = traced[policy]
