@@ -9,7 +9,7 @@ S="4202202640"
 CASE=[
   (0,"NORMAL",0,0,10,0,2,12,100),
   (1,"MISSION",2,0,5,8,3,16,14),
-  (2,"NORMAL",3,1,4,0,1,5,100),
+  (2,"HIGH",3,1,4,0,1,5,100),
   (3,"MISSION",10,0,2,5,1,8,7),
 ]
 def record(policy,row):
@@ -35,7 +35,7 @@ with tempfile.TemporaryDirectory() as td:
         data=result["policies"][policy]
         assert data["tasks"]==4 and data["wait_mae_ms"]==0
         assert data["latency_mae_ms"]==0 and data["wait_abs_error_gt_1ms"]==0
-    print("PASS deterministic FCFS queue replay: two policies, four tasks each")
+    print("PASS deterministic FCFS queue replay: two policies, four tasks each including HIGH")
     # Dropping NORMAL work would create false "zero wait" for later MISSION.
     omit=[r for r in rows if not (r[3]==P[0] and r[4]==0)]
     emit(p,omit);rejects(p,"full task population")
