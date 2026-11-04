@@ -25,7 +25,7 @@ def load(path,tasks):
             r=dict(zip(COLUMNS,fields))
             if r["scenario"]!=SCENARIO or r["policy"] not in POLICIES:
                 raise ValueError("queue trace identity")
-            if r["crit"] not in ("MISSION","NORMAL"):
+            if r["crit"] not in ("MISSION","NORMAL","HIGH"):
                 raise ValueError("unexpected criticality")
             r["task"]=int(r["task"]);r["node"]=int(r["node"])
             if r["task"]<0 or r["task"]>=tasks or not 0<=r["node"]<21:
