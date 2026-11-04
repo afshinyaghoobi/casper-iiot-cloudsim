@@ -1,0 +1,13 @@
+# JPDC CASPER policy-decision independent parity — preregistration (2026-11-04)
+
+This is a **distinct decision-logic parity experiment**, not a test of queue fidelity, full-system independence, or generalization. The original independent strict FCFS queue mechanical gate remains **FAILED** (run 41773297282, 9.12140093295ms maximum error > preregistered 5ms). E42 original blob `34256ca7bff46f911cf20e8b94278fbd09175746` and E4.6 stay untouched.
+
+## Design fixed before execution
+- Generated E45, S3_HIDDEN_NETWORK_50LOSS, seed 40, HIGH mask [9,12,14,15,17,18], calibration n=80000, deployment n=30000. Two real CloudSim runs: uninstrumented control, and identical science with read-only policy-decision logger.
+- Exact scientific 8-policy CSV parity required, except non-scientific mapper wall-clock timing.
+- Logger at the completed mapper decision (before service/scheduling), **MISSION only**, `CASPER_FULL` and `CASPER_HEALTH_STATIC` only. Captures actual policy-selected node, chosen rank, certified flag, exact Java double predictions for all 21 nodes, alarm/exclusion flags, node-specific sigma multipliers, calibration rank q values, dispatch eta and deadline. This is an observational snapshot of **inputs**, not a replay of the original Java decision.
+- Separate Python-stdlib implementation sorts eligible nodes by (predicted latency, node ID) to select top3; computes `sigma=(3+0.1*pred)*multiplier`, `upper=pred+eta*qRank[rank]*sigma`, takes first deadline-feasible upper; if none, picks rank1 but **does not issue a certificate**. For empty eligible family, falls back to globally smallest predicted node with health mask ignored, uncertified. Compare all 21-input snapshots and *every* MISSION decision to actual Java node/rank/cert status; missing task/duplicate/malformed/nonfinite floats, invalid bound/alarm, or mismatches FAIL. Require same MISSION task cohort between FULL and HEALTH_STATIC but do not require matching node selections.
+- Acceptance: **zero mismatches** in all target MISSION task decisions and exact 8-policy scientific CSV parity. No posthoc exception or relaxation after results.
+- If Python parity fails, report genuine algorithm-interface or numerical/tie handling discrepancy, not independent CASPER performance. Passing demonstrates cross-language **decision semantics conditional on the same model-state inputs** only; does not independently reconstruct calibrated q, E1.7 state, health alarms or stochastic workload, and does not show a new improvement in deadline misses.
+
+Preserve raw logs, generated official CSVs, exact SHA, audit output and evidence on failure. Original primary registered disjoint holdout p=.0625 (nonsignificant) and exploratory factorial p=.125 remain unchanged.
