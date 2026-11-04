@@ -30,7 +30,7 @@ jobs:
           javac -cp target/classes -d target/jpdc-state-classes jpdc/java_tests/CASPERStateReferenceHarness.java
           java -cp target/classes:target/jpdc-state-classes CASPERStateReferenceHarness > independent-state/java_reference.log
           python3 jpdc/test_independent_casper_state_parity.py --java-output independent-state/java_reference.log | tee independent-state/independent_python_audit.log
-          python3 - <<'PY'
+          PYTHONPATH=jpdc python3 - <<'PY'
           import tempfile
           from pathlib import Path
           from jpdc.test_independent_casper_state_parity import validate
