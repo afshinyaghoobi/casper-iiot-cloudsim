@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Confirm original frozen source and audit novelty against outcomes
+      - name: Check frozen science and whitespace-normalized novelty evidence
         shell: bash
         run: |
           set -euo pipefail
