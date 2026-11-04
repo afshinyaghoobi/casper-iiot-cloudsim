@@ -28,6 +28,19 @@ tie=simulate([task(0,1000),task(1,1000+duration,10)],
 assert abs(tie[1]['wait_ms'])<1e-9
 print('PASS completion precedes arrival at equal clock')
 
+# Two physically independent nodes must execute jobs at overlapping times.
+parallel_nodes=list(node_specs)
+for j in range(12):
+    row=list(parallel_nodes[j])
+    row[1]=1.0
+    row[3]=1.0 if j==0 else 5.0 if j==1 else 100000.0
+    parallel_nodes[j]=tuple(row)
+parallel=simulate([task(0,1000,100),task(1,1000.01,100)],
+                  parallel_nodes,'EDGE_FIRST',True)['trace']
+assert [x['node'] for x in parallel]==[0,1]
+assert parallel[1]['start_ms']<parallel[0]['finish_ms']
+print('PASS physical parallelism across distinct node servers')
+
 for policy,allowed in [('CLOUD_ONLY',range(18,21)),
                        ('EDGE_FIRST',range(12)),('PRED_GREEDY',range(21))]:
     result=run(50,'S0_STATIONARY',policy,250,True)
