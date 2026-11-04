@@ -23,6 +23,9 @@ jobs:
           python3 -m py_compile jpdc/independent_physical_event_engine.py jpdc/test_independent_physical_event_engine.py jpdc/run_independent_engine_stage1.py
           python3 jpdc/test_independent_physical_event_engine.py | tee independent-engine/tests.log
           python3 jpdc/run_independent_engine_stage1.py --out independent-engine/matrix.json | tee independent-engine/matrix.log
+          python3 jpdc/run_independent_engine_stage1.py --out independent-engine/matrix_rerun.json > independent-engine/matrix_rerun.log
+          cmp independent-engine/matrix.json independent-engine/matrix_rerun.json
+          echo JPDC_INDEPENDENT_ENGINE_FULL_MATRIX_BYTE_REPRODUCIBLE_PASS
           python3 - <<'PY'
           import json
           d=json.load(open('independent-engine/matrix.json'))
