@@ -5,8 +5,8 @@ from collections import defaultdict
 from pathlib import Path
 IDS=set(range(10898,10903))
 POLICIES=("CASPER_FULL","CASPER_HEALTH_STATIC")
-LABELS={"JPDC_FORENSIC_ARRIVAL":4,"JPDC_FORENSIC_MAPPER":9,
-        "JPDC_FORENSIC_FINISH":12}
+LABELS={"JPDC_FORENSIC_ARRIVAL":4,"JPDC_FORENSIC_MAPPER":10,
+        "JPDC_FORENSIC_FINISH":13}
 
 def audit(path):
     arrivals=defaultdict(list)
