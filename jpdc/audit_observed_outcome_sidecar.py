@@ -76,6 +76,9 @@ def audit(log_file, results_file, tasks):
     official = {r["policy"]: r for r in official_rows if r.get("policy") in POLICIES}
     if len(official) != 2:
         raise ValueError("missing required official policies")
+    seed_expected = {r["seed"] for r in official.values()}
+    if len(seed_expected) != 1 or any(row["seed"] not in seed_expected for policy_rows in traced.values() for row in policy_rows.values()):
+        raise ValueError("seed identity mismatch")
     for policy in POLICIES:
         rr = official[policy]
         all_rows = traced[policy]
