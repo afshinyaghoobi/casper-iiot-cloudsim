@@ -1,0 +1,75 @@
+name: JPDC S3 independent queue replay once
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-s3-independent-queue-replay-once.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Synthetic independent queue contract
+        run: |
+          python3 -m py_compile jpdc/replay_s3_queues_independent.py jpdc/test_replay_s3_queues_independent.py
+          python3 jpdc/test_replay_s3_queues_independent.py
+      - name: Paired CloudSim smoke and independent FCFS queue replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p replay
+          git rev-parse HEAD > replay/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/S3_INDEPENDENT_QUEUE_REPLAY_PREREG_2026-11-03.md
+          for mode in control instrumented; do
+            python3 tools/e45_generate.py
+            python3 jpdc/patch_s3_mask_generated_e45.py --nodes 9,12,14,15,17,18
+            if [ "$mode" = instrumented ]; then
+              python3 jpdc/instrument_observed_outcome_generated_e45.py
+              python3 jpdc/instrument_queue_replay_generated_e45.py
+            fi
+            mvn -B -ntp -DskipTests compile
+            mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 40 --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out replay/$mode.csv" > "replay/$mode.log" 2>&1
+            grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' "replay/$mode.log"
+          done
+          python3 - <<'PY'
+          import csv
+          def read(path):
+              with open(path,newline='') as f: r=list(csv.DictReader(f))
+              assert len(r)==8 and len({x['policy'] for x in r})==8
+              return {x['policy']:x for x in r}
+          before=read('replay/control.csv');after=read('replay/instrumented.csv')
+          assert before.keys()==after.keys()
+          for policy in before:
+              for field in before[policy]:
+                  if field=='mean_mapper_us':continue
+                  assert before[policy][field]==after[policy][field],(policy,field,before[policy][field],after[policy][field])
+          print('JPDC_QUEUE_SIDECAR_NONINTERFERENCE_PASS')
+          PY
+          python3 jpdc/audit_observed_outcome_sidecar.py --log replay/instrumented.log --results replay/instrumented.csv --tasks 30000 | tee replay/outcome_audit.log
+          python3 jpdc/replay_s3_queues_independent.py --log replay/instrumented.log --out replay/independent_queue_replay.json --tasks 30000 | tee replay/queue_replay.log
+          python3 - <<'PY'
+          import json
+          p='replay/independent_queue_replay.json'
+          s=json.load(open(p))
+          for policy,x in s['policies'].items():
+              assert x['wait_mae_ms']<=1,(policy,'MAE',x)
+              assert x['wait_max_absolute_error_ms']<=5,(policy,'MAX',x)
+              assert x['mission_post_actual_miss_count']==x['mission_post_queue_replay_miss_count'],(policy,'MISS',x)
+          print('JPDC_INDEPENDENT_QUEUE_MECHANICS_ACCEPTANCE_PASS')
+          PY
+      - name: Preserve scientific evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-s3-independent-queue-seed40-high
+          path: replay/
+          if-no-files-found: warn
