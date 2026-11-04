@@ -1,0 +1,52 @@
+name: JPDC independent state machine Python Java parity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-independent-state-machine-parity.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  state-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Compile frozen original source and independent reference harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p independent-state
+          git rev-parse HEAD > independent-state/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 -m py_compile jpdc/independent_casper_state.py jpdc/test_independent_casper_state_parity.py
+          mvn -B -ntp -DskipTests compile
+          mkdir -p target/jpdc-state-classes
+          javac -cp target/classes -d target/jpdc-state-classes jpdc/java_tests/CASPERStateReferenceHarness.java
+          java -cp target/classes:target/jpdc-state-classes CASPERStateReferenceHarness > independent-state/java_reference.log
+          python3 jpdc/test_independent_casper_state_parity.py --java-output independent-state/java_reference.log | tee independent-state/independent_python_audit.log
+          python3 - <<'PY'
+          import tempfile
+          from pathlib import Path
+          from jpdc.test_independent_casper_state_parity import validate
+          original=Path('independent-state/java_reference.log').read_text()
+          altered=original.replace('STATE_E17,0,','STATE_E17,0,999,',1)
+          assert altered!=original
+          with tempfile.TemporaryDirectory() as d:
+              path=Path(d)/'corrupt.log';path.write_text(altered)
+              try:validate(path)
+              except ValueError:print('JPDC_INDEPENDENT_STATE_CORRUPTION_REJECTED_PASS')
+              else:raise AssertionError('corrupted Java state stream was accepted')
+          PY
+      - name: Preserve reference output and audit, even if failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-independent-casper-state-parity
+          path: independent-state/
+          if-no-files-found: warn
