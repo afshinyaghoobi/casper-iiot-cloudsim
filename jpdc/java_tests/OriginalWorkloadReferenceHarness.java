@@ -42,6 +42,26 @@ public final class OriginalWorkloadReferenceHarness {
                     (double)accessor(t,"arrivalMs"));
             }
         }
+
+        // Original frozen nominal formula, invoked without replacing the science.
+        Class<?> taskClass=Class.forName("org.casperiiot.e42.E42Campaign$Task");
+        Class<?> nodeClass=Class.forName("org.casperiiot.e42.E42Campaign$NodeParams");
+        Method network=owner.getDeclaredMethod("nominalNetworkMs",taskClass,nodeClass);
+        Method service=owner.getDeclaredMethod("nominalServiceMs",taskClass,nodeClass);
+        network.setAccessible(true);
+        service.setAccessible(true);
+        for(String scenarioName:scenarios){
+            Object scenarioArg=Enum.valueOf((Class<? extends Enum>)scenario,scenarioName);
+            List<?> firstHundred=(List<?>)makeTasks.invoke(null,seed ^ 0xD3F10A77L,100,scenarioArg);
+            for(int i=0;i<firstHundred.size();i++){
+                for(int j=0;j<nodes.length;j++){
+                    double n=(double)network.invoke(null,firstHundred.get(i),nodes[j]);
+                    double sv=(double)service.invoke(null,firstHundred.get(i),nodes[j]);
+                    System.out.printf(Locale.US,"JPDC_PRED,%s,%d,%d,%.17g,%.17g,%.17g%n",
+                        scenarioName,i,j,n,sv,n+sv);
+                }
+            }
+        }
         System.out.println("JPDC_WORKLOAD_REFERENCE_COMPLETE");
     }
 }
