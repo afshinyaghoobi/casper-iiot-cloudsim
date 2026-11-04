@@ -1,0 +1,21 @@
+name: JPDC manuscript numeric audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - 'jpdc/audit_integrated_manuscript_numbers.py'
+      - 'jpdc/JPDC_INTEGRATED_RESULTS_DISCUSSION_2026-11-03.md'
+      - 'jpdc/S3_MASK_ETA_FACTORIAL_4SEED_RESULTS_2026-11-03.md'
+      - 'jpdc/S3_CONTROLLED_MASK_4SEED_RESULTS_2026-11-03.md'
+      - 'jpdc/NEW_CHAT_CONTINUITY_2026-11-02.md'
+      - '.github/workflows/jpdc-manuscript-numeric-audit.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run fail-closed manuscript arithmetic/transcription audit
+        run: python3 jpdc/audit_integrated_manuscript_numbers.py
