@@ -1,0 +1,48 @@
+name: JPDC native Python 80k physical calibration Stage3
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-independent-physical-calibration-stage3.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate all native calibration scores from independently computed physical finish events
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage3
+          git rev-parse HEAD > stage3/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/INDEPENDENT_PHYSICAL_CALIBRATION_STAGE3_PREREG_2026-11-04.md
+          python3 -m py_compile jpdc/independent_workload_generator.py jpdc/independent_stochastic_physics.py jpdc/independent_casper_state.py jpdc/independent_physical_calibration_stage3.py jpdc/test_independent_calibration_stage3.py jpdc/run_independent_calibration_stage3.py
+          python3 jpdc/test_independent_calibration_stage3.py | tee stage3/unit.log
+          python3 jpdc/run_independent_calibration_stage3.py --out stage3/calibration.json | tee stage3/matrix_stdout.log
+          python3 jpdc/run_independent_calibration_stage3.py --out stage3/calibration_repeat.json > stage3/matrix_repeat_stdout.log
+          cmp stage3/calibration.json stage3/calibration_repeat.json
+          echo JPDC_NATIVE_STAGE3_FULL_CALIBRATION_BYTE_REPRODUCIBLE_PASS
+          python3 - <<'PY'
+          import json,math
+          r=json.load(open('stage3/calibration.json'))
+          assert len(r['results'])==2
+          for row in r['results']:
+              assert row['calibration_tasks']==80000
+              assert row['postburnin_service_ratio_count']==70000
+              assert sum(row['rank_counts'])==row['mission_score_count']
+              assert sum(row['tier_counts'])==70000
+              assert all(math.isfinite(x) and x>0 for x in [
+                  *row['q_rank'],row['q_global'],*row['tier_thresholds']])
+              assert row['source']=='native_Python_completion_latency_and_service_not_Java'
+          print('JPDC_NATIVE_STAGE3_INDEPENDENT_CALIBRATION_QUANTILE_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-independent-physical-calibration-stage3
+          path: stage3/
+          if-no-files-found: warn
