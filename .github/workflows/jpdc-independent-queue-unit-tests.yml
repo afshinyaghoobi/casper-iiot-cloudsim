@@ -1,0 +1,22 @@
+name: JPDC independent queue replay unit tests
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - 'jpdc/replay_s3_queues_independent.py'
+      - 'jpdc/test_replay_s3_queues_independent.py'
+      - '.github/workflows/jpdc-independent-queue-unit-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify every task criticality and independent queue regression
+        run: |
+          set -euo pipefail
+          python3 -m py_compile jpdc/replay_s3_queues_independent.py jpdc/test_replay_s3_queues_independent.py
+          python3 jpdc/test_replay_s3_queues_independent.py
