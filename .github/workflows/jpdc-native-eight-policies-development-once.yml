@@ -1,0 +1,43 @@
+name: JPDC native all eight original policies development check
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-native-eight-policies-development-once.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  eight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify all eight frozen original policy modes on native strict FCFS engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p native-eight
+          git rev-parse HEAD > native-eight/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/NATIVE_ALL_EIGHT_POLICIES_DEVELOPMENT_PREREG_2026-11-04.md
+          python3 -m py_compile jpdc/independent_casper_deployment_stage4.py jpdc/test_native_eight_policy_semantics.py jpdc/run_native_all_eight_policies_development.py
+          python3 jpdc/test_native_eight_policy_semantics.py | tee native-eight/unit.log
+          python3 jpdc/test_independent_casper_stage4.py | tee native-eight/previous_stage4_unit.log
+          python3 jpdc/run_native_all_eight_policies_development.py --out native-eight/matrix.json | tee native-eight/matrix_stdout.log
+          python3 jpdc/run_native_all_eight_policies_development.py --out native-eight/matrix_repeat.json > native-eight/matrix_repeat_stdout.log
+          cmp native-eight/matrix.json native-eight/matrix_repeat.json
+          echo JPDC_NATIVE_ALL_EIGHT_FULL_MATRIX_BYTE_REPRODUCIBLE_PASS
+          python3 - <<'PY'
+          import json
+          x=json.load(open('native-eight/matrix.json'))
+          assert x['status']=='PASS' and len(x['policies'])==8
+          assert len(x['rows'])==16 and x['total_task_policy_observations']==192000
+          assert all(r['deployment_tasks']==12000 for r in x['rows'])
+          print('JPDC_NATIVE_ALL_EIGHT_EVIDENCE_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-eight-native-policies-development
+          path: native-eight/
+          if-no-files-found: warn
