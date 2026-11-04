@@ -1,0 +1,38 @@
+name: JPDC archive first novel network-risk pilot numerical claim audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-new-network-risk-artifact-audit.yml']
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  original-pilot-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve immutable original seed80 pilot artifact without simulations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p original-pilot
+          gh run download 41928440771 -n jpdc-new-network-risk-physical-development-pilot -D original-pilot/
+          test -s original-pilot/pilot.json
+      - name: Validate all six physical outcomes and honest mechanistic limits
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > original-pilot/audit_source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/audit_network_risk_original_artifact.py --pilot-json original-pilot/pilot.json | tee original-pilot/claim_audit.log
+          python3 jpdc/audit_full_fgcs_overlap_claims.py > original-pilot/first_article_overlap_audit.log
+          echo JPDC_NEW_NETWORK_PILOT_ORIGINAL_EVIDENCE_QA_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-new-network-original-artifact-report-audit
+          path: original-pilot/
+          if-no-files-found: warn
