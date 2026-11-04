@@ -9,6 +9,7 @@ import heapq
 import math
 from independent_workload_generator import nodes, tasks, predicted_latency
 from independent_casper_state import VirtualQueue
+from independent_stochastic_physics import affected_nodes, physical_durations, SCENARIOS
 
 POLICIES = ('CLOUD_ONLY', 'EDGE_FIRST', 'PRED_GREEDY')
 
@@ -20,10 +21,16 @@ def choose(task, node_specs, vq, now, policy):
     return min(candidates, key=lambda j: (predicted_latency(task, node_specs[j],
                                       vq.predicted_backlog(j, now)), j))
 
-def simulate(task_stream, node_specs, policy, save_trace=False):
+def simulate(task_stream, node_specs, policy, save_trace=False, stochastic_seed=None, scenario=None):
     if len(node_specs)!=21 or [n[0] for n in node_specs]!=list(range(21)):
         raise ValueError('require 21 ordered, unique nodes')
     if policy not in POLICIES: raise ValueError('invalid policy')
+    if (stochastic_seed is None)!=(scenario is None):
+        raise ValueError('stochastic seed and scenario must be specified together')
+    if scenario is not None and scenario not in SCENARIOS:
+        raise ValueError('unrecognized physical scenario')
+    affected=affected_nodes(stochastic_seed,scenario) if scenario is not None else frozenset()
+    postshock_exposed=0
     events = []
     prev = -math.inf
     count = 0
@@ -72,13 +79,19 @@ def simulate(task_stream, node_specs, policy, save_trace=False):
                 telemetry_updates+=1
             node=choose(t,node_specs,vq,timestamp,policy)
             spec=node_specs[node]
-            cpu=t[4]/spec[1]*12.0
-            network=spec[3]+(t[5]+t[6])*8000.0/spec[2]
+            nominal_cpu=t[4]/spec[1]*12.0
+            if scenario is not None:
+                cpu,network=physical_durations(stochastic_seed,t,spec,scenario,affected)
+                if t[1]>=10000 and node in affected:
+                    postshock_exposed+=1
+            else:
+                cpu=nominal_cpu
+                network=spec[3]+(t[5]+t[6])*8000.0/spec[2]
             if not all(math.isfinite(v) and v>0 for v in (cpu,network)):
                 raise ValueError('invalid service/network physics')
             assigned[node].append(task_id)
             next_free[node]=max(next_free[node],timestamp)+cpu
-            vq.on_dispatch(node,timestamp,cpu)
+            vq.on_dispatch(node,timestamp,nominal_cpu)
             item=(t,network,cpu)
             if running[node] is None:
                 if waiting[node]:raise AssertionError('bypassed older waiting task')
@@ -115,11 +128,16 @@ def simulate(task_stream, node_specs, policy, save_trace=False):
          'deadline_misses':late_by_type,'mean_latency_ms':latency_sum/count,
          'mean_wait_ms':wait_sum/count,'telemetry_resets':telemetry_updates,
          'node_dispatch_counts':[len(x) for x in assigned]}
+    if scenario is not None:
+        out.update(stochastic_physics=True,postshock_affected_dispatches=postshock_exposed,
+                   affected_nodes=sorted(affected))
     if save_trace:out['trace']=sorted(trace,key=lambda e:e['task'])
     return out
 
-def run(seed_index,scenario,policy,count=12000,save_trace=False):
+def run(seed_index,scenario,policy,count=12000,save_trace=False,stochastic=False):
     seed=4202202600+seed_index
-    out=simulate(tasks(seed,count,scenario),nodes(seed),policy,save_trace)
+    out=simulate(tasks(seed,count,scenario),nodes(seed),policy,save_trace,
+                 stochastic_seed=seed if stochastic else None,
+                 scenario=scenario if stochastic else None)
     out.update(seed_index=seed_index,scenario=scenario,scientific_seed=seed)
     return out
