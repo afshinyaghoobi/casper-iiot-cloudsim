@@ -13,7 +13,7 @@ import zipfile
 ARTIFACTS = {40: 13272215535, 41: 13271273184,
              42: 13270784276, 43: 13272485400}
 # Fields correspond to the actual documented trace schema.
-COMPARE_COLUMNS = (4, 5, 7, 8, 9, 10)  # task, node, nominal/actual delay, multiplier, latency
+COMPARE_COLUMNS = (4, 5, 7, 8, 9, 10)  # task, node, nominal/actual network delay, multiplier, pred[j] (NOT observed latency)
 
 def trace(z, arm):
     records = csv.reader(io.StringIO(z.read(f'{arm}/mission_network.csv').decode()))
