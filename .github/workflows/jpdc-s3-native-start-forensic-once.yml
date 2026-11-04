@@ -1,0 +1,60 @@
+name: JPDC S3 native Cloudlet start forensic once
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-s3-native-start-forensic-once.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Control and native-start instrumented simulations
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p native
+          git rev-parse HEAD > native/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/S3_NATIVE_START_FORENSIC_PROTOCOL_2026-11-04.md
+          for arm in control native; do
+            python3 tools/e45_generate.py
+            python3 jpdc/patch_s3_mask_generated_e45.py --nodes 9,12,14,15,17,18
+            if [ "$arm" = native ]; then
+              python3 jpdc/instrument_node14_event_order_generated_e45.py
+              python3 jpdc/instrument_native_start_generated_e45.py
+            fi
+            mvn -B -ntp -DskipTests compile
+            mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 40 --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out native/$arm.csv" > "native/$arm.log" 2>&1
+            grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' "native/$arm.log"
+          done
+          python3 - <<'PY'
+          import csv
+          def read(f):
+              with open(f,newline='') as stream:rows=list(csv.DictReader(stream))
+              assert len(rows)==8 and len({r['policy'] for r in rows})==8
+              return {r['policy']:r for r in rows}
+          a=read('native/control.csv');b=read('native/native.csv')
+          assert a.keys()==b.keys()
+          for p in a:
+              for key in a[p]:
+                  if key=='mean_mapper_us':continue
+                  assert a[p][key]==b[p][key],(p,key,a[p][key],b[p][key])
+          print('JPDC_NATIVE_FORENSIC_SCIENTIFIC_PARITY_PASS')
+          PY
+          python3 jpdc/audit_native_start_forensic.py --log native/native.log --out native/native_start_audit.json | tee native/native_start_audit_stdout.log
+      - name: Save exact data even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-s3-native-start-forensic-seed40
+          path: native/
+          if-no-files-found: warn
