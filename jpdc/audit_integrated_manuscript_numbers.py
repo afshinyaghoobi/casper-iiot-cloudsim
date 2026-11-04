@@ -89,7 +89,10 @@ def main() -> None:
     holdout = {}
     for label in ("False certifications", "Abstentions",
                   "Deadline misses", "Issued certificates"):
-        rr = [cells(r) for r in table_rows(draft, label)]
+        # A secondary row begins with "False certifications among issued...".
+        # Match exact first-cell metric names, never broad prefix matches.
+        rr = [row for line in table_rows(draft, label)
+              if (row := cells(line))[0] == label]
         require(len(rr) == 1, "holdout row exists exactly once: " + label)
         holdout[label] = rr[0][1:3]
     for label, a, b in (("False certifications", 7, 40),
