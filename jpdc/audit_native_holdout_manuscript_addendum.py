@@ -37,7 +37,7 @@ def main():
             "original five positive / four negative / one exact tie")
     require("−0.3060, +0.9882" in d and "-0.003060346399035438" in r,
             "source-scaled fixed 10000 seed-bootstrap descriptive interval")
-    require("0.3208 percentage points" in d and re.search(r"\\+\\*{0,2}0\\.3208 percentage points",r) is not None,
+    require("0.3208 percentage points" in d and "+0.3208 percentage points" in r.replace("**",""),
             "positive mean is correctly described only as small descriptive difference")
     require("4,800,000 task-policy executions" in d and "4,800,000 task-policy executions" in r,
             "complete 160×30000 task-policy evaluation cohort")
