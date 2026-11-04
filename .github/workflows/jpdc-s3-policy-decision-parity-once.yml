@@ -1,0 +1,73 @@
+name: JPDC S3 independent CASPER policy decision parity once
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-s3-policy-decision-parity-once.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Synthetic contract checks
+        run: |
+          set -euo pipefail
+          python3 -m py_compile jpdc/replay_casper_mission_decisions.py jpdc/test_replay_casper_mission_decisions.py
+          python3 jpdc/test_replay_casper_mission_decisions.py
+      - name: Compare real Java decisions with independent Python rank and certificate decisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p policy
+          git rev-parse HEAD > policy/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/S3_INDEPENDENT_POLICY_DECISION_PARITY_PROTOCOL_2026-11-04.md
+          for arm in control instrumented; do
+            python3 tools/e45_generate.py
+            python3 jpdc/patch_s3_mask_generated_e45.py --nodes 9,12,14,15,17,18
+            if [ "$arm" = instrumented ]; then
+              python3 jpdc/instrument_policy_decision_generated_e45.py
+            fi
+            mvn -B -ntp -DskipTests compile
+            mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed 40 --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out policy/$arm.csv" > "policy/$arm.log" 2>&1
+            grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' "policy/$arm.log"
+          done
+          python3 - <<'PY'
+          import csv
+          def read(file):
+              with open(file,newline='') as f: rows=list(csv.DictReader(f))
+              assert len(rows)==8 and len({r['policy'] for r in rows})==8
+              return {r['policy']:r for r in rows}
+          a=read('policy/control.csv'); b=read('policy/instrumented.csv')
+          assert a.keys()==b.keys()
+          for p in a:
+              for key in a[p]:
+                  if key=='mean_mapper_us':continue
+                  assert a[p][key]==b[p][key],(p,key,a[p][key],b[p][key])
+          print('JPDC_POLICY_DECISION_SCIENTIFIC_PARITY_PASS')
+          PY
+          python3 jpdc/replay_casper_mission_decisions.py --log policy/instrumented.log --out policy/independent_decision_parity.json --tasks 30000 | tee policy/decision_audit.log
+          python3 - <<'PY'
+          import csv,json
+          s=json.load(open('policy/independent_decision_parity.json'))
+          with open('policy/instrumented.csv',newline='') as f: official={r['policy']:r for r in csv.DictReader(f)}
+          for p,x in s['policies'].items():
+              assert x['mission_decisions']==int(official[p]['mission_n']),(p,x,official[p]['mission_n'])
+              assert x['postshock']==int(official[p]['post_mission_n']),(p,x)
+          print('JPDC_POLICY_DECISION_COMPLETE_MISSION_COHORT_PASS')
+          PY
+      - name: Preserve raw experiment output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-s3-policy-decision-seed40-high
+          path: policy/
+          if-no-files-found: warn
