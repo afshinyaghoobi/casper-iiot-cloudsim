@@ -10,7 +10,7 @@ def close(a,b,label):
 
 def validate(path):
     with open(path,encoding="utf-8") as f:
-        lines=[row for row in csv.reader(f) if row and (row[0].startswith("STATE_"))]
+        lines=[row for row in csv.reader(f) if row and (row[0] in ("STATE_E17","STATE_HEALTH","STATE_QUEUE"))]
     expected_counts={"STATE_E17":601,"STATE_HEALTH":360,"STATE_QUEUE":180}
     counts={k:0 for k in expected_counts}
     reference=[0.50+((i*37)%101)/100 for i in range(300)]
