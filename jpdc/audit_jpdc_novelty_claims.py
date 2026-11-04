@@ -24,7 +24,7 @@ def main():
     require=("NO-GO","CONDITIONAL","CASPER_FULL","PRED_GREEDY","rank2","rank3",
              "strict-FCFS","YAFS","full side-by-side","FGCS")
     for token in require:check(token.lower() in a.lower(),f"novelty gate declares {token}")
-    check("p = 1.000" in a and "p = 1.000" in n,
+    check(re.search(r"p\\s*=\\s*1\\.000",a) is not None and re.search(r"p\\s*=\\s*1\\.000",n) is not None,
           "negative ten-seed independent result unchanged")
     check("p=.0625" in a and "p = .0625" in j,
           "original nonsignificant Java confirmatory result preserved")
