@@ -1,0 +1,12 @@
+# JPDC source-independent calibration-rank schedule and conformal quantile contract (2026-11-04)
+
+Registered BEFORE execution. Frozen original E42 source git blob `34256ca7bff46f911cf20e8b94278fbd09175746` and E4.6 must remain untouched.
+
+## Scope
+Reconstruct the original `calibrationRanks(seed,tasks)` and conformal quantile `qhat(values,alpha)` independently in Python using the original workload generator already verified on 150,000 deployment tasks. Unlike prior decision parity, Python must generate the **80,000 calibration task stream independently** using original calibration seed XOR `0xCA11B4A7`, select MISSION tasks at index >=10000, construct the repeating rank labels 1/2/3, and faithfully reimplement the Java Collections.shuffle Fisher–Yates algorithm and `java.util.Random.nextInt(bound)` rejection behavior with fresh seed XOR `0xA11CE77`. Output rank per mission task index. Java read-only reflection harness invokes the ORIGINAL private `calibrationRanks` and `makeTasks` on exactly the same scientific seed and compares all mission-task labels.
+
+Separately, independent Python `qhat` uses sorted scores and (k=\lceil(n+1)(1-\alpha)\rceil), returns positive infinity if n=0 or k>n, otherwise sorted[k-1]. Java read-only reflection harness calls the original private `qhat` over deterministic original-independent score fixtures for sample sizes [0,1,2,10,99,199,200,997] and alpha levels [0.006,0.003,0.001,0.01,0.10] (40 combinations), including infinite-quantile edge cases. Real scientific rank alpha weights are 0.60,0.30,0.10 times EPS_MISSION=0.01; SERVICE_HEALTH_ALPHA=0.01.
+
+**Acceptance:** 80,000 calibration tasks generated independently with their mission-task cohort exact; 100% original Java rank label parity for each eligible MISSION index; each of 40 quantile calls agrees exactly (including infinities), no missing or duplicate keys, and corrupted-label regression fails closed. Confirm frozen E42 blob SHA before running. Do not alter original seeds or success thresholds after observing results. This establishes independent *rank assignment and quantile function semantics* only, NOT independently generated CloudSim completion residuals, fitted ranked conformal quantiles in the real 80k-calibration simulation, external physical queue fidelity, policy performance or statistical significance.
+
+Original independent FCFS physical queue test 41773297282 remains FAILED (max wait 9.1214ms >5ms); ten-seed registered S2/S3 holdout p=.0625 and earlier exploratory factorial p=.125 both nonsignificant.
