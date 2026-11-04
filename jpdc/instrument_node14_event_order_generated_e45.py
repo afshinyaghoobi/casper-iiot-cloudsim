@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Forensic logger, generated E45 only: task 10898..10902 arrival/mapper/start."""
+"""Forensic logger, generated E45 only: task 10898..10902 arrival/mapper/derived start.
+
+CloudSimPlus 8.5.7 Cloudlet does not expose getExecStartTime() here; 
+finish row derives effective start from arrival + getStartWaitTime().
+This is NOT an independent scheduler start event.
+"""
 from pathlib import Path
 
 campaign=Path("src/main/java/org/casperiiot/e45/E45Campaign.java")
@@ -26,7 +31,7 @@ newfinished=finished+"""
                     System.out.printf(Locale.US,
                         "JPDC_FORENSIC_FINISH,%d,%s,%s,%d,%d,%.12f,%.12f,%.12f,%.12f,%.12f,%.12f,%d%n",
                         seed,scenario,policy,m.task.index(),m.node,
-                        m.task.arrivalMs(),cl.getExecStartTime()*1000.0,
+                        m.task.arrivalMs(),m.task.arrivalMs()+cl.getStartWaitTime()*1000.0,
                         sim.clock()*1000.0,cl.getStartWaitTime()*1000.0,
                         serviceMs,actualLatency,cl.getId());
                 }"""
