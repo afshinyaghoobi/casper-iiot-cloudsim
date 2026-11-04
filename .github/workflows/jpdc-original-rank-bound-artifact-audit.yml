@@ -1,0 +1,51 @@
+name: JPDC original rank bound mechanism artifact audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-original-rank-bound-artifact-audit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download unmodified original S3 decision log and recompute ranked bound dominance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p rank
+          gh run download 41779874971 --repo "${{ github.repository }}" --name jpdc-s3-policy-decision-seed40-high --dir rank
+          test -s rank/instrumented.log
+          python3 -m py_compile jpdc/audit_original_rank_dominance.py
+          python3 jpdc/audit_original_rank_dominance.py --log rank/instrumented.log --out rank/rank_bound_audit.json | tee rank/audit_stdout.log
+          python3 - <<'PY'
+          import json
+          r=json.load(open('rank/rank_bound_audit.json'))
+          expected={'CASPER_FULL':(1298,1.5852998580986224,2.1830101941305102),
+                    'CASPER_HEALTH_STATIC':(1482,1.416747547035115,1.1244049130738603)}
+          for policy,(cert,g2,g3) in expected.items():
+              x=r['policies'][policy]
+              assert x['mission_tasks']==1545
+              assert x['certificates']==cert
+              for k in ('rank2_better_upper_count','rank3_better_upper_count',
+                        'rank2_rescues','rank3_rescues'):
+                  assert x[k]==0,(policy,k,x[k])
+              assert abs(x['rank2_minus_rank1_min_ms']-g2)<1e-9
+              assert abs(x['rank3_minus_rank1_min_ms']-g3)<1e-9
+          print('JPDC_RANK_BOUNDS_ORIGINAL_ARTIFACT_INVARIANTS_PASS')
+          PY
+      - name: Preserve auditable output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-original-rank-bound-audit-seed40
+          path: |
+            rank/rank_bound_audit.json
+            rank/audit_stdout.log
+          if-no-files-found: warn
