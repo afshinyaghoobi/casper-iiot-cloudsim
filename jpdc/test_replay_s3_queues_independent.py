@@ -9,8 +9,8 @@ S="4202202640"
 CASE=[
   (0,"NORMAL",0,0,10,0,2,12,100),
   (1,"MISSION",2,0,5,8,3,16,14),
-  (2,"HIGH",3,1,4,0,1,5,100),
-  (3,"MISSION",10,0,2,5,1,8,7),
+  (2,"HIGH",3,0,4,12,1,17,100),
+  (3,"MISSION",10,0,2,9,1,12,7),
 ]
 def record(policy,row):
     task,crit,arr,node,svc,wait,net,observed,deadline=row
