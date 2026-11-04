@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Check frozen science and whitespace-normalized novelty evidence
+      - name: Confirm literal preregistered inference statements and novelty boundaries
         shell: bash
         run: |
           set -euo pipefail
