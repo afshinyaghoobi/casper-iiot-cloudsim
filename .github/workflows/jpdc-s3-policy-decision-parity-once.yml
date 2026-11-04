@@ -17,7 +17,7 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
-      - name: Synthetic contract checks
+      - name: Synthetic contract checks (rank2 feasibility corrected)
         run: |
           set -euo pipefail
           python3 -m py_compile jpdc/replay_casper_mission_decisions.py jpdc/test_replay_casper_mission_decisions.py
