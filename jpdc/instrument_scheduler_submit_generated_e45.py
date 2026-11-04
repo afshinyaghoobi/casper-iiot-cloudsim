@@ -14,7 +14,7 @@ extension="""    // JPDC diagnostic-only wrapper: preserve the original SpaceSha
     private static final class JPDCForensicQueueScheduler extends CloudletSchedulerSpaceShared {
         private final CloudSimPlus simulation;
         JPDCForensicQueueScheduler(final CloudSimPlus simulation){this.simulation=simulation;}
-        private void snapshot(final String phase, final Cloudlet cloudlet, final double transfer){
+        private void snapshot(final String phase, final org.cloudsimplus.cloudlets.CloudletExecution cloudlet, final double transfer){
             if(cloudlet.getId()<10898 || cloudlet.getId()>10902)return;
             final long[] running=getCloudletExecList().stream().mapToLong(x->x.getId()).toArray();
             final long[] waiting=getCloudletWaitingList().stream().mapToLong(x->x.getId()).toArray();
@@ -25,9 +25,10 @@ extension="""    // JPDC diagnostic-only wrapper: preserve the original SpaceSha
                 Arrays.toString(waiting).replace(",",";"));
         }
         @Override
-        public double cloudletSubmit(final Cloudlet cloudlet, final double fileTransferTime){
+        protected double cloudletSubmitInternal(final org.cloudsimplus.cloudlets.CloudletExecution cloudlet,
+                                                final double fileTransferTime){
             snapshot("BEFORE",cloudlet,fileTransferTime);
-            final double result=super.cloudletSubmit(cloudlet,fileTransferTime);
+            final double result=super.cloudletSubmitInternal(cloudlet,fileTransferTime);
             snapshot("AFTER",cloudlet,fileTransferTime);
             return result;
         }
