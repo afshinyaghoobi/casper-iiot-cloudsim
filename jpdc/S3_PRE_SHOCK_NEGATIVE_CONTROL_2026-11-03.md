@@ -4,7 +4,7 @@
 Using original successful physical S3 GitHub Actions run 41719553340 (artifacts seed40 13272215535, seed41 13271273184, seed42 13270784276, seed43 13272485400), performed a deterministic **within-seed pre-shock placebo / negative-control comparison** of baseline, LOW and HIGH mask assignments. This test was conducted on previously generated original `mission_network.csv` traces, not on the processed four-seed summary.
 
 ## Verification result: PASS
-Across all four seeds, pre-shock MISSION task indices were identical in all three arms and every task matched **exactly as strings**, including task index, selected node, nominal network delay, realized network delay, network multiplier and end-to-end latency. For the two intervention arms compared against baseline:
+Across all four seeds, pre-shock MISSION task indices were identical in all three arms and every task matched **exactly as strings**, including task index, selected node, nominal network delay, realized network delay, network multiplier and predicted latency (pred[j], not observed end-to-end latency). For the two intervention arms compared against baseline:
 
 | Seed | Identical pre-shock mission task IDs | Exact arm-to-baseline task comparisons |
 |---|---:|---:|
@@ -14,7 +14,7 @@ Across all four seeds, pre-shock MISSION task indices were identical in all thre
 | 43 | 505 | 1010 |
 | **Total** | **2009** | **4018** |
 
-No mismatching task, routing node, nominal/realized network delay, multiplier or end-to-end latency was observed pre-shock for CASPER_FULL.
+No mismatching task, routing node, nominal/realized network delay, multiplier or predicted latency (pred[j], not observed end-to-end latency) was observed pre-shock for CASPER_FULL.
 
 Reproducible Python standard-library script `jpdc/pre_shock_negative_control.py` commit `330979bfa129c1a3a3dd4c3b91af0fccaf0de5c6`. Download the four original physical workflow artifacts to the same directory as `github-actions-artifact-<id>.zip`, and run `python3 jpdc/pre_shock_negative_control.py DIRECTORY`. Local run successfully printed all four seed passes and `PASS 2009 ... 4018 ...`.
 
@@ -25,3 +25,6 @@ Do not confuse a negative control with independent assignment of masks, full sta
 
 ## Next
 Execute/check the previously committed compact raw-actions auditor on downloaded original archives and record its own result; pre-register a distinct trace-replay/independent-simulator validation protocol before looking at outcomes. No repeated p-value fishing.
+
+## Trace semantic correction (verified source instrumentation)
+The last value in `mission_network.csv` is printed from `pred[j]` by `jpdc/instrument_s3_network_exposure_generated_e45.py`. It is a **prediction**, NOT an observed end-to-end task latency. Original description of it as observed latency was incorrect, and should not be repeated or used as an external latency validation. The negative control still establishes exact pre-shock equality of chosen routing node, nominal network delay, actual network delay, multiplier, and the pred[j] value. Recorded actual network delay is independently trace-validated. See `jpdc/trace_network_prediction_semantics.py`.
