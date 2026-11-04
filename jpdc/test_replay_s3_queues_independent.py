@@ -40,7 +40,7 @@ with tempfile.TemporaryDirectory() as td:
     omit=[r for r in rows if not (r[3]==P[0] and r[4]==0)]
     emit(p,omit);rejects(p,"full task population")
     mutate=[r.copy() for r in rows]
-    mutate[4][7]=2
+    mutate[4][6]=1
     emit(p,mutate);rejects(p,"task input differs")
     mutate=[r.copy() for r in rows]
     mutate[1][9]=7;mutate[1][11]=15
