@@ -1,0 +1,90 @@
+name: JPDC untouched native 10 seed eight policy confirmatory holdout
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-native-eight-policy-untouched-holdout.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freeze original E42 and verify all original native policy plus statistics contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/NATIVE_EIGHT_POLICY_HOLDOUT_PREREG_2026-11-04.md
+          python3 -m py_compile jpdc/independent_workload_generator.py jpdc/independent_stochastic_physics.py jpdc/independent_casper_state.py jpdc/independent_physical_calibration_stage3.py jpdc/independent_casper_deployment_stage4.py jpdc/run_native_eight_holdout_seed.py jpdc/analyze_native_eight_holdout.py
+          python3 jpdc/test_native_eight_policy_semantics.py
+          python3 jpdc/test_native_eight_holdout_statistics.py
+          echo JPDC_NATIVE_HOLDOUT_FROZEN_SCIENCE_GATE_PASS
+  seed-experiment:
+    needs: [frozen-gate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        seed: [60,61,62,63,64,65,66,67,68,69]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Full independent calibration and eight original policies S2/S3 for fixed seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p seed-results
+          git rev-parse HEAD > seed-results/source_commit_${{ matrix.seed }}.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/run_native_eight_holdout_seed.py --seed ${{ matrix.seed }} --out seed-results/seed${{ matrix.seed }}.json | tee seed-results/seed${{ matrix.seed }}.log
+          if [ "${{ matrix.seed }}" = "60" ]; then
+            python3 jpdc/run_native_eight_holdout_seed.py --seed 60 --out seed-results/seed60_repeat.json > seed-results/seed60_repeat.log
+            cmp seed-results/seed60.json seed-results/seed60_repeat.json
+            echo JPDC_NATIVE_HOLDOUT_SEED60_FULL_BYTE_REPRODUCIBLE_PASS
+            rm seed-results/seed60_repeat.json
+          fi
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-holdout-seed-${{ matrix.seed }}
+          path: seed-results/
+          if-no-files-found: warn
+  preregistered-analysis:
+    needs: [seed-experiment]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all ten complete seed artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: native-holdout-seed-*
+          path: seed-results
+          merge-multiple: true
+      - name: Enforce all 160 arms and exact seed-level two-sided sign test
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p analysis
+          git rev-parse HEAD > analysis/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/analyze_native_eight_holdout.py --seed-files seed-results/seed{60..69}.json --out analysis/primary_and_all_secondary.json | tee analysis/statistical_summary.log
+          python3 - <<'PY'
+          import json
+          x=json.load(open('analysis/primary_and_all_secondary.json'))
+          assert x['status']=='PASS' and x['complete_source_seed_count']==10
+          assert x['complete_arms']==160 and len(x['seed_effects'])==10
+          assert x['exact_two_sided_sign_test']['nonzero']+x['exact_two_sided_sign_test']['ties']==10
+          assert len(x['native_all_eight_secondary'])==160
+          print('JPDC_NATIVE_HOLDOUT_ORIGINAL_PREREGISTERED_PRIMARY_INFERENCE_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-holdout-original-preregistered-analysis
+          path: analysis/
+          if-no-files-found: warn
