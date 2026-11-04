@@ -1,0 +1,44 @@
+name: JPDC independent shocked physical engine Stage2
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-independent-stochastic-engine-stage2.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stochastic-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently simulate physical arrivals, service noise and hidden shocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p independent-stage2
+          git rev-parse HEAD > independent-stage2/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/INDEPENDENT_STOCHASTIC_PHYSICS_STAGE2_PREREG_2026-11-04.md
+          python3 -m py_compile jpdc/independent_stochastic_physics.py jpdc/independent_physical_event_engine.py jpdc/run_independent_stochastic_engine_stage2.py jpdc/test_independent_stochastic_engine_stage2.py
+          python3 jpdc/test_independent_physical_event_engine.py | tee independent-stage2/stage1_regression.log
+          python3 jpdc/test_independent_stochastic_engine_stage2.py | tee independent-stage2/stage2_contract.log
+          python3 jpdc/run_independent_stochastic_engine_stage2.py --out independent-stage2/matrix.json | tee independent-stage2/matrix_stdout.log
+          python3 jpdc/run_independent_stochastic_engine_stage2.py --out independent-stage2/matrix_repeat.json > independent-stage2/matrix_repeat_stdout.log
+          cmp independent-stage2/matrix.json independent-stage2/matrix_repeat.json
+          echo JPDC_STAGE2_FULL_MATRIX_BYTE_REPRODUCIBILITY_PASS
+          python3 - <<'PY'
+          import json
+          d=json.load(open('independent-stage2/matrix.json'))
+          assert d['status']=='PASS' and len(d['rows'])==18
+          assert d['total_task_policy_evaluations']==216000
+          assert sum(x['tasks'] for x in d['rows'])==216000
+          assert all(len(x['affected_nodes'])==6 for x in d['rows'])
+          print('JPDC_STAGE2_STOCHASTIC_PHYSICAL_EVIDENCE_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-independent-stochastic-engine-stage2
+          path: independent-stage2/
+          if-no-files-found: warn
