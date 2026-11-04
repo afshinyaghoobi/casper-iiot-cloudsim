@@ -56,5 +56,15 @@ for old,new in patches:
     s=s.replace(old,new)
 if s.count("JPDC_HV_THRESHOLD")!=1 or s.count("JPDC_HV_PRE")!=1 or s.count("JPDC_HV_POST")!=1:
     raise SystemExit("JPDC_HV_PATCH_FAIL missing logger after replacement")
+# Allow only the independently preregistered S2 compute-shock positive-path
+# diagnostic; default is the already verified S3 real-event protocol.
+import argparse
+args=argparse.ArgumentParser()
+args.add_argument("--scenario",choices=("S3_HIDDEN_NETWORK_50LOSS","S2_HIDDEN_COMPUTE_40LOSS"),default="S3_HIDDEN_NETWORK_50LOSS")
+scenario=args.parse_args().scenario
+guard="policy==Policy.CASPER_FULL && scenario==Scenario.S3_HIDDEN_NETWORK_50LOSS"
+if s.count(guard)!=5:raise SystemExit("JPDC_HV_PATCH_FAIL: unexpected scenario probe count")
+if scenario!="S3_HIDDEN_NETWORK_50LOSS":
+    s=s.replace(guard,"policy==Policy.CASPER_FULL && scenario==Scenario."+scenario)
 p.write_text(s,encoding="utf-8")
-print("JPDC_HV_GENERATED_ONLY_INSTRUMENT_PASS")
+print("JPDC_HV_GENERATED_ONLY_INSTRUMENT_PASS",scenario)
