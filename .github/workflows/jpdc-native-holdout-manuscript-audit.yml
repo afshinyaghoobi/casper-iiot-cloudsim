@@ -1,0 +1,30 @@
+name: JPDC native holdout manuscript addendum numeric and claim audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-native-holdout-manuscript-audit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check frozen original and audit manuscript numbers and claim boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p manuscript-audit
+          git rev-parse HEAD > manuscript-audit/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/audit_native_holdout_manuscript_addendum.py | tee manuscript-audit/audit.log
+          python3 jpdc/audit_integrated_manuscript_numbers.py | tee manuscript-audit/previous_manuscript_audit.log
+          echo JPDC_ALL_MANUSCRIPT_SOURCE_NUMBER_GATES_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-native-holdout-manuscript-audit
+          path: manuscript-audit/
+          if-no-files-found: warn
