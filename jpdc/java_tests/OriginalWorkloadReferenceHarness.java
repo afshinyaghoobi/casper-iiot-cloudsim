@@ -55,10 +55,10 @@ public final class OriginalWorkloadReferenceHarness {
             List<?> firstHundred=(List<?>)makeTasks.invoke(null,seed ^ 0xD3F10A77L,100,scenarioArg);
             for(int i=0;i<firstHundred.size();i++){
                 for(int j=0;j<nodes.length;j++){
-                    double n=(double)network.invoke(null,firstHundred.get(i),nodes[j]);
+                    double netMs=(double)network.invoke(null,firstHundred.get(i),nodes[j]);
                     double sv=(double)service.invoke(null,firstHundred.get(i),nodes[j]);
                     System.out.printf(Locale.US,"JPDC_PRED,%s,%d,%d,%.17g,%.17g,%.17g%n",
-                        scenarioName,i,j,n,sv,n+sv);
+                        scenarioName,i,j,netMs,sv,netMs+sv);
                 }
             }
         }
