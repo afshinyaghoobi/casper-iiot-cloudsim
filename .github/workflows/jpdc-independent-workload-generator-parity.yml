@@ -17,7 +17,7 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
-      - name: Verify frozen original and compare independent full workload generator
+      - name: Verify frozen original and compare independent workload plus latency predictor
         shell: bash
         run: |
           set -euo pipefail
