@@ -1,0 +1,53 @@
+name: JPDC independently generated stochastic physics reference
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-independent-stochastic-physics-parity.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Compare original frozen stochastic physics with clean-room Python
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p physics
+          git rev-parse HEAD > physics/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/INDEPENDENT_STOCHASTIC_PHYSICS_STAGE2_PREREG_2026-11-04.md
+          python3 -m py_compile jpdc/independent_workload_generator.py jpdc/independent_stochastic_physics.py jpdc/audit_independent_stochastic_physics.py
+          mvn -B -ntp -DskipTests compile
+          mkdir -p target/jpdc-physics-classes
+          javac -cp target/classes -d target/jpdc-physics-classes jpdc/java_tests/OriginalStochasticPhysicsReferenceHarness.java
+          mvn -B -ntp dependency:build-classpath -Dmdep.outputFile=physics/dependency-classpath.txt
+          java -cp "target/classes:target/jpdc-physics-classes:$(cat physics/dependency-classpath.txt)" OriginalStochasticPhysicsReferenceHarness > physics/original_reference.csv
+          python3 jpdc/audit_independent_stochastic_physics.py --original physics/original_reference.csv | tee physics/independent_audit.log
+          PYTHONPATH=jpdc python3 - <<'PY'
+          from pathlib import Path
+          import tempfile
+          from audit_independent_stochastic_physics import audit
+          s=Path('physics/original_reference.csv').read_text()
+          changed=s.replace('STOCH_PAIR,','STOCH_PAIR,0,',1)
+          assert changed!=s
+          with tempfile.TemporaryDirectory() as d:
+              path=Path(d)/'corrupted.csv';path.write_text(changed)
+              try:audit(path)
+              except ValueError:print('JPDC_STOCHASTIC_PHYSICS_CORRUPTION_REJECTED_PASS')
+              else:raise AssertionError('corrupt original physical reference accepted')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-independent-stochastic-physics-reference
+          path: physics/
+          if-no-files-found: warn
