@@ -17,7 +17,7 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
-      - name: Independently regenerate 80k original calibration task ranks and conformal qhat
+      - name: Recheck independent 80k calibration rank and quantile with strict end sentinel
         shell: bash
         run: |
           set -euo pipefail
