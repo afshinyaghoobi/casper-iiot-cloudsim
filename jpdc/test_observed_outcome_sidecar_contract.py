@@ -58,8 +58,17 @@ with tempfile.TemporaryDirectory() as dirname:
                 late_dvr=fraction(15), late_fwc=fraction(14),
                 p99_post_latency_ms=60, p99_late_latency_ms=60, late_eta=1
             ))
+    # Real E42 official CSV contains eight policy rows. Complete the
+    # fixture's unrelated policy rows with the same run metadata.
+    others = ("CLOUD_ONLY", "EDGE_FIRST", "PRED_GREEDY", "GLOBAL_CP",
+              "RANKED_CP_STATIC", "CASPER_ADAPT_NO_HEALTH")
+    with results.open("a", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(file, fieldnames=fields)
+        for policy in others:
+            writer.writerow(dict(seed=SEED, scenario=SCENARIO, policy=policy,
+                                 tasks=30000, mission_n=500, post_mission_n=250))
     audit(log, results, 30000)
-    print("PASS valid 1000 mission-outcome events")
+    print("PASS valid 1000 mission-outcome events and eight official policies")
 
     bad = folder / "bad.log"
 
