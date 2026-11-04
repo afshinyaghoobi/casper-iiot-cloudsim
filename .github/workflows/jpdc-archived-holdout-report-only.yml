@@ -1,0 +1,59 @@
+name: JPDC archived holdout reporting only, original run41920321822
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-archived-holdout-report-only.yml']
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  report-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download archived immutable original preregistered analysis (NO rerun)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p archived
+          gh run download 41920321822 -n native-holdout-original-preregistered-analysis -D archived/
+          test -s archived/primary_and_all_secondary.json
+      - name: Present all original seed-level results, uncertainty and branch utilization
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' | tee archived/complete_scientific_summary.log
+          import json,statistics
+          p='archived/primary_and_all_secondary.json'
+          x=json.load(open(p))
+          assert x['status']=='PASS' and x['complete_source_seed_count']==10 and x['complete_arms']==160
+          t=x['exact_two_sided_sign_test']
+          print('ARCHIVED_ORIGINAL_HOLDOUT_PREREGISTERED_SIGN',t)
+          print('ARCHIVED_ORIGINAL_HOLDOUT_MEAN_BENEFIT',x['mean_benefit'])
+          print('ARCHIVED_ORIGINAL_HOLDOUT_MEDIAN_BENEFIT',x['median_benefit'])
+          print('ARCHIVED_ORIGINAL_HOLDOUT_BOOTSTRAP_95_CI',x['bootstrap_95_percentile_mean_benefit'])
+          for e in x['seed_effects']:print('ARCHIVED_ORIGINAL_SEED_BENEFIT',e)
+          for s in x['scenario_pairs']:print('ARCHIVED_ORIGINAL_SCENARIO_PAIR',s)
+          for policy,counts in x['rank_counts_across_all_seeds'].items():
+              print('ARCHIVED_ORIGINAL_RANK_UTILIZATION',policy,counts)
+          for scenario in ('S2_HIDDEN_COMPUTE_40LOSS','S3_HIDDEN_NETWORK_50LOSS'):
+              for policy in ('PRED_GREEDY','CASPER_HEALTH_STATIC','CASPER_FULL'):
+                  rows=[r for r in x['native_all_eight_secondary']
+                        if r['scenario']==scenario and r['policy']==policy]
+                  assert len(rows)==10
+                  print('ARCHIVED_ORIGINAL_DESCRIPTIVE',scenario,policy,
+                        'mean_seed_post_miss_rate',statistics.mean(r['post_deadline_miss_rate'] for r in rows),
+                        'total_mission_misses',sum(r['mission_deadline_misses'] for r in rows),
+                        'mean_cert_rate',statistics.mean(r['post_cert_rate'] for r in rows),
+                        'total_health_alarm_transitions',sum(r['health_alarm_transitions'] for r in rows),
+                        'total_adaptive_eta_gt1_dispatches',sum(r['eta_gt_one_dispatches'] for r in rows))
+          print('JPDC_ARCHIVED_ORIGINAL_HOLDOUT_REPORT_ONLY_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-original-preregistered-holdout-archived-report
+          path: archived/
+          if-no-files-found: warn
