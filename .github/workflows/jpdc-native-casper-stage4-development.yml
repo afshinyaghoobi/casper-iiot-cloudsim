@@ -1,0 +1,47 @@
+name: JPDC independent native CASPER Stage4 known development seeds
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-native-casper-stage4-development.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-casper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run native calibration and physical CASPER policies with strict scientific gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p native-stage4
+          git rev-parse HEAD > native-stage4/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/NATIVE_CASPER_DEPLOYMENT_STAGE4_DEVELOPMENT_PROTOCOL_2026-11-04.md
+          python3 -m py_compile jpdc/independent_workload_generator.py jpdc/independent_stochastic_physics.py jpdc/independent_casper_state.py jpdc/independent_physical_calibration_stage3.py jpdc/independent_casper_deployment_stage4.py jpdc/test_independent_casper_stage4.py jpdc/run_independent_casper_stage4.py
+          python3 jpdc/test_independent_casper_stage4.py | tee native-stage4/unit.log
+          python3 jpdc/run_independent_casper_stage4.py --out native-stage4/matrix.json | tee native-stage4/matrix_stdout.log
+          python3 jpdc/run_independent_casper_stage4.py --out native-stage4/matrix_repeat.json > native-stage4/matrix_repeat_stdout.log
+          cmp native-stage4/matrix.json native-stage4/matrix_repeat.json
+          echo JPDC_NATIVE_STAGE4_FULL_MATRIX_BYTE_REPRODUCIBLE_PASS
+          python3 - <<'PY'
+          import json
+          r=json.load(open('native-stage4/matrix.json'))
+          assert r['status']=='PASS' and len(r['rows'])==12
+          assert r['total_deployment_task_policy_observations']==144000
+          assert len(r['calibration'])==2
+          assert all(x['postburnin_service_ratio_count']==70000 for x in r['calibration'])
+          assert all('reference_scores' not in c for c in r['calibration'])
+          assert all(x['deployment_tasks']==12000 and sum(x['node_dispatch_counts'])==12000 for x in r['rows'])
+          assert all(x['not_cloudsim_queue_equivalent'] is True for x in r['rows'])
+          assert all(x['post_false_cert_rate']<=x['post_cert_rate'] for x in r['rows'])
+          print('JPDC_NATIVE_STAGE4_FULL_POLICY_EVIDENCE_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-independent-native-casper-stage4
+          path: native-stage4/
+          if-no-files-found: warn
