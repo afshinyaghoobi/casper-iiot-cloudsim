@@ -1,0 +1,49 @@
+name: JPDC novel network residual routing — preregistered mechanism pilot
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-new-network-risk-mechanism-pilot.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify frozen CASPER and new original protocol before any pilot results
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p new-network-risk
+          git rev-parse HEAD > new-network-risk/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/NEW_NETWORK_RESIDUAL_POLICY_PILOT_PREREG_2026-11-04.md
+          python3 -m py_compile jpdc/network_residual_risk_policy.py jpdc/independent_network_risk_physical_pilot.py jpdc/test_network_residual_risk_policy.py jpdc/run_new_network_risk_pilot.py
+          python3 jpdc/test_network_residual_risk_policy.py | tee new-network-risk/unit.log
+          python3 jpdc/test_native_eight_policy_semantics.py | tee new-network-risk/original_original_modes_unit.log
+      - name: Execute six original task-stream, fully physical development pilot arms
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_new_network_risk_pilot.py --out new-network-risk/pilot.json | tee new-network-risk/pilot.log
+          python3 jpdc/run_new_network_risk_pilot.py --out new-network-risk/pilot_repeat.json > new-network-risk/pilot_repeat.log
+          cmp new-network-risk/pilot.json new-network-risk/pilot_repeat.json
+          echo JPDC_NEW_NETWORK_RISK_FULL_PILOT_BYTE_REPRODUCIBLE_PASS
+          python3 - <<'PY'
+          import json
+          d=json.load(open('new-network-risk/pilot.json'))
+          assert d['status']=='PASS' and d['seed_index']==80
+          assert len(d['rows'])==6 and d['deployment_task_policy_observations']==72000
+          assert all(x['network_feedback_events']==12000 and
+                     x['network_feedback_strictly_delayed'] for x in d['rows'])
+          assert all(x['status']=='PASS' and sum(x['node_dispatch_counts'])==12000 for x in d['rows'])
+          print('JPDC_NEW_NETWORK_RISK_ORIGINAL_PILOT_EVIDENCE_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-new-network-risk-physical-development-pilot
+          path: new-network-risk/
+          if-no-files-found: warn
