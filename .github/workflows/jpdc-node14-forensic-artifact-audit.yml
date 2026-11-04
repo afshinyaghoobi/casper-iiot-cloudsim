@@ -1,0 +1,38 @@
+name: JPDC node14 forensic artifact-only audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-node14-forensic-artifact-audit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve frozen original forensic run artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p forensic-recheck
+          gh run download 41774034113 --repo "${{ github.repository }}" --name jpdc-s3-node14-event-order-forensic-seed40 --dir forensic-recheck
+          test -s forensic-recheck/forensic.log
+          test -s forensic-recheck/control.csv
+          test -s forensic-recheck/forensic.csv
+          python3 -m py_compile jpdc/audit_node14_event_order_forensic.py
+          python3 jpdc/audit_node14_event_order_forensic.py --log forensic-recheck/forensic.log --out forensic-recheck/event_audit.json | tee forensic-recheck/audit_stdout.log
+          grep -q "JPDC_FORENSIC_STAGE_AUDIT_PASS" forensic-recheck/audit_stdout.log
+      - name: Preserve exact forensic source artifact audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-s3-node14-original-forensic-audit
+          path: |
+            forensic-recheck/event_audit.json
+            forensic-recheck/audit_stdout.log
+          if-no-files-found: warn
