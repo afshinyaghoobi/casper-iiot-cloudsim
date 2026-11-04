@@ -15,7 +15,7 @@ def validate(path):
     expected=calibration_mission_ranks(SEED,n=80000,burnin=10000)
     observed=set();quantiles=set();count_line=None;complete=0
     for raw in Path(path).open(encoding="utf-8"):
-        if not raw.startswith("JPDC_CAL_"):continue
+        if not raw.startswith(("JPDC_CAL_","JPDC_CALIBRATION_REFERENCE_COMPLETE")):continue
         r=next(csv.reader([raw]))
         tag=r[0]
         if tag=="JPDC_CAL_RANK":
