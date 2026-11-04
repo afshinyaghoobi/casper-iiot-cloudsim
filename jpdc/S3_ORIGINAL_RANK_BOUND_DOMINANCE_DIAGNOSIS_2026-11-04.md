@@ -37,3 +37,9 @@ The source data reported rank calibration q-values approximately `[1.32,1.66,1.5
 Study rank utilization across a **predefined** untouched selection of scenarios/seeds using original frozen workload science, not by tuning deadlines, calibration or eta until rank2 appears. If observed ranked branches remain unexercised, be explicit in JPDC that rank-aware calibration does not empirically choose alternative candidates in these workloads. More consequential for publication is out-of-sample independent policy-level validation in another simulation framework.
 
 The original strict independent Python FCFS queue fidelity test remains **FAILED** at max error 9.1214 ms > original 5 ms gate. Registered disjoint S2/S3 holdout p=.0625 and exploratory four-seed factorial p=.125 remain nonsignificant. E42/E4.6 are immutable.
+
+## CI verification of committed audit (same original artifact)
+
+After the local verbose analysis, the separately committed compact auditor was rerun on the original GitHub Actions artifact in a **new real CI job**. Workflow `.github/workflows/jpdc-original-rank-bound-artifact-audit.yml` commit `4d107d7b496b2ea68d66e0a2f85b6cf0c26e0e95`, run **41781816418 SUCCESS**, job **126414855936**, produced `JPDC_ORIGINAL_RANK_BOUND_AUDIT_PASS` and `JPDC_RANK_BOUNDS_ORIGINAL_ARTIFACT_INVARIANTS_PASS`, with stored output artifact **13299387144**. The job directly downloaded the unmodified original run `41779874971` artifact and recomputed all 3090 feasible-rank bound comparisons. No new CloudSim simulations were performed and the old result was not reclassified as a confirmatory holdout.
+
+Audited report: https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/41781816418
