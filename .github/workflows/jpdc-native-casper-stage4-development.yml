@@ -39,6 +39,21 @@ jobs:
           assert all(x['post_false_cert_rate']<=x['post_cert_rate'] for x in r['rows'])
           print('JPDC_NATIVE_STAGE4_FULL_POLICY_EVIDENCE_AUDIT_PASS')
           PY
+          PYTHONPATH=jpdc python3 - <<'PY'
+          import json,math
+          from independent_physical_event_engine import run
+          stage4=json.load(open('native-stage4/matrix.json'))
+          baseline_rows=[r for r in stage4['rows'] if r['policy']=='PRED_GREEDY']
+          assert len(baseline_rows)==4
+          for current in baseline_rows:
+              prior=run(current['seed_index'],current['scenario'],'PRED_GREEDY',12000,stochastic=True)
+              for field in ('mean_latency_ms','mean_wait_ms'):
+                  assert math.isclose(current[field],prior[field],rel_tol=0,abs_tol=1e-8),(
+                      current['seed_index'],current['scenario'],field,current[field],prior[field])
+              assert current['mission_deadline_misses']==prior['deadline_misses']['MISSION']
+              assert current['node_dispatch_counts']==prior['node_dispatch_counts']
+          print('JPDC_NATIVE_STAGE4_BASELINE_VS_INDEPENDENT_STAGE2_REGRESSION_PASS')
+          PY
       - if: always()
         uses: actions/upload-artifact@v4
         with:
