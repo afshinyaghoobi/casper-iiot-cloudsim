@@ -1,0 +1,49 @@
+name: JPDC observed actual rank2 outcomes seeds 41 and 44
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-s3-observed-rank2-outcomes-41-44.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-rank2:
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [41,44]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Actual CloudSim completion outcomes for preregistered rank2 follow-up
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p actualrank
+          git rev-parse HEAD > actualrank/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/S3_RANK2_OBSERVED_OUTCOMES_FOLLOWUP_PROTOCOL_2026-11-04.md
+          python3 -m py_compile jpdc/audit_actual_rank2_outcomes.py
+          python3 tools/e45_generate.py
+          python3 jpdc/patch_s3_mask_generated_e45.py --nodes 9,12,14,15,17,18
+          python3 jpdc/instrument_policy_decision_generated_e45.py
+          python3 jpdc/instrument_observed_outcome_generated_e45.py
+          mvn -B -ntp -DskipTests compile
+          mvn -B -ntp -DskipTests exec:java -Dexec.mainClass=org.casperiiot.e45.E45Campaign -Dexec.args="--seed ${{ matrix.seed }} --cal 80000 --tasks 30000 --scenarios S3_HIDDEN_NETWORK_50LOSS --out actualrank/original.csv" > actualrank/original.log 2>&1
+          grep -q 'E45_ONLINE_DISPATCH_RUNTIME PASS' actualrank/original.log
+          python3 jpdc/audit_observed_outcome_sidecar.py --log actualrank/original.log --results actualrank/original.csv --tasks 30000 | tee actualrank/observed_validation.log
+          python3 jpdc/replay_casper_mission_decisions.py --log actualrank/original.log --out actualrank/policy_parity.json --tasks 30000 | tee actualrank/policy_parity_stdout.log
+          python3 jpdc/audit_actual_rank2_outcomes.py --log actualrank/original.log --seed-index ${{ matrix.seed }} --out actualrank/rank2_actual_outcomes.json | tee actualrank/rank2_actual_stdout.log
+      - name: Retain all original and derived evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-actual-rank2-outcomes-seed-${{ matrix.seed }}
+          path: actualrank/
+          if-no-files-found: warn
