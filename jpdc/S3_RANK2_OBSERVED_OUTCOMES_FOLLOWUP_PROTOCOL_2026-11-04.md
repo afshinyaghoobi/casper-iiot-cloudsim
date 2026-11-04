@@ -1,0 +1,14 @@
+# JPDC rank2 observed-outcome follow-up — exploratory, registered before additional executions (2026-11-04)
+
+The separate prospectively fixed four-seed 41–44 S3 HIGH mechanism screen (workflow 41782270007) found 14 **real rank2 selections** across CASPER_FULL (13) and CASPER_HEALTH_STATIC (1); all rank3 0. These are first-ranked upper-bound infeasible and second-ranked upper-bound feasible **predicted certificate decisions**, not yet observed deadline-success outcomes.
+
+This follow-up is an EXPLORATORY, POST-SELECTION descriptive audit of **the two previously observed activating seeds 41 and 44**. It is not an independent holdout, not a randomized rank1-vs-rank2 counterfactual, not evidence for causal policy superiority, and cannot supply independent seed-level statistical significance. Do not select different seeds if these outcomes disappoint.
+
+## Frozen scientific inputs and methods
+Original frozen E42 git blob `34256ca7bff46f911cf20e8b94278fbd09175746`, E4.6 untouched, original generated E45 simulator, S3 HIGH six-node mask [9,12,14,15,17,18], 80,000 calibration, 30,000 deployment tasks, seed 41 and seed 44. No adjustment to deadlines/calibration/eta/ranks. Add **only** two previously verified generated-E45 observational sidecars: `jpdc/instrument_policy_decision_generated_e45.py` and `jpdc/instrument_observed_outcome_generated_e45.py` to the same run. For every CASPER_FULL / HEALTH_STATIC MISSION task, join logged decision (selected node, rank, certificate) with actual realized completion (native CloudSim actual network, wait, service; deadline miss, false certificate). Re-run strict official CSV observed-outcome sidecar audit and independent Java/Python policy decision parity audit.
+
+## Prespecified descriptive outputs
+For each of seed41 and seed44, report all original rank2 task indices, whether selected certificate was issued, whether actual completion met deadline, actual and predicted latency, slack to deadline. All rank2 task outcomes must be present; missing or mismatched task IDs, multiple events, or inconsistent cert flags reject the audit. Aggregate observed misses among rank2 chosen MISSION tasks *descriptively only* and stratify policy/seed. Do NOT infer that a task would have missed or succeeded under rank1 without a separate controlled counterfactual that the current data do not provide.
+
+## Execution integrity
+Eight-policy CSV, simulation completed, exact source SHA; strict event/official reconciliation; original prior rank2 counts must match (seed41 FULL9 STATIC0, seed44 FULL4 STATIC1), or flag a reproduction inconsistency rather than silently accept. This follow-up uses a single instrumented run per seed (seed40's previous logger noninterference verified; not newly paired here). Original 10-seed disjoint primary p=.0625, exploratory factorial p=.125 remain nonsignificant, and independent queue strict FCFS fidelity remains FAILED.
