@@ -17,7 +17,7 @@ BURN_IN=10000
 CAL_SIZE=80000
 NODES=21
 
-def calibrate(seed_index,cal_size=CAL_SIZE):
+def calibrate(seed_index,cal_size=CAL_SIZE,include_reference=False):
     if cal_size<=BURN_IN:raise ValueError("calibration must exceed burn-in")
     seed=4202202600+seed_index
     specs=nodes(seed)
@@ -151,7 +151,7 @@ def calibrate(seed_index,cal_size=CAL_SIZE):
     if cal_size==CAL_SIZE and not all(math.isfinite(v) and v>0 for v in
                                       [*q_rank,q_global,*tier_thresholds]):
         raise AssertionError("nonfinite/zero scientific calibration quantile")
-    return {"status":"PASS","engine":"independent_strict_FCFS_stochastic_calibration",
+    result={"status":"PASS","engine":"independent_strict_FCFS_stochastic_calibration",
             "scientific_seed":seed,"seed_index":seed_index,
             "calibration_tasks":cal_size,"burn_in":BURN_IN,
             "postburnin_service_ratio_count":len(service_completed),
@@ -166,3 +166,6 @@ def calibrate(seed_index,cal_size=CAL_SIZE):
             "mean_physical_wait_ms":total_wait/cal_size,
             "source":"native_Python_completion_latency_and_service_not_Java",
             "not_cloudsim_queue_equivalent":True}
+    if include_reference:
+        result["reference_scores"]=list(reference_scores)
+    return result
