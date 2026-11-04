@@ -1,0 +1,55 @@
+name: JPDC independent original calibration rank and qhat parity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-independent-calibration-rank-qhat-parity.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Independently regenerate 80k original calibration task ranks and conformal qhat
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p calibration
+          git rev-parse HEAD > calibration/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/INDEPENDENT_CALIBRATION_RANK_QHAT_PREREG_2026-11-04.md
+          python3 -m py_compile jpdc/independent_workload_generator.py jpdc/audit_independent_calibration_rank_qhat.py
+          mvn -B -ntp -DskipTests compile
+          mkdir -p target/jpdc-cal-classes
+          javac -cp target/classes -d target/jpdc-cal-classes jpdc/java_tests/OriginalCalibrationReferenceHarness.java
+          mvn -B -ntp dependency:build-classpath -Dmdep.outputFile=calibration/dependency-classpath.txt
+          java -cp "target/classes:target/jpdc-cal-classes:$(cat calibration/dependency-classpath.txt)" OriginalCalibrationReferenceHarness > calibration/original_java_reference.csv
+          python3 jpdc/audit_independent_calibration_rank_qhat.py --java-reference calibration/original_java_reference.csv | tee calibration/independent_audit_stdout.log
+          PYTHONPATH=jpdc python3 - <<'PY'
+          import tempfile
+          from pathlib import Path
+          from audit_independent_calibration_rank_qhat import validate
+          original=Path('calibration/original_java_reference.csv').read_text()
+          import re
+          altered=re.sub(r'JPDC_CAL_RANK,(\d+),([123])',lambda m:'JPDC_CAL_RANK,'+m.group(1)+','+str(1+(int(m.group(2))%3)),original,count=1)
+          assert altered!=original
+          with tempfile.TemporaryDirectory() as d:
+              p=Path(d)/'bad.csv';p.write_text(altered)
+              try:validate(p)
+              except ValueError:print('JPDC_INDEPENDENT_CALIBRATION_MUTATION_REJECTED_PASS')
+              else:raise AssertionError('mutated original reference rank was accepted')
+          PY
+      - name: Keep all original reference evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-original-calibration-rank-qhat-seed40
+          path: calibration/
+          if-no-files-found: warn
