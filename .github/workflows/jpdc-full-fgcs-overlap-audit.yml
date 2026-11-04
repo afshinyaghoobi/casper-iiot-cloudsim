@@ -1,0 +1,31 @@
+name: JPDC full submitted FGCS manuscript overlap and claim gate
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-full-fgcs-overlap-audit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  overlap-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preserve original scientific source and audit complete FGCS document overlap report
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p overlap-audit
+          git rev-parse HEAD > overlap-audit/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/audit_full_fgcs_overlap_claims.py | tee overlap-audit/claims.log
+          python3 jpdc/audit_jpdc_novelty_claims.py | tee overlap-audit/previous_novelty.log
+          python3 jpdc/audit_native_holdout_manuscript_addendum.py | tee overlap-audit/native_manuscript.log
+          echo JPDC_FULL_FGCS_TEXT_OVERLAP_AND_FROZEN_RESULTS_QA_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-fgcs-full-text-overlap-claims
+          path: overlap-audit/
+          if-no-files-found: warn
