@@ -33,7 +33,7 @@ def audit(path,tasks=30000):
     seed_seen=set()
     seen_pre=set();seen_post=set();seen_finish=set()
     pending=None;next_pre=0;telemetry_count=0;alarm_transitions=0
-    max_backlog_error=0.0;max_next_free_error=0.0
+    max_backlog_error=0.0;max_next_free_error=0.0;first_alarm_task=None
     for line in Path(path).open(encoding="utf-8"):
         if not line.startswith(tuple(tag+"," for tag in TAGS)):continue
         row=next(csv.reader([line]))
@@ -63,7 +63,9 @@ def audit(path,tasks=30000):
             seen_finish.add(task)
             old=health[node].alarmed
             expected=health[node].observe(actual,nominal)
-            if not old and expected:alarm_transitions+=1
+            if not old and expected:
+                alarm_transitions+=1
+                if first_alarm_task is None:first_alarm_task=task
             if (row[6]=="true")!=expected:raise ValueError(f"health alarm mismatch task={task}, node={node}")
         elif tag=="JPDC_HV_TELEMETRY":
             if pending is not None or task!=next_pre:raise ValueError("telemetry event placement")
@@ -105,6 +107,7 @@ def audit(path,tasks=30000):
             "real_task_dispatches":len(seen_post),"real_finish_health_updates":len(seen_finish),
             "telemetry_resets":telemetry_count,"health_alarm_transitions":alarm_transitions,
             "alarmed_nodes_at_end":sum(h.alarmed for h in health),
+            "first_alarm_task_id":first_alarm_task,
             "max_backlog_error_ms":max_backlog_error,
             "max_selected_queue_next_free_error_ms":max_next_free_error,"status":"PASS"}
 
