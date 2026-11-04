@@ -82,6 +82,12 @@ with tempfile.TemporaryDirectory() as dirname:
     expect_reject(bad, results, "seed identity mismatch")
     change_line(0, 13, "invalid")
     expect_reject(bad, results, "malformed boolean")
+    # Preserve total counts but silently replace one task ID in only one policy.
+    change_line(0, 4, "251")
+    expect_reject(bad, results, "cross-policy mission task ID mismatch")
+    # A deadline perturbation can leave miss labels/rates unchanged.
+    change_line(0, 12, "51")
+    expect_reject(bad, results, "cross-policy deadline mismatch")
     wrong = folder / "wrong.csv"
     wrong.write_text(results.read_text().replace(",0.04,", ",0.08,", 1), encoding="utf-8")
     bad.write_text("\n".join(original) + "\n", encoding="utf-8")
