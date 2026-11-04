@@ -30,8 +30,8 @@ public final class OriginalStochasticPhysicsReferenceHarness {
                 for(boolean value:mask)bits.append(value?'1':'0');
                 System.out.printf(Locale.US,"STOCH_MASK,%d,%s,%s%n",seedIndex,name,bits);
                 List<?> tasks=(List<?>)mkTasks.invoke(null,seed^0xD3F10A77L,30000,sc);
-                double computeRetained=((Number)scenario.getDeclaredField("computeRetained").get(sc)).doubleValue();
-                double bwRetained=((Number)scenario.getDeclaredField("bwRetained").get(sc)).doubleValue();
+                double computeRetained=(name.equals("S2_HIDDEN_COMPUTE_40LOSS")||name.equals("S4_COMPOUND")) ? .60 : 1.0;
+                double bwRetained=(name.equals("S3_HIDDEN_NETWORK_50LOSS")||name.equals("S4_COMPOUND")) ? .50 : 1.0;
                 for(int i:indices){
                     Object t=tasks.get(i);
                     for(int node=0;node<21;node++){
