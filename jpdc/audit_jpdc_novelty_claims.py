@@ -47,8 +47,8 @@ def main():
     ]
     for term in forbidden:
         check(re.search(term,a,re.I) is None,f"no unsupported novelty/performance claim: {term}")
-    check("not a complete side-by-side" not in d.lower() or True,
-          "existing native manuscript remains separate from originality assessment")
+    check("p-value was 1.000" in d and "rank 3 was never selected" in d.lower(),
+          "existing native manuscript keeps negative outcome and mechanism limits")
     print("JPDC_NOVELTY_CLAIM_BOUNDARY_AUDIT_PASS")
 
 if __name__=="__main__":main()
