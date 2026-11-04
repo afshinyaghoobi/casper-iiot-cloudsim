@@ -51,6 +51,7 @@ jobs:
                   assert a[p][k]==b[p][k],(p,k,a[p][k],b[p][k])
           print('JPDC_SCHEDULER_SUBMISSION_SCIENTIFIC_PARITY_PASS')
           PY
+          # The probe subclasses SpaceShared at its protected cloudletSubmitInternal hook.
           python3 -m py_compile jpdc/audit_scheduler_submit_forensic.py jpdc/instrument_scheduler_submit_generated_e45.py
           python3 jpdc/audit_scheduler_submit_forensic.py --log scheduler/instrumented.log --out scheduler/submission_analysis.json | tee scheduler/submission_audit.log
       - name: Keep raw evidence whether passed or failed
