@@ -73,6 +73,10 @@ def audit(log_file, results_file, tasks):
 
     with open(results_file, encoding="utf-8", newline="") as f:
         official_rows = list(csv.DictReader(f))
+    if len(official_rows) != 8 or len({r.get("policy") for r in official_rows}) != 8:
+        raise ValueError("official CSV requires eight distinct policy rows")
+    if any(r.get("scenario") != SCENARIO or int(r.get("tasks", "-1")) != tasks for r in official_rows):
+        raise ValueError("official scenario/task-count metadata mismatch")
     official = {r["policy"]: r for r in official_rows if r.get("policy") in POLICIES}
     if len(official) != 2:
         raise ValueError("missing required official policies")
