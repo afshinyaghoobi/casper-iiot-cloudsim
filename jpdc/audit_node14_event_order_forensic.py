@@ -35,12 +35,17 @@ def audit(path):
                                      "derived_start_ms":float(start),"callback_clock_ms":float(end),
                                      "observed_wait_ms":float(wait),"service_ms":float(service),
                                      "actual_latency_ms":float(actual),"cloudlet_id":int(cl_id)}
-    if set(arrivals)!=IDS or any(len(arrivals[i])!=8 for i in IDS):
+    if set(arrivals)!=IDS or any(len(arrivals[i])!=9 for i in IDS):
         raise ValueError("missing per-policy arrival records")
     for p in POLICIES:
         if set(mapped[p])!=IDS or set(finished[p])!=IDS:raise ValueError("missing forensic stage")
         for t in IDS:
             m,o=mapped[p][t],finished[p][t]
+            # The nine arrivals comprise one calibration pass and eight policy deployments.
+            # Match target deployment by its source-frozen planned timestamp.
+            match=[e for e in arrivals[t] if abs(e["planned_ms"]-m["arrival_ms"])<=1e-8]
+            if len(match)!=8 or any(abs(e["event_ms"]-e["planned_ms"])>1e-8 for e in match):
+                raise ValueError(f"deployment arrival/event timing mismatch task={t}")
             if (m["node"]!=o["node"] or m["seed"]!=o["seed"] or
                 m["cloudlet_id"]!=o["cloudlet_id"] or
                 abs(m["arrival_ms"]-o["arrival_ms"])>1e-8):
@@ -56,7 +61,7 @@ def audit(path):
             "derived_start_order":order("derived_start_ms",finished),
             "actual_wait_recorded":{str(t):finished[p][t]["observed_wait_ms"] for t in sorted(IDS)},
             "tasks":{str(t):{"mapper":mapped[p][t],"finish":finished[p][t]} for t in sorted(IDS)}}
-    return {"origin":"actual logged event stages; diagnostic only", "arrival_events_by_task":dict(arrivals),
+    return {"origin":"actual logged event stages; diagnostic only (nine arrival-source invocations: calibration + eight deployment policies)", "arrival_events_by_task":dict(arrivals),
             "per_policy":details}
 
 if __name__=="__main__":
