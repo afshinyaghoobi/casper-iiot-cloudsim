@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Recheck frozen original and emphasis-normalized manuscript claims
+      - name: Check finalized original manuscript evidence and rank2 text counts
         shell: bash
         run: |
           set -euo pipefail
