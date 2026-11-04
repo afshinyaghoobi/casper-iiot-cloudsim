@@ -1,0 +1,32 @@
+name: JPDC originality and frozen-science claim gate
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-originality-claim-gate.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  originality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm original frozen source and audit novelty against outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p novelty-audit
+          git rev-parse HEAD > novelty-audit/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/JPDC_NOVELTY_ORIGINALITY_GATE_2026-11-04.md
+          python3 jpdc/audit_jpdc_novelty_claims.py | tee novelty-audit/claims.log
+          python3 jpdc/audit_native_holdout_manuscript_addendum.py | tee novelty-audit/manuscript_numbers.log
+          python3 jpdc/audit_integrated_manuscript_numbers.py | tee novelty-audit/original_results_numbers.log
+          echo JPDC_ORIGINALITY_AND_NUMBERS_CONSISTENCY_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-originality-and-claims-gate
+          path: novelty-audit/
+          if-no-files-found: warn
