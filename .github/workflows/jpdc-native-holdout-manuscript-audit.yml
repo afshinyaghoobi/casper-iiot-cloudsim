@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Recheck frozen original and Markdown-aware manuscript numbers and claim boundaries
+      - name: Recheck frozen original and emphasis-normalized manuscript claims
         shell: bash
         run: |
           set -euo pipefail
