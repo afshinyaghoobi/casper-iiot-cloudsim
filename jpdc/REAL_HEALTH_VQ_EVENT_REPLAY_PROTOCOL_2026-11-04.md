@@ -1,0 +1,18 @@
+# JPDC real-event health and virtual queue Python replay — preregistered 2026-11-04
+
+## Purpose and original science freeze
+After independent synthetic Python state tests passed (run 41847775502) and independent E17 replay of 30,000 actual CASPER_FULL dispatch events passed (run 41848215650), this **separately registered diagnostic study** verifies health-detector latching and virtual queue state against the *actual CloudSim event sequence*. This is not YAFS, a second physical simulator, or independent causal CASPER efficacy. Frozen E42 blob SHA `34256ca7bff46f911cf20e8b94278fbd09175746`, frozen E4.6 untouched.
+
+S3_HIDDEN_NETWORK_50LOSS, seed index40, exact HIGH 6-node mask [9,12,14,15,17,18], 80k calibration/30k deployment, unmodified eight policies, compare uninstrumented and observational generated-E45 logs; all scientific CSV fields identical except timing-only `mean_mapper_us`.
+
+## Original event streams to observe (CASPER_FULL only)
+1. **Health constructor thresholds:** emit 21 thresholds `cal.serviceThresholdByNode[j]` once before runtime. Python creates 21 `NodeHealth` objects with frozen defaults (8 recent completion ratios, alarm at 5 exceedances). No Java internal state is copied.
+2. **Actual finish callback:** after Java health.observe(serviceMs,nominalServiceMs) for every completed task, record task index, node, actual service duration, nominal predicted service and Java *post*-observe alarm. Python feeds the original real CloudSim completion event order into its own detector and checks every emitted alarm; tasks observed in wall-clock event order, not sorted by task index.
+3. **Before each mapper decision:** after optional 50-ms telemetry reset, emit `t.index`, arrivalMs, original `vq.predictedBacklogMs(j,now)` for all 21 nodes, and actual 21-node health alarm mask. Python replays queue telemetry and dispatch from raw event streams, then recomputes **every** backlog and alarm mask *before* selection. It cannot copy Java's predictedNextFree state.
+4. **Only when telemetry reset occurs:** log exact 21 `trueNextFree` values as the telemetry *input* immediately before Java `vq.resetFromTelemetry`. Python performs the same reset, preserving the simulator's actual telemetry as a known exogenous input (not pretending to independently derive physical completion times).
+5. **After original `vq.onDispatch(j,now,nominal)`:** log chosen node, task index, current task arrival, nominal predicted service, and Java `vq.predictedNextFreeMs(j)` only for the chosen node. Python independently updates its queue and checks that node's resulting next-free value.
+
+## Pass/fail gates fixed before execution
+Exactly 21 unique thresholds, 30,000 unique pre-dispatch records and 30,000 post-dispatch records, exactly 30,000 unique completed task IDs and no missing/out-of-order pre/post dispatch; all events one scientific seed and FULL policy; exact 21 alarm-mask fields; finite and physical timestamps and service values; independent per-event health alarm and queue backlog difference <=1e-8ms, exact node/dispatch identity, no more than 1e-8ms next-free difference. No event deduplication, no sampling or filtering, and every task must have a finished health event. Require source hash unchanged and 8-policy scientific parity. Real CloudSim completion outcomes supply health/telemetry inputs; this is **conditional state-transition parity**, not independently measured physical performance.
+
+Original FCFS queue transfer strict test 41773297282 FAILED at max9.1214ms > 5ms; the disjoint 10-seed holdout p=.0625 and four-seed exploratory factorial p=.125 remain nonsignificant. None of these outcomes may be reinterpreted based on this component test.
