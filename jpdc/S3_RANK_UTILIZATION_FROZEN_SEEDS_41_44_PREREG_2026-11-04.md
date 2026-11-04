@@ -1,0 +1,15 @@
+# JPDC unmodified original-ranked-policy multi-seed activation screen — preregistered 2026-11-04
+
+## Research question and frozen selections
+The initial cross-language decision validation on S3 HIGH seed40 found **rank1 exclusively** for 3090 MISSION decisions, and independent original artifact audit found zero ranked rescue under those inputs. Before examining other seeds, fix **four consecutive new seed indices 41,42,43,44**, **one scenario S3_HIDDEN_NETWORK_50LOSS**, and **one fixed six-node HIGH mask [9,12,14,15,17,18]**. Do not change calibration, deadline generation, confidence thresholds, policy behavior, generated task streams, or masks to encourage non-rank1 choices. Frozen E42 source git blob `34256ca7bff46f911cf20e8b94278fbd09175746`; E4.6 unchanged. Generate E45 observational logger only.
+
+The source decision log records all 21 predicted task latencies, health mask, sigma multipliers, rank q values, eta, chosen node, rank and certificate. For each seed, execute one original-source full CloudSim simulation with **80,000 calibration and 30,000 deployment tasks**, recording all eight policies' official CSV. Independently verify all MISSION decisions for both FULL and HEALTH_STATIC in Python, then count rank1/2/3 actual selections and potential rank2/3 **rescues** (a later upper bound <= deadline when rank1 upper bound > deadline), counts of later bounds below rank1, q ordering and min gaps. We will report ALL four seeds, including all zeros and failures, not just favorable examples.
+
+## Primary descriptive output
+Rank2+rank3 selection counts by seed and policy. Secondary descriptive diagnostics: rank2/rank3 rescue availability, fraction where qRank2 or qRank3 > qRank1; percent of actual bounds (U2-U1)/(U3-U1) positive, ties, negative. The scientific sample unit is **seed** (n=4), NOT the number of task decisions. No p-value or confirmatory claims. Previously examined seed40 is excluded from this fixed 4-seed screen.
+
+## Falsification rules
+No omitted missions, partial outputs, simulation failure or missing branches; require exact Java/Python MISSION decision parity and match official MISSION counts per policy, and retain all outputs. Report broken seeds and reasons. A simulation completed without a separate paired uninstrumented control: prior seed40 noninterference was verified but does not automatically prove noninterference on new seeds. If no rank2/3 activation, explicitly mark ranked routing feature as *empirically unexercised in this set* and consider restricting JPDC contributions rather than tuning for a result.
+
+## Interpretation
+This is preregistered **mechanism coverage screening**, not new independent scheduler validation, a new adaptive online-feedback improvement claim, or an independent randomized out-of-sample efficacy trial. Original strict Python FCFS fidelity run 41773297282 remains FAILED max 9.1214ms>5ms. Separate S2/S3 registered holdout p=.0625 and exploratory factorial sign p=.125 remain nonsignificant; do not modify source or claims.
