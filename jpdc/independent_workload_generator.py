@@ -13,6 +13,14 @@ class JavaRandom:
     def bits(self,bits):
         self.state=(self.state*0x5DEECE66D+0xB)&MASK
         return self.state>>(48-bits)
+    def next_int(self,bound):
+        if bound<=0:raise ValueError('bound must be positive')
+        if bound & (bound-1)==0:return (bound*self.bits(31))>>31
+        while True:
+            bits=self.bits(31)
+            val=bits%bound
+            # Java signed 32-bit rejection predicate
+            if bits-val+(bound-1)<(1<<31):return val
     def next_double(self):
         return ((self.bits(26)<<27)+self.bits(27))/float(1<<53)
     def next_gaussian(self):
@@ -47,9 +55,9 @@ def nodes(seed):
 
 SCENARIO_MULT={"S0_STATIONARY":1.0,"S1_LAMBDA_X2":2.0,"S2_HIDDEN_COMPUTE_40LOSS":1.0,
                "S3_HIDDEN_NETWORK_50LOSS":1.0,"S4_COMPOUND":2.0}
-def tasks(seed,n,scenario):
+def tasks(seed,n,scenario,seed_salt=0xD3F10A77):
     if scenario not in SCENARIO_MULT:raise ValueError("scenario")
-    r=JavaRandom(seed^0xD3F10A77)
+    r=JavaRandom(seed^seed_salt)
     now=1000.0
     for i in range(n):
         pm=SCENARIO_MULT[scenario] if i>=10000 else 1.0
@@ -70,3 +78,29 @@ def predicted_latency(task,node,backlog_ms):
     _,_,_,_,work,in_mb,out_mb,_=task
     _,cap,bw,rtt,_,_=node
     return rtt+(in_mb+out_mb)*8000/bw+backlog_ms+work/cap*12
+
+
+def calibration_mission_ranks(seed,n=80000,burnin=10000):
+    """Independently reconstruct E42 calibration rank-label shuffling.
+
+    This is pre-CLOUDSIM randomized allocation, not the outcome calibration q.
+    """
+    if n<=burnin:raise ValueError("need post-burnin calibration tasks")
+    indices=[t[1] for t in tasks(seed,n,"S0_STATIONARY",seed_salt=0xCA11B4A7)
+             if t[1]>=burnin and t[2]=="MISSION"]
+    ranks=[(i%3)+1 for i in range(len(indices))]
+    rng=JavaRandom(seed^0xA11CE77)
+    for i in range(len(ranks),1,-1):
+        j=rng.next_int(i)
+        ranks[i-1],ranks[j]=ranks[j],ranks[i-1]
+    return dict(zip(indices,ranks))
+
+
+def conformal_qhat(values,alpha):
+    """Frozen E42 quantile definition; infinity means insufficient calibration."""
+    if not 0<alpha<1:raise ValueError("alpha outside (0,1)")
+    if not values:return math.inf
+    if not all(math.isfinite(x) for x in values):raise ValueError("nonfinite calibration sample")
+    sorted_values=sorted(values)
+    k=math.ceil((len(values)+1)*(1-alpha))
+    return sorted_values[k-1] if k<=len(values) else math.inf
