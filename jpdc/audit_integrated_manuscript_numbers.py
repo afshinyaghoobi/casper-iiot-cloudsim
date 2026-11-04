@@ -81,7 +81,8 @@ def main() -> None:
             "four factorial interaction magnitudes computed from counts")
     require((high_f[0] - high_a[0]) / high_f[0] * 100 > 90.9 - 0.01,
             "HIGH false-certificate descriptive relative reduction 90.9%")
-    require("p = .125" in draft and "p = .125" in fact,
+    require(("p = .125" in draft or "p=.125" in draft) and
+            ("p = .125" in fact or "p=.125" in fact),
             "four-seed inference limited to exploratory p=.125")
 
     # Disjoint holdout table must use correct rates and certificate denominators.
