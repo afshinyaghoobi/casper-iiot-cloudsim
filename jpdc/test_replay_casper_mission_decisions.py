@@ -11,7 +11,7 @@ pred=[10.0+float(i) for i in range(21)]
 sigma=[1.0]*21
 allclear=[False]*21
 q=[4.0,0.01,0.01]
-assert replay(pred,allclear,sigma,q,11,1)==(1,2,True)
+assert replay(pred,allclear,sigma,q,11.1,1)==(1,2,True)
 assert replay(pred,allclear,sigma,q,9,1)==(0,1,False)
 assert replay(pred,[True]*21,sigma,q,100,1)==(0,1,False)
 assert replay(pred,allclear,sigma,[0.0,0.0,0.0],10,1)==(0,1,True)
@@ -22,7 +22,7 @@ with tempfile.TemporaryDirectory() as tmp:
     for policy in POLS:
         for t in range(250):
             alarms=[True]*21 if t%13==0 else allclear
-            deadline=11.0 if t%5==0 else 9.0
+            deadline=11.1 if t%5==0 else 9.0
             eta=1.0 if policy=="CASPER_HEALTH_STATIC" else (1.25 if t%7==0 else 1.0)
             selected=replay(pred,alarms,sigma,q,deadline,eta)
             lines.append(["JPDC_POLICY_DECISION",4202202640,"S3_HIDDEN_NETWORK_50LOSS",policy,t,"MISSION",
