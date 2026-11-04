@@ -1,0 +1,53 @@
+name: JPDC independent original workload and node generator parity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-independent-workload-generator-parity.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  workload-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Verify frozen original and compare independent full workload generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p generator
+          git rev-parse HEAD > generator/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -f jpdc/INDEPENDENT_WORKLOAD_GENERATOR_PARITY_PREREG_2026-11-04.md
+          python3 -m py_compile jpdc/independent_workload_generator.py jpdc/audit_independent_workload_generation.py
+          mvn -B -ntp -DskipTests compile
+          mkdir -p target/jpdc-workload-classes
+          javac -cp target/classes -d target/jpdc-workload-classes jpdc/java_tests/OriginalWorkloadReferenceHarness.java
+          java -cp target/classes:target/jpdc-workload-classes OriginalWorkloadReferenceHarness > generator/original_java_reference.csv
+          python3 jpdc/audit_independent_workload_generation.py --original-java generator/original_java_reference.csv | tee generator/independent_generator_stdout.log
+          PYTHONPATH=jpdc python3 - <<'PY'
+          from pathlib import Path
+          import tempfile
+          from audit_independent_workload_generation import audit
+          original=Path('generator/original_java_reference.csv').read_text()
+          changed=original.replace('JPDC_TASK,S0_STATIONARY,0,','JPDC_TASK,S0_STATIONARY,0,BAD,',1)
+          assert changed!=original
+          with tempfile.TemporaryDirectory() as tmp:
+              p=Path(tmp)/'bad.csv';p.write_text(changed)
+              try:audit(p)
+              except ValueError:print('JPDC_WORKLOAD_CORRUPTION_REJECTED_PASS')
+              else:raise AssertionError('corrupt scientific workload accepted')
+          PY
+      - name: Preserve original full reference and audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-independent-original-workload-parity-seed40
+          path: generator/
+          if-no-files-found: warn
