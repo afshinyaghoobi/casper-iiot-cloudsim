@@ -1,0 +1,48 @@
+name: JPDC Stage11 physical E2E network epoch shadow with source policy parity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage11-physical-epoch-shadow.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen E42 and registered physical shadow-only feedback protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage11
+          git rev-parse HEAD > stage11/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE11_PHYSICAL_NETWORK_EPOCH_SHADOW_PREREG_2026-11-05.md
+          python3 -m py_compile jpdc/independent_physical_network_epoch_shadow_stage11.py jpdc/run_physical_network_epoch_shadow_stage11.py
+          python3 jpdc/test_normalized_network_shock_epochs_stage10.py | tee stage11/stage10_regression.log
+          python3 jpdc/test_network_probe_stage6.py | tee stage11/stage6_regression.log
+      - name: Execute fixed seed83 eight-arm full original physical E2E shadow matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_physical_network_epoch_shadow_stage11.py --out stage11/matrix.json | tee stage11/matrix.log
+          python3 jpdc/run_physical_network_epoch_shadow_stage11.py --out stage11/matrix_repeat.json > stage11/matrix_repeat.log
+          cmp stage11/matrix.json stage11/matrix_repeat.json
+          echo JPDC_STAGE11_FULL_PHYSICAL_SHADOW_BYTE_REPRODUCIBLE_PASS
+          python3 - <<'PY'
+          import json
+          x=json.load(open('stage11/matrix.json'))
+          assert x['status']=='PASS' and x['scientific_seed_index']==83
+          assert len(x['rows'])==8 and x['task_policy_observations']==96000
+          assert all(r['shadow_network_epoch']['feedback_events']==12000 for r in x['rows'])
+          assert all(r['shadow_network_epoch']['shadow_only_no_routing_control'] for r in x['rows'])
+          print('JPDC_STAGE11_ORIGINAL_SHADOW_ARTIFACT_EVIDENCE_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage11-native-physical-shadow-epoch
+          path: stage11/
+          if-no-files-found: warn
