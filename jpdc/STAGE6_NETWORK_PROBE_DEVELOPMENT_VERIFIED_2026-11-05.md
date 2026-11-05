@@ -50,3 +50,23 @@ Use an **archived artifact-only** reporting gate (no new scientific rerun) to qu
 - Original real CI: https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/42033188272
 - Original raw artifact: https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/42033188272/artifacts/13417540579
 - First original protocol: `jpdc/STAGE6_NETWORK_PROBE_DEVELOPMENT_PREREG_2026-11-05.md`.
+
+## Additional immutable artifact-only cost and feedback coverage diagnostic (no new experiment)
+
+To validate aggregate reported costs rather than extrapolating from the 96 probe counts, a **separate read-only CI workflow** `.github/workflows/jpdc-stage6-archived-probe-cost-audit.yml` was created **after** the original pilot and downloaded the immutable original GitHub Actions Stage6 result `42033188272` artifact `13417540579` without rerunning or changing scientific data. **REAL audit run `42033570758` SUCCESS**, job `127265825807`, with marker `JPDC_STAGE6_IMMUTABLE_ORIGINAL_PROBE_COST_AUDIT_PASS`. Audit CI commit `0cb0f0241e34c42be0136c39588997a96c9a4a5a`.
+
+Original stored measurements:
+| Scenario | Original no-probe number of nodes with any E2E feedback | Probe number of nodes with any E2E feedback | Mean actual observed E2E latency of 96 directly probed NORMAL tasks | Mean *nominal predicted* latency difference between probe choice and risk policy's same-state unprobed choice | Probe positive network-excess E2E feedback |
+|---|---:|---:|---:|---:|---:|
+| S2 compute | 9 of 21 | **21 of 21** | **120.7805 ms** | **+71.5076 ms** | 0 |
+| S3 network | 13 of 21 | **21 of 21** | **120.7403 ms** | **+71.2624 ms** | 1 |
+
+This confirms a REAL increase in **observation breadth**; it does not prove a meaningful improvement in recognizing hidden damage (only one positive probe feedback during S3), or in deadline outcomes (all-MISSION misses worsened from5 to6 with probes in S3). Crucially, the +71 ms values are **predicted nominal timing differentials at the same original probe-decision state**, *not actually measured causal latency penalties*: different dispatch choices modify all later node queues. Mean observed E2E latency ~120.7ms is the realized latency of the probed tasks, NOT the increment relative to hypothetical unprobed physical completion. Probe budget 96/96 attempted and rerouted, 0 directly probed NORMAL deadline misses, but later MISSION effects cannot be assumed safe.
+
+### Related-work novelty boundary, preliminary
+Online scheduling with censored/delayed feedback and exploration/exploitation is an established research topic, not a broad novel principle from this project alone. Direct preliminary related context:
+- Wang et al. (2026), *Bandit Learning for Online Scheduling with Immediate Decision*, Proceedings of UAI / PMLR 337, https://proceedings.mlr.press/v337/wang26g.html : bandit/UCB learning with censored feedback, different identical-machine preemption/abandonment model.
+- Xiong Wang et al. (2024), *Online Learning Aided Decentralized Multi-User Task Offloading for Mobile Edge Computing*, IEEE TMC 23(4), DOI 10.1109/TMC.2023.3275851, https://doi.org/10.1109/TMC.2023.3275851 : decentralized bandit offloading with/without processed-task neighbor feedback and network-delay-aware rewards.
+Neither directly establishes equivalence to this native strict-FCFS, MISSION/NORMAL, node-local quantile model. They establish that adding bandit-style exploration/probing **cannot alone be called newly invented without a full prior-art analysis**. Avoid claiming a novel regret bound for this simple fixed-rate probe (none was derived).
+
+Archive: https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/42033570758
