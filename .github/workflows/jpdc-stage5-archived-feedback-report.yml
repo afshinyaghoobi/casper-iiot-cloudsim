@@ -1,0 +1,60 @@
+name: JPDC Stage5 immutable harmonized feedback diagnostic report
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage5-archived-feedback-report.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  archived:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download completed original seed81 artifact without recomputation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p archived-stage5
+          gh run download 41966056585 -n jpdc-stage5-e2e-harmonized-development -D archived-stage5/
+          test -s archived-stage5/stage5.json
+      - name: Audit exact six arm outputs and original-versus-delayed E17 trajectories
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > archived-stage5/report_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 - <<'PY' | tee archived-stage5/complete_readonly_report.log
+          import json
+          from math import isfinite
+          x=json.load(open('archived-stage5/stage5.json'))
+          assert x['status']=='PASS' and x['seed_index']==81 and len(x['rows'])==6
+          assert x['total_task_policy_observations']==72000
+          for r in x['rows']:
+              assert r['cpu_finish_events']==r['e2e_feedback_events']==r['network_feedback_events']==12000
+              assert r['e17_observed_at_e2e']==r['adaptive_feedback_events']
+              if r['policy']=='CASPER_FULL':
+                  assert r['adaptive_feedback_events']==r['mission_tasks']
+              print('ARCHIVED_STAGE5_ROW',r['scenario'],r['policy'],
+                    'mission_misses',r['mission_deadline_misses'],
+                    'post_miss_rate',r['post_deadline_miss_rate'],
+                    'positive_network_feedback',r['network_positive_excess_feedback'],
+                    'risk_active',r['risk_positive_penalty_arrivals'],
+                    'risk_reroutes',r['risk_changed_node_selections'],
+                    'affected_dispatches',r['postshock_affected_dispatches'],
+                    'eta_gt_one',r['eta_gt_one_dispatches'],
+                    'E17_E2E_feedback',r['e17_observed_at_e2e'])
+          for r in x['old_full_vs_harmonized_full']:
+              print('ARCHIVED_STAGE5_ORIGINAL_VS_DELAYED_E17',r)
+          assert all(r['mission_deadline_misses']==0 for r in x['rows'])
+          print('JPDC_STAGE5_IMMUTABLE_ARTIFACT_DIAGNOSTIC_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage5-original-data-report
+          path: archived-stage5/
+          if-no-files-found: warn
