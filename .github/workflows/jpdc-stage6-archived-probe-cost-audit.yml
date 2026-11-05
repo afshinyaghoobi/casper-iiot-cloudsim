@@ -1,0 +1,75 @@
+name: JPDC Stage6 immutable probe cost and observation coverage audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage6-archived-probe-cost-audit.yml']
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  archival:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download original completed Stage6 seed82 artifact only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p archived-stage6
+          gh run download 42033188272 -n jpdc-stage6-network-probe-development -D archived-stage6/
+          test -s archived-stage6/matrix.json
+      - name: Strict immutable-data audit and noncausal probe cost report
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > archived-stage6/report_source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 - <<'PY' | tee archived-stage6/report.log
+          import json,math
+          x=json.load(open('archived-stage6/matrix.json'))
+          assert x['status']=='PASS' and x['scientific_seed_index']==82
+          assert len(x['rows'])==8 and x['task_policy_observations']==96000
+          mapped={(r['scenario'],r['policy']):r for r in x['rows']}
+          assert len(mapped)==8
+          for scene, expect_miss, expect_exposure, expect_pos in (
+              ('S2_HIDDEN_COMPUTE_40LOSS',2,821,0),
+              ('S3_HIDDEN_NETWORK_50LOSS',6,28,1)):
+              r=mapped[(scene,'NEW_NETWORK_RESIDUAL_PROBE')]
+              plain=mapped[(scene,'NEW_NETWORK_RESIDUAL')]
+              assert r['mission_deadline_misses']==expect_miss
+              assert r['postshock_affected_dispatches']==expect_exposure
+              assert r['network_probe_positive_feedback']==expect_pos
+              assert r['network_probe_opportunities']==r['network_probe_attempts']==96
+              assert r['network_probe_changed_choices']==96
+              assert r['network_probe_normal_deadline_misses']==0
+              assert r['network_probe_attempts']<=r['normal_arrivals']//100
+              assert sum(r['network_node_feedback_counts'])==12000
+              assert sum(plain['network_node_feedback_counts'])==12000
+              extra=r['network_probe_predicted_nominal_extra_ms']
+              latency=r['network_probe_actual_latency_sum_ms']
+              assert math.isfinite(extra) and math.isfinite(latency) and latency>0
+              assert r['network_feedback_events']==r['e2e_feedback_events']==r['cpu_finish_events']==12000
+              coverage=sum(v>0 for v in r['network_node_feedback_counts'])
+              original_coverage=sum(v>0 for v in plain['network_node_feedback_counts'])
+              print('ARCHIVED_STAGE6_PROBE_COST',scene,
+                    'attempts',r['network_probe_attempts'],
+                    'direct_normal_misses',r['network_probe_normal_deadline_misses'],
+                    'observed_probe_mean_actual_e2e_ms',latency/96,
+                    'sum_predicted_nominal_difference_ms',extra,
+                    'mean_predicted_nominal_difference_ms',extra/96,
+                    'E2E_feedback_nodes_covered',coverage,
+                    'no_probe_E2E_feedback_nodes_covered',original_coverage,
+                    'probe_positive_observations',r['network_probe_positive_feedback'],
+                    'total_positive_observations',r['network_positive_excess_feedback'],
+                    'no_probe_positive_observations',plain['network_positive_excess_feedback'])
+          print('JPDC_STAGE6_IMMUTABLE_ORIGINAL_PROBE_COST_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage6-immutable-probe-cost-report
+          path: archived-stage6/
+          if-no-files-found: warn
