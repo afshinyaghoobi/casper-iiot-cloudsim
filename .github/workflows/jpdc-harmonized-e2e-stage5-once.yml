@@ -1,0 +1,52 @@
+name: JPDC Stage5 E2E feedback-harmonized policy timing development
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-harmonized-e2e-stage5-once.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  timing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify frozen originals and independent timing protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p harmonized
+          git rev-parse HEAD > harmonized/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/HARMONIZED_E2E_FEEDBACK_STAGE5_PREREG_2026-11-04.md
+          python3 -m py_compile jpdc/independent_harmonized_e2e_feedback_stage5.py jpdc/run_harmonized_e2e_feedback_stage5.py jpdc/test_harmonized_e2e_feedback_stage5.py
+          python3 jpdc/test_network_residual_risk_policy.py | tee harmonized/previous_new_policy_unit.log
+          python3 jpdc/test_harmonized_e2e_feedback_stage5.py | tee harmonized/timing_unit.log
+      - name: Execute original prespecified seed81 full six-arm E2E timing pilot twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_harmonized_e2e_feedback_stage5.py --out harmonized/stage5.json | tee harmonized/stage5.log
+          python3 jpdc/run_harmonized_e2e_feedback_stage5.py --out harmonized/stage5_repeat.json > harmonized/stage5_repeat.log
+          cmp harmonized/stage5.json harmonized/stage5_repeat.json
+          echo JPDC_STAGE5_HARMONIZED_FULL_MATRIX_BYTE_REPRODUCIBLE_PASS
+          python3 - <<'PY'
+          import json
+          x=json.load(open('harmonized/stage5.json'))
+          assert x['status']=='PASS' and x['seed_index']==81
+          assert x['total_task_policy_observations']==72000 and len(x['rows'])==6
+          assert len(x['old_full_vs_harmonized_full'])==2
+          assert all(r['network_feedback_strictly_delayed'] and r['e17_feedback_strictly_delayed']
+                     and r['e2e_feedback_events']==r['cpu_finish_events']==r['network_feedback_events']==12000
+                     for r in x['rows'])
+          assert all(r['adaptive_feedback_events']==r['mission_tasks']
+                     for r in x['rows'] if r['policy']=='CASPER_FULL')
+          print('JPDC_STAGE5_ORIGINAL_E2E_HARMONIZATION_EVIDENCE_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage5-e2e-harmonized-development
+          path: harmonized/
+          if-no-files-found: warn
