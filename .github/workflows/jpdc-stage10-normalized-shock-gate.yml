@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Frozen E42 and registered no-oracle shock measurement contract
+      - name: Frozen E42 and corrected exact-noise-overlap shock measurement contract
         shell: bash
         run: |
           set -euo pipefail
