@@ -1,0 +1,33 @@
+name: JPDC Stage9 exact age-envelope compression and shock falsification
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage9-interval-compression-shock-gate.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mathematical:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify frozen CASPER and Stage9 pretest mathematical contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage9
+          git rev-parse HEAD > stage9/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE9_INTERVAL_COMPRESSION_AND_SHOCK_PREREG_2026-11-05.md
+          python3 -m py_compile jpdc/two_intercept_network_envelope_stage9.py jpdc/test_two_intercept_network_envelope_stage9.py
+          python3 jpdc/test_two_intercept_network_envelope_stage9.py | tee stage9/compression_shock.log
+          python3 jpdc/test_age_aware_network_interval_stage8.py | tee stage9/stage8_reference.log
+          python3 jpdc/test_stage7_identifiability_counterexamples.py | tee stage9/stage7_reference.log
+          echo JPDC_STAGE9_FROZEN_INTERVAL_SHOCK_AND_PRIOR_CONTRACTS_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage9-interval-compression-and-shock
+          path: stage9/
+          if-no-files-found: warn
