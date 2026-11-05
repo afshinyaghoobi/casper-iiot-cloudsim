@@ -1,0 +1,49 @@
+name: JPDC Stage6 bounded normal E2E network exploration development
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-network-probe-stage6.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify original frozen science and registered probe policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage6
+          git rev-parse HEAD > stage6/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE6_NETWORK_PROBE_DEVELOPMENT_PREREG_2026-11-05.md
+          python3 -m py_compile jpdc/normal_network_probe_stage6.py jpdc/independent_network_probe_stage6.py jpdc/test_network_probe_stage6.py jpdc/run_network_probe_stage6.py
+          python3 jpdc/test_network_probe_stage6.py | tee stage6/probe_unit.log
+          python3 jpdc/test_network_residual_risk_policy.py | tee stage6/previous_policy_unit.log
+      - name: Run original eight-arm seed82 development experiment twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_network_probe_stage6.py --out stage6/matrix.json | tee stage6/matrix.log
+          python3 jpdc/run_network_probe_stage6.py --out stage6/matrix_repeat.json > stage6/matrix_repeat.log
+          cmp stage6/matrix.json stage6/matrix_repeat.json
+          echo JPDC_STAGE6_ORIGINAL_PROBE_FULL_MATRIX_BYTE_REPRODUCIBLE_PASS
+          python3 - <<'PY'
+          import json
+          d=json.load(open('stage6/matrix.json'))
+          assert d['status']=='PASS' and d['scientific_seed_index']==82
+          assert d['task_policy_observations']==96000 and len(d['rows'])==8
+          assert len(d['policies'])==4 and len(d['scenarios'])==2
+          assert all(x['cpu_finish_events']==x['e2e_feedback_events']==x['network_feedback_events']==12000 for x in d['rows'])
+          assert all(x['adaptive_feedback_events']==x['e17_observed_at_e2e'] for x in d['rows'])
+          print('JPDC_STAGE6_ORIGINAL_PROBE_EVIDENCE_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage6-network-probe-development
+          path: stage6/
+          if-no-files-found: warn
