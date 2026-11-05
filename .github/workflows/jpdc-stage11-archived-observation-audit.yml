@@ -1,0 +1,75 @@
+name: JPDC Stage11 archived first-feedback detection lag and exposure audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage11-archived-observation-audit.yml']
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  archived:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact immutable original Stage11 run artifact, no simulation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p archive-stage11
+          gh run download 42093920896 -n jpdc-stage11-native-physical-shadow-epoch -D archive-stage11/
+          test -s archive-stage11/matrix.json
+      - name: Audit immutable times and observational missing detection
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > archive-stage11/report_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 - <<'PY' | tee archive-stage11/first_feedback_report.log
+          import json,math
+          d=json.load(open('archive-stage11/matrix.json'))
+          assert d['status']=='PASS' and d['scientific_seed_index']==83
+          assert d['task_policy_observations']==96000 and len(d['rows'])==8
+          assert all(r['shadow_network_epoch']['feedback_events']==12000 for r in d['rows'])
+          for r in d['rows']:
+              s=r['shadow_network_epoch']
+              assert s['shadow_only_no_routing_control'] and s['affected_postshock_feedback']==s['affected_postshock_dispatches']
+              assert s['affected_nodes_observed_postshock']+s['distinct_affected_unobserved_nodes']==6
+              assert s['affected_nodes_alarmed']<=s['affected_nodes_observed_postshock']
+              assert s['false_alarms']==0
+              assert s['alarm_count']==sum(s['alarms_by_node'])
+              assert s['alarm_count']<=s['feedback_events']
+              if s['first_observed_affected_alarm_e2e_ms'] is not None:
+                  assert s['first_exposed_task_arrival_ms']<=s['first_exposed_task_e2e_delivery_ms']<=s['first_observed_affected_alarm_e2e_ms']
+                  delay_from_arrival=s['first_observed_affected_alarm_e2e_ms']-s['first_exposed_task_arrival_ms']
+                  assert math.isclose(delay_from_arrival,s['detector_delay_from_first_affected_arrival_ms'],abs_tol=1e-8)
+                  delay_from_first_observation=s['detector_delay_from_first_affected_feedback_ms']
+                  assert delay_from_first_observation>=0
+              else:
+                  delay_from_arrival=None
+                  delay_from_first_observation=None
+              if r['scenario']=='S2_HIDDEN_COMPUTE_40LOSS':
+                  assert s['alarm_count']==0
+              else:
+                  assert s['alarm_count']==1 and s['affected_nodes_alarmed']==1
+              print('STAGE11_ARCHIVED_DETECTION',r['scenario'],r['policy'],
+                    'observed_affected_nodes',s['affected_nodes_observed_postshock'],
+                    'alarmed_affected_nodes',s['affected_nodes_alarmed'],
+                    'affected_dispatches',s['affected_postshock_dispatches'],
+                    'first_exposed_arrival_ms',s['first_exposed_task_arrival_ms'],
+                    'first_affected_E2E_ms',s['first_exposed_task_e2e_delivery_ms'],
+                    'first_alarm_E2E_ms',s['first_observed_affected_alarm_e2e_ms'],
+                    'alarm_delay_from_first_arrival_ms',delay_from_arrival,
+                    'alarm_delay_from_first_affected_E2E_ms',delay_from_first_observation,
+                    'quarantined_older_reports',sum(s['quarantined_reports_by_node']),
+                    'all_MISSION_misses',r['mission_deadline_misses'])
+          print('JPDC_STAGE11_IMMUTABLE_SHADOW_OBSERVABILITY_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage11-archived-original-observability-report
+          path: archive-stage11/
+          if-no-files-found: warn
