@@ -1,0 +1,33 @@
+name: JPDC Stage7 selected-only delayed feedback identifiability counterexample
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage7-feedback-identifiability-gate.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  two-world:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify original source and elementary non-oracular lower-bound fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage7
+          git rev-parse HEAD > stage7/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE7_DELAYED_FEEDBACK_IDENTIFIABILITY_PROPOSITION_2026-11-05.md
+          python3 -m py_compile jpdc/test_stage7_identifiability_counterexamples.py
+          python3 jpdc/test_stage7_identifiability_counterexamples.py | tee stage7/two_world_fixture.log
+          python3 jpdc/test_network_probe_stage6.py | tee stage7/old_probe_unit.log
+          python3 jpdc/test_network_residual_risk_policy.py | tee stage7/old_risk_unit.log
+          echo JPDC_STAGE7_IDENTIFIABILITY_AND_EXISTING_POLICY_GATES_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage7-two-world-identifiability-proof-fixtures
+          path: stage7/
+          if-no-files-found: warn
