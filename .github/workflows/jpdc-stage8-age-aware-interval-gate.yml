@@ -1,0 +1,33 @@
+name: JPDC Stage8 conditional time-drift interval and no-future-feedback proof
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage8-age-aware-interval-gate.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  conditional:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify original frozen CASPER and mathematical assumption protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage8
+          git rev-parse HEAD > stage8/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE8_AGE_AWARE_RESIDUAL_INTERVAL_PREREG_2026-11-05.md
+          python3 -m py_compile jpdc/age_aware_network_interval_stage8.py jpdc/test_age_aware_network_interval_stage8.py
+          python3 jpdc/test_age_aware_network_interval_stage8.py | tee stage8/age_aware_interval_fixtures.log
+          python3 jpdc/test_stage7_identifiability_counterexamples.py | tee stage8/original_identifiability.log
+          python3 jpdc/test_network_probe_stage6.py | tee stage8/original_probing.log
+          echo JPDC_STAGE8_CONDITIONAL_MATHEMATICAL_AND_PRIOR_SOURCE_QA_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage8-age-aware-network-interval-prototype
+          path: stage8/
+          if-no-files-found: warn
