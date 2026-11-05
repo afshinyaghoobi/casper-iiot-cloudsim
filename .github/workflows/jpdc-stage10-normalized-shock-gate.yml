@@ -1,0 +1,33 @@
+name: JPDC Stage10 source-normalized network change alarms
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage10-normalized-shock-gate.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  shock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen E42 and registered no-oracle shock measurement contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage10
+          git rev-parse HEAD > stage10/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE10_NORMALIZED_NETWORK_SHOCK_EPOCH_PREREG_2026-11-05.md
+          python3 -m py_compile jpdc/normalized_network_shock_epochs_stage10.py jpdc/test_normalized_network_shock_epochs_stage10.py
+          python3 jpdc/test_normalized_network_shock_epochs_stage10.py | tee stage10/network_shock.log
+          python3 jpdc/test_two_intercept_network_envelope_stage9.py | tee stage10/old_compression.log
+          python3 jpdc/test_age_aware_network_interval_stage8.py | tee stage10/old_age_interval.log
+          echo JPDC_STAGE10_NORMALIZED_SHOCK_AND_PRIOR_GATES_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage10-source-normalized-delayed-shock-diagnostics
+          path: stage10/
+          if-no-files-found: warn
