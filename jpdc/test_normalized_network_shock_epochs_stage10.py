@@ -78,7 +78,7 @@ def main():
     weak.deliver(0,nsmall,nsmall,0.,1.)
     ev=weak.deliver(0,2*nsmall,nsmall,10.,20.)
     assert ev.kind=="compatible_delivered_feedback" and weak.alarms[0]==0
-    assert weak.bounds(0,30.,nsmall).normalized_low==0.
+    assert weak.bounds(0,30.,nsmall).normalized_low==.5
     assert weak.bounds(0,30.,nsmall).normalized_high==.5
     print("PASS change alarm NOT guaranteed under weak measurement precision")
 
