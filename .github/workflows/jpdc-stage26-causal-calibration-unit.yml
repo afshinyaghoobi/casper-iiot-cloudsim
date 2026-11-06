@@ -1,0 +1,40 @@
+name: JPDC Stage26 causal WAIT score calibration unit tests
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage26-causal-calibration-unit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen E42 and Stage26 prospective preregistered protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage26
+          git rev-parse HEAD > stage26/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE26_CAUSAL_WAIT_CALIBRATION_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/causal_wait_calibration_stage26.py jpdc/test_causal_wait_calibration_stage26.py
+      - name: Exact Stage26 causal unit fixtures twice and original regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/test_causal_wait_calibration_stage26.py | tee stage26/contract.log
+          python3 jpdc/test_causal_wait_calibration_stage26.py > stage26/contract_repeat.log
+          cmp stage26/contract.log stage26/contract_repeat.log
+          python3 jpdc/test_queue_error_aware_dominance_stage24.py | tee stage26/stage24.log
+          python3 jpdc/test_robust_interval_dominance_stage22.py | tee stage26/stage22.log
+          python3 jpdc/test_congestion_guard_stage15.py | tee stage26/stage15.log
+          echo JPDC_STAGE26_CAUSAL_CALIBRATION_REPRODUCIBLE_REGRESSION_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage26-causal-wait-calibration-unit-gates
+          path: stage26/
+          if-no-files-found: warn
