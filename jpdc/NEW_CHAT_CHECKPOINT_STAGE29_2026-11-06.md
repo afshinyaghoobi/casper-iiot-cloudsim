@@ -1,0 +1,31 @@
+# JPDC continuation checkpoint after Stage29 — 2026-11-06
+
+## User goal and nonnegotiable science
+Continue actual connected GitHub research `afshinyaghoobi/casper-iiot-cloudsim`, branch `jpdc-seed0-repro-20261024`, toward **JPDC** journal-only new CASPER follow-on contribution, not CCGrid splitting. Preserve all original FGCS E42 Git blob SHA `34256ca7bff46f911cf20e8b94278fbd09175746`, E4.6 and previously run source models unchanged. Report actual Actions runs, precise negative as well as positive results, no future promises or paper acceptance claims.
+
+## NEW Stage29 fully completed independent science — decisive negative result
+- Preregistered **before outcomes** `jpdc/STAGE29_FOUR_SEED_FULL_Q_VALIDATION_PREREG_2026-11-06.md` commit `5a1d767b397d5765a08ac28c5d1a3ca35f2d04f8`. Locked exactly 4 new scientific source seeds501–504, separate from previously reported dev seeds83–90/301–308. Cannot assert never used in all historical repo code without exhaustive audit.
+- Real GitHub [4-seed matrix + aggregate 42280672176](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/42280672176) **SUCCESS** all seed501/502/503/504 jobs and full fixed-cohort aggregate `JPDC_STAGE29_ALL_FOUR_SEEDS_COMPLETE_COHORT_AUDIT_PASS`. 4 seeds × 2 scenarios S2 hidden CPU40%/S3 hidden network50% × 2 original policies PRED_GREEDY/CASPER_FULL ×12000 task-policy observations =192,000 dependent jobs, scientific n=4. Per-arm complete original Stage6 policy JSON EXACT parity, original source and Stage28 rolling calibration UNCHANGED. Each physical source seed 80k task calibration, native strict Python FCFS (not Java).
+- Original fixed Stage28 `CausalNonnetworkCalibrator`: q=(actual WAIT−nominal predicted WAIT)+(actual CPU−nominal predicted CPU), labels only after CPU finish, 9 contexts by class and source queue telemetry age 0–10,10–25,25+ms; rolling200 finished scores, min40 else abstain, empirical signed 5%–95% order statistic, **always certified=False and descriptive_only=True**. No network feedback/CPU truth at dispatch, no Stage24 certified q bound.
+- **Primary operational 90% coverage adequacy FAIL** S2 PRED_GREEDY postshock:
+  * 501: total90.20%, HIGH89.13%, MISSION83.00%;
+  * 502: total84.40%, HIGH83.33%, MISSION59.82%;
+  * 503: total85.65%, HIGH85.42%, MISSION69.90%;
+  * 504: total82.65%, HIGH75.25%, MISSION40.66%.
+  * Mean per seed total85.725%, HIGH83.2846%, MISSION**63.3459%**. Pass n/4: total1, HIGH0, MISSION0. S2 GREEDY post 8000 tasks, 1142 q-bound misses; HIGH198/1176 misses; MISSION147/406 misses. Avoid treating 406 as scientific n.
+- Other full cohort postshock seed-means:
+  * S2 CASPER_FULL overall89.7125%, HIGH91.3664%, MISSION84.8508%, all four MISSION seeds <90%.
+  * S3 PRED_GREEDY overall90.35%, HIGH91.1812%, MISSION88.0635%.
+  * S3 CASPER_FULL overall90.35%, HIGH91.1812%, MISSION87.7887%.
+  * Pre overall approx89.91–89.96%; 1450 initial sparse abstentions per four-seed policy/scenario cohort.
+- Full verified report `jpdc/STAGE29_FOUR_SEED_FULL_Q_COVERAGE_VERIFIED_NEGATIVE_2026-11-06.md` commit `785be4e8bbf9a9a0b05e0fca094da12e5d6bea45`; frozen source cohort audit `jpdc/audit_stage29_complete_cohort.py`; source runner `jpdc/run_stage29_independent_full_q.py`; CI `.github/workflows/jpdc-stage29-four-seed-full-q.yml`. Scientific result: recent-history central empirical q interval **does not reliably cover CPU shock, especially MISSION**; cannot be used as Stage24 hard bound or a safe certificate. Four source seeds do NOT establish universal generalization, but replicate the failure. No tuning on them for confirmation.
+
+## Earlier binding evidence
+- Stage28 archived development seed90 full nonnetwork q rolling intervals [42277500263](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/42277500263) unit/replay PASS, S2 PRED_GREEDY post total83.95%, HIGH67.30%, MISSION85.15%, one development seed only.
+- Stage27 original seed90 CPU+WAIT labels physical CI [42269844289](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/42269844289) success exact source Stage6 parity; S2 greedy post ABS p95 q32.58ms, FULL3.81ms; original n1. Stage25 seed89 WAIT-only source physical, Stage26 WAIT-only prequential archived seed89 ~91% aggregate but MISSION undercoverage; can't confuse WAIT-only q with full nonnetwork q.
+- Stage24 queue-error-aware dominance `jpdc/queue_error_aware_dominance_stage24.py` unit success [42242666207](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/42242666207); input q bound **external assumption only**; MUST NOT inject Stage28 signed quantile as guaranteed interval.
+- Stage23 previous Stage22 network-only robust dominance one DEVELOPMENT seed88 S3 MISSION misses16 vs FULL33, S2 robust14 vs FULL9, no independent efficacy. Stage16 older Stage15 guarded n8 S3 exact sign p=.375 NOT significant and S2 harm; Stage17 probe ablation n2 null MISSION miss effect.
+- Java CloudSimPlus 8.5.7 SpaceShared vs Python FCFS queue parity preregistered FAIL max wait9.1214ms>5ms; Stage18–21 source mechanism min VM update delay10.001ms and direct waiting bypass explain domain difference but no cross-model validation. No established JPDC algorithm novelty versus existing robust/delayed feedback/deadline scheduling methods.
+
+## Best next ACTUAL Stage30 research
+Before any new source runs, preregister a **causal CPU-regime-change alarm + abstention strategy** with explicit costs and no hidden oracle shock onset. Since Stage29 shows nominal coverage fails, design testable online logic that reads only CPU-finish signed q observations (perhaps adaptive one-sided tail or split CUSUM) and revokes stale signed intervals when drift evidence emerges; crucially report detection lag/false alarms, label-delivery delay, MISSION fallback behavior and coverage conditional on alarm state, not only a mean. Unit-test hidden future data, stale invalidation and false-alarm counterexamples; do NOT claim sequential conditional coverage from a detector or restore 90% coverage by dropping difficult tasks without reporting abstention and class costs. Need distinctly **new independent seeds** for next honest efficacy/coverage evaluation, avoid tuning 501–504 as though fresh. Strong published baselines, alternative queue simulator and external traces still needed for JPDC. No guaranteed acceptance/submission readiness.
