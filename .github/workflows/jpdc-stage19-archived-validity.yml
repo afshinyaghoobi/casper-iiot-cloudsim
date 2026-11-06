@@ -1,0 +1,35 @@
+name: JPDC Stage19 archived-only microfixture timing-validity audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage19-archived-validity.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  validity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: jpdc-stage19-real-cloudsim-857-microqueue
+          run-id: 42232972792
+          github-token: ${{ github.token }}
+          path: original-stage19
+      - name: Determine whether the preregistered Java fixture ever had a free PE with an older waiting task
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s original-stage19/native.log
+          mkdir -p stage19-window
+          python3 jpdc/audit_stage19_original_timing_window.py original-stage19/native.log | tee stage19-window/audit.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage19-original-fixture-window-validity
+          path: stage19-window/
+          if-no-files-found: warn
