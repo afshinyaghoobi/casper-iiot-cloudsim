@@ -1,0 +1,66 @@
+name: JPDC Stage31 independent frozen CPU-alarm utility four-seed evaluation
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage31-independent-cpu-alarm.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        seed: [505, 506, 507, 508]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Original protected E42 and preregistered Stage31 science
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage31
+          git rev-parse HEAD > stage31/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE31_FOUR_SEED_CPU_ALARM_VALIDATION_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/run_stage31_frozen_cpu_alarm.py jpdc/audit_stage31_complete_alarm_cohort.py
+          python3 jpdc/test_causal_cpu_shift_guard_stage30.py > stage31/causal_unit.log
+      - name: Original source frozen policy and retrospective CPU alarm with no future truth
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage31_frozen_cpu_alarm.py --seed ${{ matrix.seed }} --out stage31/seed_${{ matrix.seed }}.json | tee stage31/seed_${{ matrix.seed }}.log
+          echo JPDC_STAGE31_INDEPENDENT_SEED_COMPLETE ${{ matrix.seed }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage31-independent-source-${{ matrix.seed }}
+          path: stage31/
+          if-no-files-found: warn
+  cohort:
+    needs: [seed]
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage31-independent-source-*
+          path: stage31-artifacts
+      - name: Require all registered seeds and report negative operational gate outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage31-aggregate
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/audit_stage31_complete_alarm_cohort.py --input stage31-artifacts --out stage31-aggregate/cohort.json | tee stage31-aggregate/cohort.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage31-all-four-seed-frozen-alarm-utility-cohort
+          path: stage31-aggregate/
+          if-no-files-found: warn
