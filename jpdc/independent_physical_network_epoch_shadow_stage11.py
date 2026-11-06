@@ -251,9 +251,6 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None)
                     prior_accepted_count=len(prior_history),
                     prior_latest_measurement_ms=(
                         prior_measurement if math.isfinite(prior_measurement) else None),
-                    prior_accepted_measurements=[
-                        dict(z=x.z,measurement_ms=x.measurement_time,
-                             delivery_ms=x.delivery_time) for x in prior_history],
                     kind=observation.kind,epoch=observation.epoch))
 
             if i>=10000 and j in affected:
