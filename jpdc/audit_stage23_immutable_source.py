@@ -20,12 +20,12 @@ for scenario in SCENARIOS:
         assert r["total_mission"]==630 and r["post_mission"]==105
         assert r["total_mission_misses"]==r["pre_misses"]+r["post_misses"]
         assert all(math.isfinite(r[x]) for x in ("mean_latency_ms","mean_wait_ms"))
-    a=robust["source_stage23_robust"]
-    assert a["decisions"]==a["causal_e2e_delivered"]==12000
-    assert a["probe_attempts"]==0
-    assert 0<=a["mission_switches"]<=a["switches"]
-    assert a["arrivals_changed_from_greedy"]==a["switches"]
-    assert a["mission_changed_from_greedy"]==a["mission_switches"]
+    stats=robust["source_stage23_robust"]
+    assert stats["decisions"]==stats["causal_e2e_delivered"]==12000
+    assert stats["probe_attempts"]==0
+    assert 0<=stats["mission_switches"]<=stats["switches"]
+    assert stats["arrivals_changed_from_greedy"]==stats["switches"]
+    assert stats["mission_changed_from_greedy"]==stats["mission_switches"]
     for r in (g,full,guard):
         assert r["source_stage23_robust"] is None
     item=dict(
@@ -38,8 +38,8 @@ for scenario in SCENARIOS:
         robust_minus_guarded_total_misses=robust["total_mission_misses"]-guard["total_mission_misses"],
         robust_pre_misses=robust["pre_misses"],robust_post_misses=robust["post_misses"],
         full_pre_misses=full["pre_misses"],full_post_misses=full["post_misses"],
-        robust_switches=a["switches"],robust_mission_switches=a["mission_switches"],
-        robust_unverified_decisions=a["unverified_decisions"],
+        robust_switches=stats["switches"],robust_mission_switches=stats["mission_switches"],
+        robust_unverified_decisions=stats["unverified_decisions"],
         robust_mean_latency_ms=robust["mean_latency_ms"],
         full_mean_latency_ms=full["mean_latency_ms"],
         robust_mean_wait_ms=robust["mean_wait_ms"],
