@@ -1,0 +1,35 @@
+name: JPDC Stage23 immutable original source development evidence audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage23-archived-source-audit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  archived:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: jpdc-stage23-robust-source-development-seed88
+          run-id: 42238156427
+          github-token: ${{ github.token }}
+          path: stage23-original
+      - name: Frozen source and complete 8-arm source-artifact diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s stage23-original/matrix.json
+          mkdir -p stage23-frozen-audit
+          python3 jpdc/audit_stage23_immutable_source.py --original stage23-original/matrix.json --out stage23-frozen-audit/results.json | tee stage23-frozen-audit/report.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage23-archived-eight-arm-development-evidence
+          path: stage23-frozen-audit/
+          if-no-files-found: warn
