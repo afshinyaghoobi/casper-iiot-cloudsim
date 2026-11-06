@@ -1,0 +1,45 @@
+name: JPDC Stage23 robust interval dominance native physical development seed88
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage23-robust-source-dev.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source protection, prereg and Python fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage23
+          git rev-parse HEAD > stage23/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE23_ROBUST_INTERVAL_PHYSICAL_DEV_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/independent_physical_robust_dominance_stage23.py jpdc/run_stage23_robust_source_dev.py
+          python3 jpdc/test_robust_interval_dominance_stage22.py | tee stage23/stage22_regression.log
+      - name: Source-generated Stage23 eight-arm native physical matrix and exact repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage23_robust_source_dev.py --out stage23/matrix.json | tee stage23/matrix.log
+          python3 jpdc/run_stage23_robust_source_dev.py --out stage23/matrix_repeat.json > stage23/repeat.log
+          cmp stage23/matrix.json stage23/matrix_repeat.json
+          echo JPDC_STAGE23_NATIVE_PHYSICAL_REPRODUCIBILITY_PASS
+          python3 - <<'PY'
+          import json
+          x=json.load(open("stage23/matrix.json"))
+          assert x["seed_index"]==88 and x["status"]=="PASS"
+          assert len(x["rows"])==8 and x["task_policy_observations"]==96000
+          print("JPDC_STAGE23_FULL_FROZEN_PHYSICAL_ARTIFACT_PASS")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage23-robust-source-development-seed88
+          path: stage23/
+          if-no-files-found: warn
