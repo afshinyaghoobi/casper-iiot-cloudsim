@@ -1,0 +1,16 @@
+# JPDC Stage18 — CloudSim Plus 8.5.7 SpaceShared queue-admission source-level forensic, preregistered 2026-11-06
+
+## Frozen known facts (do not reinterpret)
+Original Python strict chronological FCFS vs Java CloudSimPlus queue replay MAX absolute WAIT error 9.12140093294972ms exceeded preregistered 5ms, so original fidelity test **FAILED** (run 41773297282). Independent pre/post scheduler-submission log (run 41777312914) observed node14 10900 submitted first into waiting behind running 10898; later 10901 submitted with running empty while 10900 still waiting; 10901 admitted directly into execution. This is a demonstrated *case-specific* waiting-list bypass, NOT yet a general Java scheduler bug explanation or downstream original-policy validation.
+
+## Stage18 preregistered code-inspection hypothesis
+CloudSim Plus 8.5.7 SpaceShared scheduler may admit an incoming cloudlet directly if its required PEs are momentarily available, even when its internal waiting list is nonempty, while waiting-list releases happen via a different update-processing callback. The earlier task could remain waiting at an interleaved event boundary. Alternative possibilities: a timing precision window; an event update delay; arrival and internal scheduler update scheduled at different priorities; or implementation-specific scheduler queue transfer. No conclusion before inspecting the actual 8.5.7 source.
+
+## Procedure frozen before reading outputs
+(1) Keep E42 blob SHA 34256ca7bff46f911cf20e8b94278fbd09175746 and original E4.6 untouched. (2) On GitHub-hosted Ubuntu JDK17, ask Maven to download exact *sources* classifier of org.cloudsimplus:cloudsimplus:8.5.7 and record archive SHA256. (3) Identify implementation paths of `CloudletSchedulerSpaceShared`, `CloudletSchedulerAbstract`, and relevant update/submit/queue methods; extract numbered source excerpts (line locations, method names) into artifact. (4) Independently extract .class bytecode if sources not available; don't conclude based on a snippet from a different version. (5) Identify observed-bypass compatible or contradicting paths, including whether `canExecuteCloudletInternal`, `cloudletSubmitInternal`, `updateProcessing`, `moveNextCloudletsFromWaitingToExecList` check queue fairness. Label any upstream event timing inference a hypothesis, as not directly observed here. (6) Run the complete static extraction twice and compare byte-identical JSON.
+
+## Acceptance and boundaries
+A successful static source extraction can confirm **which condition the library implements**. It cannot prove actual upstream event timing or causal history for node14, and cannot convert previously failed end-to-end simulation parity to PASS. If sources classifier is unavailable, preserve failure and switch to exact bytecode audit. Do NOT patch original CloudSim library or E42 model, do NOT add exceptions to FCFS replay, do NOT claim Stage18 work improves CASPER scheduling performance. If current method differs from hypotheses, report what it shows, not desired conclusion.
+
+## Output
+A source+method indexed audit for published manuscript limitations and an explicit list of unproven runtime-event hypotheses; no new efficacy seed or submission-readiness claim.
