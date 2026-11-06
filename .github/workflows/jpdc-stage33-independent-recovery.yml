@@ -1,0 +1,66 @@
+name: JPDC Stage33 fixed independent four-seed post-CPU-alarm epoch recovery
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage33-independent-recovery.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        seed: [509, 510, 511, 512]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freeze E42 and pre-outcome science definition
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage33
+          git rev-parse HEAD > stage33/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE33_RECOVERY_EPOCH_FOUR_SEED_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/run_stage33_independent_epoch_recovery.py jpdc/audit_stage33_complete_recovery_cohort.py
+          python3 jpdc/test_causal_recovery_epoch_stage32.py > stage33/stage32_unit_regression.log
+      - name: Run fixed source seed with Stage6 parity and immutable frozen epoch recovery rule
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage33_independent_epoch_recovery.py --seed ${{ matrix.seed }} --out stage33/seed_${{ matrix.seed }}.json | tee stage33/seed_${{ matrix.seed }}.log
+          echo JPDC_STAGE33_ONE_FIXED_SEED_SOURCE_COMPLETE ${{ matrix.seed }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage33-source-seed-${{ matrix.seed }}
+          path: stage33/
+          if-no-files-found: warn
+  cohort:
+    needs: [seed]
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage33-source-seed-*
+          path: stage33-artifacts
+      - name: Require all four science seeds and preserve negative outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage33-aggregate
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/audit_stage33_complete_recovery_cohort.py --input stage33-artifacts --out stage33-aggregate/cohort.json | tee stage33-aggregate/cohort.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage33-independent-complete-recovery-cohort
+          path: stage33-aggregate/
+          if-no-files-found: warn
