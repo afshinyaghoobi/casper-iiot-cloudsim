@@ -1,0 +1,35 @@
+name: JPDC Stage25 archived-only queue wait context strata
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage25-archived-wait-strata.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  strata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: jpdc-stage25-causal-queue-wait-development-seed89
+          run-id: 42254782412
+          github-token: ${{ github.token }}
+          path: original-stage25
+      - name: Audit immutable Stage25 causal queue wait labels, no new physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage25-archived
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s original-stage25/wait_trace.json
+          python3 jpdc/audit_stage25_archived_wait_strata.py --original original-stage25/wait_trace.json --out stage25-archived/strata.json | tee stage25-archived/strata.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage25-original-artifact-wait-strata
+          path: stage25-archived/
+          if-no-files-found: warn
