@@ -1,0 +1,42 @@
+name: JPDC Stage17 preregistered no-active-probe causal ablation
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage17-probe-ablation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ablation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [86, 87]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen source and Stage17 preregistration gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage17
+          git rev-parse HEAD > stage17/git_head.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE17_PROBING_ABLATION_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/no_active_probe_freshness_stage17.py jpdc/independent_physical_probe_ablation_stage17.py jpdc/run_stage17_probe_ablation.py
+          python3 jpdc/test_congestion_guard_stage15.py | tee stage17/guard_regression.log
+      - name: Exact exploratory native eight-arm per-seed matrix and byte-identical rerun
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage17_probe_ablation.py --seed ${{ matrix.seed }} --out stage17/ablation.json | tee stage17/ablation.log
+          python3 jpdc/run_stage17_probe_ablation.py --seed ${{ matrix.seed }} --out stage17/ablation_repeat.json > stage17/repeat.log
+          cmp stage17/ablation.json stage17/ablation_repeat.json
+          echo JPDC_STAGE17_ABLATION_SEED_REPRODUCIBLE_PASS ${{ matrix.seed }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage17-probe-ablation-dev-seed-${{ matrix.seed }}
+          path: stage17/
+          if-no-files-found: warn
