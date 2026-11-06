@@ -1,0 +1,29 @@
+name: JPDC Stage15 guarded controller deterministic unit contract
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage15-guard-contract.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source protection and deterministic guard assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE15_CONGESTION_GUARDED_FRESHNESS_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/congestion_guarded_freshness_stage15.py jpdc/test_congestion_guard_stage15.py
+          python3 jpdc/test_congestion_guard_stage15.py | tee stage15_guard.log
+          python3 jpdc/test_freshness_active_observation_stage13.py | tee stage13_fixture.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage15-nominal-detour-guard-unit-test
+          path: '*.log'
+          if-no-files-found: warn
