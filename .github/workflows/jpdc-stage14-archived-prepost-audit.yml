@@ -1,0 +1,35 @@
+name: JPDC Stage14 archived-only pre-post miss diagnostic
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage14-archived-prepost-audit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  archived:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download immutable Stage14 successful original artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: jpdc-stage14-native-physical-freshness-development-seed84
+          run-id: 42184744223
+          github-token: ${{ github.token }}
+          path: original-stage14
+      - name: Audit pre vs post MISSION misses from original source only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s original-stage14/matrix.json
+          python3 jpdc/audit_archived_stage14_prepost.py original-stage14/matrix.json | tee stage14_archived_prepost.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage14-archived-prepost-miss-audit
+          path: stage14_archived_prepost.log
+          if-no-files-found: warn
