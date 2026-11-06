@@ -45,20 +45,47 @@ def run():
                 # at arrival of a postshock report, not simply present eventually.
                 before=[p for p in accepted if p["task_index"]<10000]
                 e["prior_pre_accepted_at_delivery"]=len(before)
+                # Frozen Stage10 pair rule, independently reconstructed OFFLINE.
+                candidates=[(abs(e["normalized_excess"]-p["normalized_excess"])
+                             -0.0001*abs(e["cpu_finish_ms"]-p["cpu_finish_ms"]))
+                            for p in accepted]
+                e["max_prior_incompatibility_margin"]=max(candidates) if candidates else None
+                e["prior_pre_min_generation_gap_ms"]=(
+                    min(abs(e["cpu_finish_ms"]-p["cpu_finish_ms"]) for p in before)
+                    if before else None)
                 if e["postshock_task_offline"] and before and e["kind"]!="late_measurement_quarantined":
                     pairs+=1
+                if e["kind"]!="late_measurement_quarantined":
+                    predicted_alarm=bool(candidates and max(candidates)>1e-10)
+                    assert predicted_alarm==(e["kind"]=="observed_incompatible_change_alarm"), (
+                        policy,j,e["task_index"],"observer-rule reconstruction mismatch")
                 if e["kind"]=="observed_incompatible_change_alarm":
                     accepted=[]
                 if e["kind"]!="late_measurement_quarantined":
                     accepted.append(e)
             pre=[e for e in es if not e["postshock_task_offline"]]
             post=[e for e in es if e["postshock_task_offline"]]
-            episodes.append(dict(node=j,pre_delivered=len(pre),post_delivered=len(post),
+            nonquarantined_post=[e for e in post if e["kind"]!="late_measurement_quarantined"]
+            post_with_pre=[e for e in nonquarantined_post if e["prior_pre_accepted_at_delivery"]>0]
+            no_alarm_reason=(
+                "alarm_observed" if any(e["kind"]=="observed_incompatible_change_alarm" for e in es)
+                else "no_postshock_feedback" if not post
+                else "all_postshock_feedback_quarantined" if not nonquarantined_post
+                else "no_prior_accepted_pre_shock_at_post_feedback" if not post_with_pre
+                else "all_delivered_pairs_compatible_under_frozen_L_epsilon")
+            episodes.append(dict(node=j,no_alarm_reason_offline=no_alarm_reason,
+                pre_delivered=len(pre),post_delivered=len(post),
                 pre_accepted=sum(e["kind"]!="late_measurement_quarantined" for e in pre),
                 post_accepted=sum(e["kind"]!="late_measurement_quarantined" for e in post),
                 post_quarantined=sum(e["kind"]=="late_measurement_quarantined" for e in post),
                 post_with_prior_accepted_pre=sum(e["prior_pre_accepted_at_delivery"]>0 for e in post),
                 comparable_accepted_post_pairs=pairs,
+                max_post_pre_comparison_margin=(
+                    max((e["max_prior_incompatibility_margin"] for e in post_with_pre
+                         if e["max_prior_incompatibility_margin"] is not None),default=None)),
+                min_post_pre_generation_gap_ms=(
+                    min((e["prior_pre_min_generation_gap_ms"] for e in post_with_pre
+                         if e["prior_pre_min_generation_gap_ms"] is not None),default=None)),
                 alarms=sum(e["kind"]=="observed_incompatible_change_alarm" for e in es),
                 first_post_e2e_ms=min((e["delivered_ms"] for e in post),default=None),
                 first_alarm_ms=min((e["delivered_ms"] for e in es if e["kind"]=="observed_incompatible_change_alarm"),default=None),
