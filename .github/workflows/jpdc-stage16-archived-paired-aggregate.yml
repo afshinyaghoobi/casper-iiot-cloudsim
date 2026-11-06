@@ -1,0 +1,39 @@
+name: JPDC Stage16 immutable eight-seed paired aggregate audit
+on:
+  workflow_run:
+    workflows: ["JPDC Stage16 prespecified independent paired eight-seed physical validation"]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  aggregate:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jpdc-seed0-repro-20261024
+      - name: Download exact original successful eight-shard matrix artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage16-paired-seed-*
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          merge-multiple: false
+          path: frozen-stage16
+      - name: Aggregate all seeds without recomputation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          mkdir -p stage16-summary
+          python3 jpdc/audit_stage16_paired_eight_seed_aggregate.py --root frozen-stage16 --out stage16-summary/paired.json | tee stage16-summary/paired.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage16-immutable-eight-seed-paired-analysis
+          path: stage16-summary/
+          if-no-files-found: warn
