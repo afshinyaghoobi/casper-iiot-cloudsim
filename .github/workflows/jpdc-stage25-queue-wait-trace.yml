@@ -1,0 +1,46 @@
+name: JPDC Stage25 original strict-FCFS causal queue WAIT residual trace
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage25-queue-wait-trace.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wait-residual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check frozen model and prospective queue trace protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage25
+          git rev-parse HEAD > stage25/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE25_QUEUE_WAIT_RESIDUAL_TRACE_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/independent_physical_queue_trace_stage25.py jpdc/run_stage25_queue_wait_trace.py
+          python3 jpdc/test_queue_error_aware_dominance_stage24.py | tee stage25/stage24_regression.log
+      - name: Run complete registered 4-arm trace with twice byte-identical output
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage25_queue_wait_trace.py --out stage25/wait_trace.json | tee stage25/wait_trace.log
+          python3 jpdc/run_stage25_queue_wait_trace.py --out stage25/wait_trace_repeat.json > stage25/repeat.log
+          cmp stage25/wait_trace.json stage25/wait_trace_repeat.json
+          echo JPDC_STAGE25_WAIT_TRACE_BYTE_REPRODUCIBLE_PASS
+          python3 - <<'PY'
+          import json
+          x=json.load(open("stage25/wait_trace.json"))
+          assert x["status"]=="PASS" and x["seed"]==89
+          assert x["dependent_task_policy_records"]==48000 and len(x["rows"])==4
+          assert all(len(a["trace"])==12000 for a in x["rows"])
+          print("JPDC_STAGE25_FROZEN_ORIGINAL_ARTIFACT_AUDIT_PASS")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage25-causal-queue-wait-development-seed89
+          path: stage25/
+          if-no-files-found: warn
