@@ -1,4 +1,5 @@
 name: JPDC Stage12 exploratory per-node E2E episode trace audit
+# Stage12 diagnostic classification gate: frozen 2026-11-06
 on:
   push:
     branches: [jpdc-seed0-repro-20261024]
