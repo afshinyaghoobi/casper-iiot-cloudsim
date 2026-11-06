@@ -1,0 +1,23 @@
+# JPDC Stage34 — prospective class-aware HIGH-to-MISSION proxy and negative-transfer unit audit (2026-11-06)
+
+## Why this is development, not an immediate publication claim
+Stage33 genuinely new seeds509–512 verified a negative: post CPU shock source-PRED_GREEDY MISSION interval availability only 1.15–11.38%, mean 5.16% across 4 seeds, because three disjoint telemetry-age groups each require 40 new MISSION labels. Stage29 independent seeds501–504 already falsified simple 90%-nominal post CPU-shock MISSION coverage; Stage31/33 also show costly alarm/no recovery. Do not tune thresholds on seeds509–512 and call any test on them confirmatory. No already issued empirical interval is a hard safety certificate.
+
+## NEW candidate method frozen BEFORE any Stage34 test or replay
+A separate observer-only Stage32 clone, retaining frozen Stage30 CPU-only 3 of last8 >10ms alarm and frozen Stage28 source-aligned full q predictor, will allow **HIGH-to-MISSION proxy only** for the SAME telemetry-age band, only after alarm. No borrowing NORMAL, no using hidden true source fault mask or service time before CPU completion, no use of prealarm q labels.
+- If original per-(MISSION,age-band) post-alarm estimate has >=40 completed labels, issue the original Stage32 MISSION estimate unchanged.
+- Otherwise require at least **10 completed post-alarm-dispatched MISSION labels** of the SAME age band, AND at least **40 completed post-alarm HIGH labels** of that SAME age band. No other pooling.
+- Require absolute difference of **signed median q** over each group's post-alarm CPU-finish-delivered residuals <=**2ms**, AND every one of the latest 10 MISSION samples must lie within HIGH's current 5%–95% interval, AND original MISSION samples must not be used to refit HIGH bounds. If all hold, issue exactly the HIGH signed q interval as a **proxy**, marked `proxy_source="HIGH"`, `certified=False` and `descriptive_only=True`. If any gate fails, abstain `insufficient_or_incompatible_proxy_evidence`; do not alter normal Stage32 observation.
+- Fixed descriptive thresholds 10 own MISSION labels, 40 HIGH labels, median discrepancy<=2ms and 10/10 own recent MISSION samples contained. These are exploratory values selected for a causal negative-transfer demonstration, **NOT** empirically calibrated safety guarantees, confidence bounds or novel theoretical methods.
+- At dispatch once a proxy interval is issued, keep its immutable values/provenance. New CPU-finish evidence cannot retroactively change it. Comparisons use same-age context only; no borrowing from NORMAL, different telemetry age, prealarm source, or different queue model. Recovery becomes descriptive availability only, never a certified Stage24 q envelope, and original source scheduler remains unchanged.
+
+## Prespecified falsifying unit tests
+1. No alarm: exact original Stage32 decisions.
+2. After alarm, HIGH>=40 without MISSION>=10 never issues proxy; MISSION>=10 without HIGH>=40 also abstains; other age/class groups cannot count.
+3. Identical HIGH/MISSION signed q residual distribution and all 10 own inside HIGH interval -> proxy may issue, clearly labeled, original min40 still not met.
+4. Negative transfer counterexample: HIGH residuals all0ms, MISSION all +20ms -> **blocked** by median and containment; a *subsequent* MISSION residual +20ms AFTER ten previously compatible MISSION samples can nonetheless invalidate the new proxy: this demonstrates no prospective guarantee or safe deadline assumption.
+5. Only jobs dispatched after CPU alarm and completed CPU contribute; prealarm jobs finishing late never contribute; before completion no future q labels or oracle masks.
+6. Recovered own MISSION>=40 takes precedence over proxy and stays no-cert; old original Stage32/30/28/24 unit tests pass; source E42 blob `34256ca7bff46f911cf20e8b94278fbd09175746` unchanged, E4.6 untouched.
+
+## Fixed first data audit (development only)
+Read only original frozen Stage27 seed90 immutable artifact [42269844289](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/42269844289); compare unchanged Stage32 issuance and Stage34 proxy on exact same 4 arms S2/S3 × original frozen PRED_GREEDY/CASPER_FULL. Report per-task-class/phase original-issued, own-recovered, proxy-issued, blocked and sparse counts, empirical achieved interval inclusion **separately for proxy MISSION**, postshock MISSION availability and rate of failed proxy vs current Stage32. Archive-only reproducibility and no retuning. A zero-proxy result is legitimate negative; do not adjust thresholds afterwards. Seed90 is pre-examined DEVELOPMENT only, no independent scientific efficacy. Require separate preregistered new independent seed cohort before claims.
