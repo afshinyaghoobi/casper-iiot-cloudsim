@@ -1,0 +1,49 @@
+name: JPDC Stage12 exploratory per-node E2E episode trace audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage12-node-episode-audit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  episode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen source and preregistration gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage12
+          git rev-parse HEAD > stage12/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE12_NODE_EPISODE_TRACE_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/independent_physical_network_epoch_shadow_stage11.py jpdc/run_stage12_node_episode_audit.py
+          python3 jpdc/test_normalized_network_shock_epochs_stage10.py | tee stage12/stage10_tests.log
+          python3 jpdc/test_network_probe_stage6.py | tee stage12/stage6_tests.log
+      - name: Exact twin exploratory audit with Stage6 outcome parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage12_node_episode_audit.py --out stage12/episodes.json | tee stage12/episodes.log
+          python3 jpdc/run_stage12_node_episode_audit.py --out stage12/episodes_repeat.json > stage12/repeat.log
+          cmp stage12/episodes.json stage12/episodes_repeat.json
+          echo JPDC_STAGE12_BYTE_REPRODUCIBLE_PASS
+          python3 - <<'PY'
+          import json
+          x=json.load(open('stage12/episodes.json'))
+          assert x['status']=='PASS' and x['seed_index']==83 and len(x['arms'])==2
+          for a in x['arms']:
+              assert len(a['affected_node_episodes'])==6
+              assert sum(e['alarms']>0 for e in a['affected_node_episodes'])==1
+              assert sum(e['post_delivered']>0 for e in a['affected_node_episodes'])==6
+          print('JPDC_STAGE12_SIX_NODE_DIAGNOSTIC_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage12-node-episode-exploratory-seed83
+          path: stage12/
+          if-no-files-found: warn
