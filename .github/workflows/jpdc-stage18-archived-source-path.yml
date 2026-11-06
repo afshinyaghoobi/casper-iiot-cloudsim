@@ -1,0 +1,36 @@
+name: JPDC Stage18 immutable CloudSimPlus source-path audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage18-archived-source-path.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  static-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch immutable original 8.5.7 forensic artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: jpdc-stage18-cloudsim-857-source-forensic
+          run-id: 42232194179
+          github-token: ${{ github.token }}
+          path: stage18-original
+      - name: Confirm direct admission versus later queued cloudlet drain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s stage18-original/forensic.json
+          mkdir -p stage18-audit
+          python3 jpdc/check_stage18_archived_scheduler_source.py --original stage18-original/forensic.json --out stage18-audit/path_check.json | tee stage18-audit/path_check.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage18-immutable-static-queue-admission-check
+          path: stage18-audit/
+          if-no-files-found: warn
