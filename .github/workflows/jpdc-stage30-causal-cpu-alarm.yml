@@ -1,0 +1,55 @@
+name: JPDC Stage30 causal CPU shift alarm unit and frozen development replay
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage30-causal-cpu-alarm.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  alarm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: jpdc-stage27-cpu-nonnetwork-source-development-seed90
+          run-id: 42269844289
+          github-token: ${{ github.token }}
+          path: archived-stage27
+      - name: Frozen original E42 and prospective CPU-alarm protocol gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage30
+          git rev-parse HEAD > stage30/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE30_CAUSAL_CPU_SHIFT_ALARM_PREREG_2026-11-06.md
+          test -s archived-stage27/full_trace.json
+          python3 -m py_compile jpdc/causal_cpu_shift_guard_stage30.py jpdc/test_causal_cpu_shift_guard_stage30.py jpdc/replay_stage30_archived_cpu_alarm.py
+      - name: Frozen adversarial unit contract and earlier q regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/test_causal_cpu_shift_guard_stage30.py | tee stage30/unit.log
+          python3 jpdc/test_causal_cpu_shift_guard_stage30.py > stage30/unit_repeat.log
+          cmp stage30/unit.log stage30/unit_repeat.log
+          python3 jpdc/test_causal_nonnetwork_calibration_stage28.py > stage30/stage28_regression.log
+          python3 jpdc/test_queue_error_aware_dominance_stage24.py > stage30/stage24_regression.log
+          echo JPDC_STAGE30_UNIT_AND_REGRESSION_REPRODUCIBILITY_PASS
+      - name: Replay original development artifact without new physical scheduling
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/replay_stage30_archived_cpu_alarm.py --original archived-stage27/full_trace.json --out stage30/alarm_replay.json | tee stage30/alarm_replay.log
+          python3 jpdc/replay_stage30_archived_cpu_alarm.py --original archived-stage27/full_trace.json --out stage30/alarm_replay_repeat.json > stage30/alarm_replay_repeat.log
+          cmp stage30/alarm_replay.json stage30/alarm_replay_repeat.json
+          echo JPDC_STAGE30_FROZEN_ARCHIVED_ALARM_REPLAY_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage30-original-development-causal-cpu-alarm
+          path: stage30/
+          if-no-files-found: warn
