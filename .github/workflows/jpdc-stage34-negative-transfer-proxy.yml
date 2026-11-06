@@ -1,4 +1,5 @@
 name: JPDC Stage34 causal HIGH MISSION proxy negative transfer and archive replay
+# Rerun fixed science after repairing test fixture missing dispatches only
 on:
   push:
     branches: [jpdc-seed0-repro-20261024]
