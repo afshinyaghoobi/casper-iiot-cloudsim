@@ -1,5 +1,5 @@
 name: JPDC Stage23 robust interval dominance native physical development seed88
-# Rerun original preregistered seed88 after fixing HIGH-vs-MISSION diagnostic counter only
+# Rerun original preregistered seed88 after fixing task-class accounting and API isolation only
 on:
   push:
     branches: [jpdc-seed0-repro-20261024]
