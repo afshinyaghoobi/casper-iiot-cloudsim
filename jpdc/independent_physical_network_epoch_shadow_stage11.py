@@ -68,7 +68,7 @@ def route(task,pred,alarmed,sigma,qrank,qglobal,eta,policy):
 NEW_POLICY="NEW_NETWORK_RESIDUAL"
 PROBE_POLICY="NEW_NETWORK_RESIDUAL_PROBE"
 
-def simulate(seed_index,scenario,policy,calibration,count=12000):
+def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None):
     if policy not in (*POLICIES,NEW_POLICY,PROBE_POLICY):raise ValueError("invalid pilot policy")
     flags=(POLICY_FLAGS["PRED_GREEDY"] if policy in (NEW_POLICY,PROBE_POLICY) else POLICY_FLAGS[policy])
     net_probe=NormalNetworkProbe()
@@ -238,7 +238,24 @@ def simulate(seed_index,scenario,policy,calibration,count=12000):
             nominal_net=specs[j][3]+(inmb+outmb)*8000.0/specs[j][2]
             excess=risk_state.observe_e2e(j,actual_net,nominal_net,now)
             # Shadow state sees ONLY delivered observations, not hidden truth.
+            # Optional E2E-only scientific audit hook: never consulted by routing.
+            # Capture state strictly before this report enters the observer.
+            prior_history=tuple(shadow.history[j]) if trace_hook is not None else ()
+            prior_measurement=shadow.last_measurement[j] if trace_hook is not None else None
             observation=shadow.deliver(j,actual_net,nominal_net,cpu_finish_time,now)
+            if trace_hook is not None:
+                trace_hook(dict(task_index=i,node=j,cpu_finish_ms=cpu_finish_time,
+                    delivered_ms=now,actual_network_ms=actual_net,
+                    nominal_network_ms=nominal_net,
+                    normalized_excess=max(0.0,actual_net/nominal_net-1.0),
+                    prior_accepted_count=len(prior_history),
+                    prior_latest_measurement_ms=(
+                        prior_measurement if math.isfinite(prior_measurement) else None),
+                    prior_accepted_measurements=[
+                        dict(z=x.z,measurement_ms=x.measurement_time,
+                             delivery_ms=x.delivery_time) for x in prior_history],
+                    kind=observation.kind,epoch=observation.epoch))
+
             if i>=10000 and j in affected:
                 shadow_affected_feedback+=1
                 shadow_seen_nodes.add(j)
