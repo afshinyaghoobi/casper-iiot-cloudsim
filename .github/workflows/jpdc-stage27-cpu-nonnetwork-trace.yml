@@ -1,0 +1,46 @@
+name: JPDC Stage27 causal CPU plus WAIT source trace seed90
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage27-cpu-nonnetwork-trace.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen original and Stage27 prospective observation protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage27
+          git rev-parse HEAD > stage27/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE27_CPU_AND_TOTAL_NONNETWORK_TRACE_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/independent_physical_cpu_nonnetwork_trace_stage27.py jpdc/run_stage27_cpu_nonnetwork_trace.py
+          python3 jpdc/test_causal_wait_calibration_stage26.py | tee stage27/causal_regression.log
+      - name: Source 4-arm paired developmental physical trace, full byte-identical repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage27_cpu_nonnetwork_trace.py --out stage27/full_trace.json | tee stage27/full_trace.log
+          python3 jpdc/run_stage27_cpu_nonnetwork_trace.py --out stage27/full_trace_repeat.json > stage27/full_trace_repeat.log
+          cmp stage27/full_trace.json stage27/full_trace_repeat.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open("stage27/full_trace.json"))
+          assert a["status"]=="PASS" and a["scientific_seed"]==90
+          assert len(a["rows"])==4 and a["dependent_task_policy_observations"]==48000
+          assert all(len(x["trace"])==12000 for x in a["rows"])
+          print("JPDC_STAGE27_FROZEN_ORIGINAL_SOURCE_COMPLETE_ARTIFACT_PASS")
+          PY
+          echo JPDC_STAGE27_SOURCE_TRACE_BYTE_REPRODUCIBLE_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage27-cpu-nonnetwork-source-development-seed90
+          path: stage27/
+          if-no-files-found: warn
