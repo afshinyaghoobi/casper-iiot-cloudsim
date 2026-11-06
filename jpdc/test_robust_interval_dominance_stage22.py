@@ -29,7 +29,7 @@ def test():
     print("PASS cannot displace unknown greedy node")
 
     c=setup_pair()
-    x=c.select(22.,p,n,11.,False)
+    x=c.select(22.,p,n,11.,False,True)
     assert x.node==1 and x.switched and x.conditionally_dominated
     assert x.candidate_upper_ms+1e-9<x.reference_lower_ms
     assert x.mission_deadline_feasible and not x.probe
@@ -44,7 +44,7 @@ def test():
     print("PASS nominal and network-bound conditional dominance; queue-model counterexample")
 
     c=setup_pair()
-    x=c.select(22.,p,n,9.5,False)
+    x=c.select(22.,p,n,9.5,False,True)
     assert x.node==0 and not x.switched and x.unverified
     print("PASS reject candidate whose conditional upper exceeds MISSION deadline")
 
@@ -55,9 +55,14 @@ def test():
     print("PASS NORMAL robust routing has no artificial probing")
 
     c=setup_pair()
+    high=c.select(22.,p,n,11.,False,False)
+    assert high.switched and c.switches==1 and c.mission_switches==0
+    print("PASS HIGH route changes are never counted as MISSION switches")
+
+    c=setup_pair()
     event=c.deliver_e2e(1,8.,4.,25.,30.)
     assert event.kind=="observed_incompatible_change_alarm"
-    x=c.select(31.,p,n,11.,False)
+    x=c.select(31.,p,n,11.,False,True)
     assert x.node==0 and not x.switched
     assert c.observer.bounds(1,31.,4.).unverified_after_alarm
     print("PASS incompatible epoch cannot certify a one-sample replacement node")
@@ -80,7 +85,7 @@ def test():
     print("PASS reject feedback or decisions before latest observed delivery")
 
     c=setup_pair()
-    c.select(22.,p,n,11.,False)
+    c.select(22.,p,n,11.,False,True)
     c.invariant()
     assert c.decisions==c.switches==c.mission_switches==1
     assert c.unverified_decisions==0
