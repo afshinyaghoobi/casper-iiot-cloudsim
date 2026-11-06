@@ -167,7 +167,7 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None)
                     specs[k][3]+(t[5]+t[6])*8000.0/specs[k][2]
                     for k in range(NODES)]
                 active_selection=fresh_controller.select(now,pred,nominal_net_vector,
-                                               t[3],t[2]=="NORMAL")
+                                               t[3],t[2]=="NORMAL",t[2]=="MISSION")
                 j=active_selection.node
                 rank,cert,family=1,False,()
                 active_arrival_changes+=int(j!=min(range(NODES),
