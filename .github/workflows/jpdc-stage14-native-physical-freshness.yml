@@ -1,4 +1,5 @@
 name: JPDC Stage14 native physical causal freshness scheduling dev pilot
+# Controller naming collision resolved; exact original seed84 unchanged
 on:
   push:
     branches: [jpdc-seed0-repro-20261024]
