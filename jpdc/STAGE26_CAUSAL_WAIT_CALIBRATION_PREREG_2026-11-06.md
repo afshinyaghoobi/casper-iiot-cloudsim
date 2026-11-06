@@ -1,0 +1,20 @@
+# JPDC Stage26 — causal WAIT residual rolling calibration interface, preregistered 2026-11-06
+
+## Scientific scope
+Stage25 seed89 produced **WAIT-only** error, actual service-start wait minus dispatch-available VirtualQueue backlog, delivered at CPU finish; observation varies strongly by telemetry age, but this is a ONE-seed descriptive observation. Stage24 takes externally calibrated signed nonnetwork error intervals, which also require CPU prediction error, not merely WAIT error. Do not turn Stage25 percentile into a "safe" bound or claim conformal exchangeability/guaranteed coverage.
+
+## Exactly frozen exploratory calibration design, before any new runs
+Implement a small **standalone causal interval learner**, no physical scheduling changes and no direct Stage24-certified policy integration:
+- Each issued task has immutable record (id, node, class, dispatch_ms, telemetry_age_ms, predicted_wait_ms); no observed wait yet.
+- A completed job **only at CPU finish** may provide signed wait error and service start; validate clocks `dispatch <= service_start <= cpu_finish`, exact arithmetic and no duplicate finish.
+- Source-specific context string is `native_python_strict_fcfs_vq_telemetry50ms`. Split by class (NORMAL/HIGH/MISSION) and **age bins [0,10), [10,25), [25,50+] ms**. To avoid leaky use of postshock truth, shock status is not a context feature. Node tier is omitted at this interface (not ruled out for future preregistered work).
+- Each context uses a bounded FIFO of the **last 200 CPU-finish-delivered scores**; require **>=40** causal completed labels for a usable estimate; default **abstain** otherwise. No borrowing other classes or ages.
+- For exploratory *pointwise* empirical signed interval, use order-statistic lower `floor((n-1)*0.05)` and upper `ceil((n-1)*0.95)`, with exact deterministic tie ordering; no smoothing. This 90% nominal central range is *not a valid 90% predictive interval*, especially under nonexchangeable queue data.
+- A request at `now_ms` can only use scores delivered by that time, and must be monotonic in time. Invalid future, duplicate, retrograde reports fail closed. Report sample n, scores delivered count, age band and validity source, label `descriptive_only=True`, `certified=False`.
+- Even when n>=40, the interval is an **estimate only**. It MUST NOT be passed to Stage24 as a certified error bound or used as a hard-deadline guarantee; this stage will test code contracts and time causality, not real-world risk coverage.
+
+## Preregistered deterministic unit gates
+(1) no completed labels -> abstain, (2) pending/unobserved cannot enter scores, (3) 39 completed -> abstain and 40 -> descriptive interval, (4) delayed/out-of-order *job completion* accepted in CPU-finishing time order, (5) reject retroactive arrival of any measurement, (6) class and telemetry-age bins isolated including boundaries, (7) preserve signed error below zero, (8) rolling window retains 200 most recently completed CPU labels rather than 200 dispatched tasks, (9) immutable past decisions not modified by later labels, (10) reject bad physical clock/arithmetic and duplicate task ids, (11) repeat deterministic logs byte identically, (12) Stage24/22/15 regression tests and E42 frozen blob gate.
+
+## Future validation design (NOT part of this unit-stage)
+Separate **prospective** validation: disjoint genuinely untouched source seeds (verify repository-wide use before selecting), chronological development calibration vs later time-block tests, block-aware variability and per-seed coverage/miscoverage plus tail changes during nonstationarity; calibrate CPU service residual separately and test complete nonnetwork q and network e with explicit dependence. Only after independent calibration and reliability assessment may an experimentally justified risk tolerance be integrated; never claim guaranteed deterministic envelope based solely on historical quantiles. Source Python strict-FCFS and Java CloudSimPlus SpaceShared remain non-equivalent (prior registered max wait mismatch FAIL 9.1214ms>5ms). Stage16 S3 p=.375 and S2 harm, Stage17 probe null and Stage23 one-seed mixed results remain binding.
