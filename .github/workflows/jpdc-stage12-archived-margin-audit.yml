@@ -1,0 +1,36 @@
+name: JPDC Stage12 immutable archived node margin forensic audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage12-archived-margin-audit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  archived:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen original Stage12 artifact, no simulation
+        uses: actions/download-artifact@v4
+        with:
+          name: jpdc-stage12-node-episode-exploratory-seed83
+          run-id: 42180091694
+          github-token: ${{ github.token }}
+          path: stage12-original
+      - name: Audit frozen node-level margins, no science recomputation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git_hash="$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)"
+          test "$git_hash" = "34256ca7bff46f911cf20e8b94278fbd09175746"
+          test -s stage12-original/episodes.json
+          python3 jpdc/audit_archived_stage12_node_margins.py stage12-original/episodes.json | tee archived_stage12_margin_audit.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage12-archived-node-margins
+          path: archived_stage12_margin_audit.log
+          if-no-files-found: warn
