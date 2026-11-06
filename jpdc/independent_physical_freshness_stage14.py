@@ -76,7 +76,7 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None)
     net_probe=NormalNetworkProbe()
     risk_state=NetworkResidualRisk()
     shadow=NormalizedObservedNetworkEpochs([.0001]*NODES,[0.0]*NODES)
-    active=FreshnessAwareController() if policy==ACTIVE_POLICY else None
+    fresh_controller=FreshnessAwareController() if policy==ACTIVE_POLICY else None
     shadow_alerts=[]
     shadow_first_arrival=None
     shadow_first_e2e=None
@@ -160,7 +160,7 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None)
                 nominal_net_vector=[
                     specs[k][3]+(t[5]+t[6])*8000.0/specs[k][2]
                     for k in range(NODES)]
-                active_selection=active.select(now,pred,nominal_net_vector,
+                active_selection=fresh_controller.select(now,pred,nominal_net_vector,
                                                t[3],t[2]=="NORMAL")
                 j=active_selection.node
                 rank,cert,family=1,False,()
@@ -272,8 +272,8 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None)
             prior_history=tuple(shadow.history[j]) if trace_hook is not None else ()
             prior_measurement=shadow.last_measurement[j] if trace_hook is not None else None
             observation=shadow.deliver(j,actual_net,nominal_net,cpu_finish_time,now)
-            if active is not None:
-                active.deliver_e2e(j,actual_net,nominal_net,cpu_finish_time,now)
+            if fresh_controller is not None:
+                fresh_controller.deliver_e2e(j,actual_net,nominal_net,cpu_finish_time,now)
             if trace_hook is not None:
                 trace_hook(dict(task_index=i,node=j,cpu_finish_ms=cpu_finish_time,
                     delivered_ms=now,actual_network_ms=actual_net,
@@ -306,9 +306,9 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None)
                 e17_observed_at_e2e+=1
                 if not previous and e17.alarm_ever:feedback_alarm_transitions+=1
     net_probe.assert_valid()
-    if active is not None:
-        active.assert_budget()
-        if active.observer.total_delivered!=count:
+    if fresh_controller is not None:
+        fresh_controller.assert_budget()
+        if fresh_controller.observer.total_delivered!=count:
             raise AssertionError("active network feedback conservation")
     if net_probe.global_ordinal!=count:
         raise AssertionError("network probe E2E feedback conservation failed")
@@ -405,22 +405,22 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None)
                     min(a["time_ms"] for a in shadow_alerts if a["affected_postshock"])-shadow_first_e2e
                     if shadow_alarmed_nodes and shadow_first_e2e is not None else None)
             }}
-    if active is not None:
+    if fresh_controller is not None:
         result["stage14_active"]={
             "nonconformal_unverified_policy":True,
-            "causal_e2e_delivered":active.observer.total_delivered,
-            "normal_arrivals":active.normal_arrivals,
-            "probe_opportunities":active.probe_opportunities,
-            "probe_attempts":active.probe_attempts,
-            "probe_skipped":active.probe_skipped,
-            "probe_changed_choices":active.probe_changed,
+            "causal_e2e_delivered":fresh_controller.observer.total_delivered,
+            "normal_arrivals":fresh_controller.normal_arrivals,
+            "probe_opportunities":fresh_controller.probe_opportunities,
+            "probe_attempts":fresh_controller.probe_attempts,
+            "probe_skipped":fresh_controller.probe_skipped,
+            "probe_changed_choices":fresh_controller.probe_changed,
             "probe_nominal_extra_ms_vs_greedy":active_probe_nominal_extra_ms,
             "probe_actual_latency_sum_ms":active_probe_latency_sum_ms,
             "probe_normal_deadline_misses":active_probe_deadline_misses,
-            "mission_unverified_decisions":active.mission_unverified,
+            "mission_unverified_decisions":fresh_controller.mission_unverified,
             "arrivals_changed_from_nominal_greedy":active_arrival_changes,
             "mission_changed_from_nominal_greedy":active_mission_changes,
-            "alarms_by_node":list(active.observer.alarms),
-            "late_quarantine_by_node":list(active.observer.late_quarantined)
+            "alarms_by_node":list(fresh_controller.observer.alarms),
+            "late_quarantine_by_node":list(fresh_controller.observer.late_quarantined)
         }
     return result
