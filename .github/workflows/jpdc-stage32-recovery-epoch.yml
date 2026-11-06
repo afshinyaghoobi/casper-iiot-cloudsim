@@ -1,0 +1,55 @@
+name: JPDC Stage32 causal post-alarm evidence-only epoch recovery
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage32-recovery-epoch.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: jpdc-stage27-cpu-nonnetwork-source-development-seed90
+          run-id: 42269844289
+          github-token: ${{ github.token }}
+          path: original-stage27
+      - name: Frozen original E42, pre-registered protocol, compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage32
+          git rev-parse HEAD > stage32/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE32_CAUSAL_RECOVERY_EPOCH_PREREG_2026-11-06.md
+          test -s original-stage27/full_trace.json
+          python3 -m py_compile jpdc/causal_recovery_epoch_stage32.py jpdc/test_causal_recovery_epoch_stage32.py jpdc/replay_stage32_archived_recovery.py
+      - name: Adversarial causal and prior original policy regression fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/test_causal_recovery_epoch_stage32.py | tee stage32/unit.log
+          python3 jpdc/test_causal_recovery_epoch_stage32.py > stage32/unit_repeat.log
+          cmp stage32/unit.log stage32/unit_repeat.log
+          python3 jpdc/test_causal_cpu_shift_guard_stage30.py > stage32/stage30_regression.log
+          python3 jpdc/test_causal_nonnetwork_calibration_stage28.py > stage32/stage28_regression.log
+          echo JPDC_STAGE32_CAUSAL_UNIT_REGRESSIONS_PASS
+      - name: Immutable development source archive and counterfactual alarm evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/replay_stage32_archived_recovery.py --original original-stage27/full_trace.json --out stage32/recovery.json | tee stage32/recovery.log
+          python3 jpdc/replay_stage32_archived_recovery.py --original original-stage27/full_trace.json --out stage32/recovery_repeat.json > stage32/recovery_repeat.log
+          cmp stage32/recovery.json stage32/recovery_repeat.json
+          echo JPDC_STAGE32_ARCHIVED_RECOVERY_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage32-original-frozen-seed90-epoch-recovery
+          path: stage32/
+          if-no-files-found: warn
