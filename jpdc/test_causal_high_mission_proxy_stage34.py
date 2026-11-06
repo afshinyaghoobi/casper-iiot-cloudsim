@@ -53,8 +53,10 @@ def test():
     assert z.original.task_class=="MISSION" and z.original.descriptive_only
     g.dispatch(k,k%21,"MISSION",50.*(k+1),5.,0.,2.)
     g.finish(k,k%21,50.*(k+1),50.*(k+1)+2.)
-    assert g.query(50.*(k+2),"MISSION",15.).phase=="postalarm_rebuild"
-    assert g.query(50.*(k+2),"NORMAL",5.).phase=="postalarm_rebuild"
+    d=task(g,k+1,50.*(k+2),"MISSION",15.,0.)
+    assert d.phase=="postalarm_rebuild"
+    d=task(g,k+2,50.*(k+3),"NORMAL",5.,0.)
+    assert d.phase=="postalarm_rebuild"
     g.invariant()
     print("PASS 40 HIGH plus 10 compatible MISSION emits same-age labeled uncertified proxy only")
 
