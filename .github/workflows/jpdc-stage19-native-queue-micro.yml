@@ -1,0 +1,46 @@
+name: JPDC Stage19 real native CloudSimPlus micro queue event forensic
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage19-native-queue-micro.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  micro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Frozen original source and exact prospective microfixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage19
+          git rev-parse HEAD > stage19/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE19_CLOUDSIM_REAL_MICRO_QUEUE_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/audit_stage19_native_micro.py
+          mvn -B -q -DskipTests compile
+      - name: Run original CloudSimPlus scheduler microfixture twice; audit real event outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage19QueueMicro | grep -E '^STAGE19_|^JPDC_STAGE19_' > stage19/native.log
+          python3 jpdc/audit_stage19_native_micro.py --log stage19/native.log --out stage19/result.json | tee stage19/audit.log
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage19QueueMicro | grep -E '^STAGE19_|^JPDC_STAGE19_' > stage19/native_repeat.log
+          cmp stage19/native.log stage19/native_repeat.log
+          python3 jpdc/audit_stage19_native_micro.py --log stage19/native_repeat.log --out stage19/result_repeat.json > stage19/audit_repeat.log
+          cmp stage19/result.json stage19/result_repeat.json
+          echo JPDC_STAGE19_NATIVE_CLOUDSIM_MICRO_REPRODUCIBLE_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage19-real-cloudsim-857-microqueue
+          path: stage19/
+          if-no-files-found: warn
