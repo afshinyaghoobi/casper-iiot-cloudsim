@@ -1,0 +1,43 @@
+name: JPDC Stage16 prespecified independent paired eight-seed physical validation
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage16-eight-seed-validation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        seed: [301, 302, 303, 304, 305, 306, 307, 308]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Original frozen source and preregistered science gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage16
+          git rev-parse HEAD > stage16/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE16_PAIRED_EIGHT_SEED_PROTOCOL_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/run_stage16_paired_seeds.py
+          python3 jpdc/test_congestion_guard_stage15.py | tee stage16/guard_contract.log
+      - name: Run registered frozen source tasks twice and byte-compare
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage16_paired_seeds.py --seed ${{ matrix.seed }} --out stage16/seed.json | tee stage16/seed.log
+          python3 jpdc/run_stage16_paired_seeds.py --seed ${{ matrix.seed }} --out stage16/seed_repeat.json > stage16/repeat.log
+          cmp stage16/seed.json stage16/seed_repeat.json
+          echo JPDC_STAGE16_PER_SEED_EXACT_REPRODUCIBLE_PASS ${{ matrix.seed }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage16-paired-seed-${{ matrix.seed }}
+          path: stage16/
+          if-no-files-found: warn
