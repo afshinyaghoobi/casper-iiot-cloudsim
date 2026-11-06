@@ -1,0 +1,16 @@
+# JPDC Stage17 — targeted probing ablation preregistration (2026-11-06)
+
+## Motivation and design lock
+Stage16 (independent scientific seed cohort 301–308) yielded no statistically supported CASPER_FULL superiority in the *preregistered* S3 primary, and S2 is adversely affected in aggregate. Before altering staleness and nominal-detour thresholds, isolate the active observation contribution. Stage17 is **new exploratory DEVELOPMENT**, not new independent confirmation of Stage16 and cannot be combined with the original sign test post hoc.
+
+## Ablation intervention
+Compare the exact frozen Stage15 NEW_FRESHNESS_GUARDED against a clone with identical task selection rule, age assumptions, epsilon/L, max freshness, +2ms greedy nominal detour, E2E feedback, observer and event-loop physics but **no explicit active probe overrides**. Every NORMAL 100th opportunity is still counted; it is skipped as disabled. This changes assignment causally, which will change downstream queue states and which naturally completed E2E reports are observed; this is the actual treatment effect, not a counterfactual identical-feedback replay. The no-probe policy never has access to oracle changes or post-dispatch outcomes.
+
+## Frozen source generated trial
+**Seed indices 86 and 87, DEVELOPMENT only**, neither belongs to seed83/84/85 or frozen stage16 cohort301–308. Both are selected now and never replaced for favorable results. Two scenarios **S2_HIDDEN_COMPUTE_40LOSS** and **S3_HIDDEN_NETWORK_50LOSS**, 80k independent calibration tasks/seed, 12k deployment tasks/arm, four frozen policies in each scenario: PRED_GREEDY, CASPER_FULL, NEW_FRESHNESS_GUARDED, NEW_FRESHNESS_NO_ACTIVE_PROBE. Exactly 2*2*4*12,000=192,000 task-policy observations with **n=2 scientific seeds**; metrics cannot support inferential hypothesis tests. Standard frozen source hashes and per-policy output parity gates for original PRED_GREEDY and CASPER_FULL; frozen Stage15 full-output identity required for original guarded policy. Every seed workflow runs its entire matrix twice and compares JSON byte-for-byte.
+
+## Primary exploratory diagnostic
+Within each seed and scenario record no-probe minus guarded differences in TOTAL MISSION deadline misses, pre/post counts, mean queue wait, and mean E2E latency. Additionally record NORMAL probe opportunities/attempts and original guarded changed-probe choices; no-probe attempts exactly zero. For understanding congestion, add dispatch-time queue-aware greedy difference and per-selected-node routing counts for both active and no-probe policies, **observational only**, to trace whether selection concentration contributes. All outcomes (positive and negative) reported; no threshold retuning based on seed86/87, no fake independent task-level n.
+
+## Future decision
+If no-probe is comparable or better, complex probing adds no demonstrated value in this source environment and should be removed or redesigned. If no-probe is worse, evaluate probing costs and causal identification across further prespecified seeds before a novel algorithm claim. We still need a genuine novelty/literature differential and cross-engine queue-validation evidence. Avoid JPDC submission until these gaps are addressed.
