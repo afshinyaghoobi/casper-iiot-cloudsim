@@ -1,0 +1,35 @@
+name: JPDC Stage13 causal freshness controller fixture gate
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage13-causal-controller.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fixtures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen E42 source and Stage13 prospective specification
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE13_CAUSAL_FRESHNESS_ACTIVE_OBSERVATION_DESIGN_2026-11-06.md
+          python3 -m py_compile jpdc/freshness_active_observation_stage13.py jpdc/test_freshness_active_observation_stage13.py
+      - name: Test causal feedback, stale state, budget and alarm semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage13
+          python3 jpdc/test_freshness_active_observation_stage13.py | tee stage13/fixtures.log
+          python3 jpdc/test_normalized_network_shock_epochs_stage10.py | tee stage13/stage10_regression.log
+          python3 jpdc/test_network_probe_stage6.py | tee stage13/stage6_regression.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage13-causal-controller-fixtures
+          path: stage13/
+          if-no-files-found: warn
