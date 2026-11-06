@@ -1,0 +1,54 @@
+name: JPDC Stage18 original CloudSimPlus 8.5.7 scheduler source forensic
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage18-cloudsim-sources.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  forensic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Frozen E42 and Stage18 registered source protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage18
+          git rev-parse HEAD > stage18/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE18_CLOUDSIM_857_SCHEDULER_SOURCE_FORENSIC_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/audit_cloudsim_857_source_stage18.py
+      - name: Download exact version 8.5.7 source archive without building original CASPER
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -q dependency:copy -Dartifact=org.cloudsimplus:cloudsimplus:8.5.7:jar:sources -DoutputDirectory=stage18 -Dmdep.stripVersion=false
+          test -s stage18/cloudsimplus-8.5.7-sources.jar
+          sha256sum stage18/cloudsimplus-8.5.7-sources.jar | tee stage18/source_jar_sha256.txt
+      - name: Extract source-referenced conditions twice byte identically
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/audit_cloudsim_857_source_stage18.py --sources stage18/cloudsimplus-8.5.7-sources.jar --out stage18/forensic.json > stage18/source_excerpt.log
+          python3 jpdc/audit_cloudsim_857_source_stage18.py --sources stage18/cloudsimplus-8.5.7-sources.jar --out stage18/forensic_repeat.json > stage18/source_excerpt_repeat.log
+          cmp stage18/forensic.json stage18/forensic_repeat.json
+          cmp stage18/source_excerpt.log stage18/source_excerpt_repeat.log
+          cat stage18/source_excerpt.log
+          echo JPDC_STAGE18_CLOUDSIM_857_SOURCE_BYTE_REPRODUCIBLE_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage18-cloudsim-857-source-forensic
+          path: |
+            stage18/*.txt
+            stage18/*.log
+            stage18/*.json
+          if-no-files-found: warn
