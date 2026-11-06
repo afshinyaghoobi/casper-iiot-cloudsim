@@ -1,0 +1,63 @@
+name: JPDC Stage28 full CPU plus WAIT q causal unit and archived replay
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage28-full-q-prequential.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  causal-full-q:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: jpdc-stage27-cpu-nonnetwork-source-development-seed90
+          run-id: 42269844289
+          github-token: ${{ github.token }}
+          path: original-stage27
+      - name: Frozen E42 and prospectively registered Stage28 contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage28
+          git rev-parse HEAD > stage28/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE28_FULL_Q_CAUSAL_PREQUENTIAL_PREREG_2026-11-06.md
+          test -s original-stage27/full_trace.json
+          python3 -m py_compile jpdc/causal_nonnetwork_calibration_stage28.py jpdc/test_causal_nonnetwork_calibration_stage28.py jpdc/replay_stage28_archived_full_q.py
+      - name: Unit adversarial leakage, rolling and uncertainty regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/test_causal_nonnetwork_calibration_stage28.py | tee stage28/stage28_unit.log
+          python3 jpdc/test_causal_nonnetwork_calibration_stage28.py > stage28/stage28_unit_repeat.log
+          cmp stage28/stage28_unit.log stage28/stage28_unit_repeat.log
+          python3 jpdc/test_causal_wait_calibration_stage26.py | tee stage28/stage26_regression.log
+          python3 jpdc/test_queue_error_aware_dominance_stage24.py | tee stage28/stage24_regression.log
+      - name: Original Stage27 source full q 48000-label prequential replay twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/replay_stage28_archived_full_q.py --original original-stage27/full_trace.json --out stage28/prequential.json | tee stage28/prequential.log
+          python3 jpdc/replay_stage28_archived_full_q.py --original original-stage27/full_trace.json --out stage28/prequential_repeat.json > stage28/prequential_repeat.log
+          cmp stage28/prequential.json stage28/prequential_repeat.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open("stage28/prequential.json"))
+          assert x["status"]=="PASS" and x["scientific_seed"]==90
+          assert len(x["results"])==4 and x["statistical_units"]==1
+          assert all(row["overall"]["n"]==12000 for row in x["results"])
+          assert "NONE" in x["guarantees"]
+          print("JPDC_STAGE28_48K_COMPLETE_ORIGINAL_ARTIFACT_CAUSALITY_PASS")
+          PY
+          echo JPDC_STAGE28_FULL_Q_PREQUENTIAL_BYTE_REPRODUCIBLE_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage28-full-q-archived-seed90-prequential
+          path: stage28/
+          if-no-files-found: warn
