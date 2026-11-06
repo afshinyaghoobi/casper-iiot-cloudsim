@@ -1,0 +1,45 @@
+name: JPDC Stage15 guarded freshness native physical development seed85
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage15-guarded-physical.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stage15:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freeze source, preregistration and unit gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage15
+          git rev-parse HEAD > stage15/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE15_CONGESTION_GUARDED_FRESHNESS_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/congestion_guarded_freshness_stage15.py jpdc/independent_physical_guarded_freshness_stage15.py jpdc/run_native_physical_guarded_stage15.py
+          python3 jpdc/test_freshness_active_observation_stage13.py | tee stage15/stage13_regression.log
+      - name: Ten-arm native physical seed85 development and bitwise repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_native_physical_guarded_stage15.py --out stage15/matrix.json | tee stage15/matrix.log
+          python3 jpdc/run_native_physical_guarded_stage15.py --out stage15/matrix_repeat.json > stage15/repeat.log
+          cmp stage15/matrix.json stage15/matrix_repeat.json
+          echo JPDC_STAGE15_BYTE_EXACT_REPEAT_PASS
+          python3 - <<'PY'
+          import json
+          x=json.load(open("stage15/matrix.json"))
+          assert x["status"]=="PASS" and x["seed_index"]==85
+          assert len(x["rows"])==10 and x["task_policy_observations"]==120000
+          print("JPDC_STAGE15_ORIGINAL_SOURCE_ARTIFACT_AUDIT_PASS")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage15-guarded-freshness-development-seed85
+          path: stage15/
+          if-no-files-found: warn
