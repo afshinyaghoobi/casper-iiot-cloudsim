@@ -87,9 +87,12 @@ class FreshnessAwareController:
                     predicted_ms[j]-predicted_ms[chosen]<=MAX_PROBE_EXTRA_MS]
                 if admissible:
                     # Prefer unknown/stale nodes, not nodes based on hidden truth.
-                    candidate=max(admissible,key=lambda j:(
-                        int(bs[j].samples==0),int(bs[j].unverified_after_alarm),
-                        ages[j],-predicted_ms[j],-j))
+                    # Deterministic round-robin tie-break for equally unknown
+                    # nodes avoids continually "probing" the baseline node.
+                    candidate=min(admissible,key=lambda j:(
+                        -int(bs[j].samples==0),-int(bs[j].unverified_after_alarm),
+                        -ages[j],(j-self.probe_opportunities)%NODES,
+                        predicted_ms[j],j))
                     probe=True
                     self.probe_attempts+=1
                     self.probe_changed+=int(candidate!=chosen)
@@ -99,7 +102,8 @@ class FreshnessAwareController:
                     self.probe_skipped+=1
         else:
             self.mission_unverified+=int(not verified)
-        self.probe_changed<=self.probe_attempts or (_ for _ in ()).throw(AssertionError("invalid probe count"))
+        if self.probe_changed>self.probe_attempts:
+            raise AssertionError("invalid probe count")
         return Selection(chosen,verified,len(fresh),not verified,probe,
                          chosen!=fallback,ages[chosen] if math.isfinite(ages[chosen]) else None,
                          bs[chosen].excess_latency_high_ms if verified else None)
