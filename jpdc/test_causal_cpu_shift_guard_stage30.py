@@ -50,7 +50,7 @@ def test():
     task(g,42,2150.,11.)
     assert g.alarmed and g.alarm_count==1
     assert first.issued and first.original.available and not first.certified
-    post=g.query(2155.,"MISSION",5.)
+    post=g.query(2165.,"MISSION",5.)
     assert post.abstention_reason=="cpu_shift_alarm"
     task(g,43,2200.,0.)
     assert g.alarm_count==1 and g.alarmed
