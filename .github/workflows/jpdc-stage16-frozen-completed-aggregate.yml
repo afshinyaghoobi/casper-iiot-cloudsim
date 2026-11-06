@@ -1,0 +1,36 @@
+name: JPDC Stage16 immutable completed eight-seed results synthesis
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage16-frozen-completed-aggregate.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact successful immutable Stage16 artifacts, no rerunning simulations
+        uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage16-paired-seed-*
+          run-id: 42186301148
+          github-token: ${{ github.token }}
+          merge-multiple: false
+          path: stage16-original
+      - name: Audit all 8 paired independent source seeds
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          mkdir -p stage16-frozen-analysis
+          python3 jpdc/audit_stage16_paired_eight_seed_aggregate.py --root stage16-original --out stage16-frozen-analysis/eight_seed_paired.json | tee stage16-frozen-analysis/audit.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage16-immutable-eight-seed-paired-audit-completed
+          path: stage16-frozen-analysis/
+          if-no-files-found: warn
