@@ -1,0 +1,47 @@
+name: JPDC Stage14 native physical causal freshness scheduling dev pilot
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage14-native-physical-freshness.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen original model and preregistered Stage14 protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage14
+          git rev-parse HEAD > stage14/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE14_NATIVE_PHYSICAL_CAUSAL_PILOT_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/independent_physical_freshness_stage14.py jpdc/run_native_physical_freshness_stage14.py
+          python3 jpdc/test_freshness_active_observation_stage13.py | tee stage14/stage13_unit.log
+          python3 jpdc/test_normalized_network_shock_epochs_stage10.py | tee stage14/stage10_unit.log
+      - name: Run exact Stage14 8-arm native source physical matrix twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_native_physical_freshness_stage14.py --out stage14/matrix.json | tee stage14/matrix.log
+          python3 jpdc/run_native_physical_freshness_stage14.py --out stage14/matrix_repeat.json > stage14/repeat.log
+          cmp stage14/matrix.json stage14/matrix_repeat.json
+          echo JPDC_STAGE14_BYTE_IDENTICAL_REPRODUCIBILITY_PASS
+          python3 - <<'PY'
+          import json
+          x=json.load(open("stage14/matrix.json"))
+          assert x["status"]=="PASS" and x["seed_index"]==84
+          assert len(x["rows"])==8 and x["task_policy_observations"]==96000
+          assert all(r["deployment_tasks"]==12000 for r in x["rows"])
+          print("JPDC_STAGE14_SOURCE_PHYSICAL_MATRIX_ARTIFACT_AUDIT_PASS")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage14-native-physical-freshness-development-seed84
+          path: stage14/
+          if-no-files-found: warn
