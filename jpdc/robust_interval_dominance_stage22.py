@@ -56,12 +56,14 @@ class RobustDominanceController:
         self.last_time=delivered_ms
         return event
 
-    def select(self,now_ms,predicted_ms,nominal_network_ms,deadline_ms,is_normal):
+    def select(self,now_ms,predicted_ms,nominal_network_ms,deadline_ms,is_normal,is_mission=False):
         self._positive_vector(predicted_ms,nominal_network_ms)
         if not isinstance(is_normal,bool) or any(
             isinstance(v,bool) or not isinstance(v,(int,float)) or
             not math.isfinite(v) or v<0 for v in (now_ms,deadline_ms)):
             raise ValueError("invalid decision inputs")
+        if not isinstance(is_mission,bool) or (is_mission and is_normal):
+            raise ValueError("MISSION and NORMAL task labels cannot overlap")
         if now_ms<self.last_time:raise ValueError("retroactive routing decision")
         # No state change until all source-model bounds are evaluated.
         lower_and_upper=[self.observer.bounds(j,now_ms,nominal_network_ms[j])
@@ -98,12 +100,12 @@ class RobustDominanceController:
         self.last_time=now_ms
         self.decisions+=1
         self.switches+=int(switched)
-        self.mission_switches+=int(switched and not is_normal)
+        self.mission_switches+=int(switched and is_mission)
         self.unverified_decisions+=int(not verified)
         return RobustChoice(
             node=j,reference_node=g,switched=switched,
             conditionally_dominated=verified,
-            mission_deadline_feasible=bool(switched and not is_normal and upper<=deadline_ms),
+            mission_deadline_feasible=bool(switched and is_mission and upper<=deadline_ms),
             unverified=not verified,
             candidate_upper_ms=upper,
             reference_lower_ms=reference_lower,
