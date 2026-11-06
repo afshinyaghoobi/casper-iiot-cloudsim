@@ -1,0 +1,66 @@
+name: JPDC Stage35 independent four-seed HIGH MISSION proxy and negative transfer
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage35-four-seed-high-proxy.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        seed: [513, 514, 515, 516]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify unchanged E42, frozen Stage35 protocol, causal unit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage35
+          git rev-parse HEAD > stage35/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE35_FOUR_SEED_PROXY_VALIDATION_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/run_stage35_independent_proxy.py jpdc/audit_stage35_complete_proxy_cohort.py
+          python3 jpdc/test_causal_high_mission_proxy_stage34.py > stage35/causal_unit.log
+      - name: Full preregistered physical source seed with frozen router, proxy and exact-own baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage35_independent_proxy.py --seed ${{ matrix.seed }} --out stage35/seed_${{ matrix.seed }}.json | tee stage35/seed_${{ matrix.seed }}.log
+          echo JPDC_STAGE35_ORIGINAL_SEED_PARITY_AND_PROXY_PASS ${{ matrix.seed }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage35-source-seed-${{ matrix.seed }}
+          path: stage35/
+          if-no-files-found: warn
+  cohort:
+    needs: [seed]
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage35-source-seed-*
+          path: stage35-seeds
+      - name: Complete mandatory four-seed cohort and report all adverse coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage35-aggregate
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/audit_stage35_complete_proxy_cohort.py --directory stage35-seeds --out stage35-aggregate/cohort.json | tee stage35-aggregate/cohort.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage35-four-seed-complete-proxy-cohort
+          path: stage35-aggregate/
+          if-no-files-found: warn
