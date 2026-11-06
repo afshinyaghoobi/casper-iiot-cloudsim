@@ -1,0 +1,40 @@
+name: JPDC Stage22 robust interval dominance theorem and causal fixtures
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage22-robust-dominance.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  theorem-fixtures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Immutable source and prior preregistration
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage22
+          git rev-parse HEAD > stage22/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE22_ROBUST_INTERVAL_DOMINANCE_PROTOCOL_2026-11-06.md
+          python3 -m py_compile jpdc/robust_interval_dominance_stage22.py jpdc/test_robust_interval_dominance_stage22.py
+      - name: Run falsifying causal fixtures and old controller regressions twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/test_robust_interval_dominance_stage22.py | tee stage22/robust.log
+          python3 jpdc/test_robust_interval_dominance_stage22.py > stage22/robust_repeat.log
+          cmp stage22/robust.log stage22/robust_repeat.log
+          python3 jpdc/test_freshness_active_observation_stage13.py | tee stage22/stage13.log
+          python3 jpdc/test_congestion_guard_stage15.py | tee stage22/stage15.log
+          python3 jpdc/test_normalized_network_shock_epochs_stage10.py | tee stage22/stage10.log
+          echo JPDC_STAGE22_UNIT_REPRODUCIBILITY_AND_REGRESSION_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage22-robust-dominance-theorem-unit
+          path: stage22/
+          if-no-files-found: warn
