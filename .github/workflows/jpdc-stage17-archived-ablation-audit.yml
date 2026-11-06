@@ -1,0 +1,36 @@
+name: JPDC Stage17 frozen complete two-seed archive-only ablation audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage17-archived-ablation-audit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  archived:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch original completed Stage17 immutable artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage17-probe-ablation-dev-seed-*
+          run-id: 42187795512
+          github-token: ${{ github.token }}
+          merge-multiple: false
+          path: stage17-original
+      - name: Two-seed read-only causal contrast and queue concentration audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          mkdir -p stage17-archived
+          python3 jpdc/audit_stage17_archived_ablation.py stage17-original | tee stage17-archived/diagnosis.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage17-immutable-two-seed-ablation-results
+          path: stage17-archived/
+          if-no-files-found: warn
