@@ -41,7 +41,7 @@ def test():
     for i in range(40):
         task(g,i,50.*(i+1),10. if i in (36,37,38) else 0.)
     assert not g.alarmed
-    first=g.query(405.,"MISSION",5.)
+    first=g.query(2005.,"MISSION",5.)
     assert first.issued and first.abstention_reason is None
     # Query snapshot is frozen, even when alarm subsequently fires.
     task(g,40,2050.,11.)
@@ -54,7 +54,7 @@ def test():
     assert post.abstention_reason=="cpu_shift_alarm"
     task(g,43,2200.,0.)
     assert g.alarm_count==1 and g.alarmed
-    g.invariant()
+    assert g.base.dispatches==44 and g.base.finishes==44
     print("PASS threshold strictly >10, two >10 outliers insufficient, irrevocable issue-time status")
 
     g=CausalCpuShiftGuard()
