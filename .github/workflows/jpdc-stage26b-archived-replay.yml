@@ -1,0 +1,46 @@
+name: JPDC Stage26b original Stage25 archived causal WAIT prequential replay
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage26b-archived-replay.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: jpdc-stage25-causal-queue-wait-development-seed89
+          run-id: 42254782412
+          github-token: ${{ github.token }}
+          path: stage25-original
+      - name: Original E42 integrity, frozen Stage26b protocol and Python regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage26b
+          git rev-parse HEAD > stage26b/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE26B_ARCHIVED_WAIT_PREQUENTIAL_PREREG_2026-11-06.md
+          test -s stage25-original/wait_trace.json
+          python3 -m py_compile jpdc/replay_stage26b_archived_wait_calibration.py
+          python3 jpdc/test_causal_wait_calibration_stage26.py | tee stage26b/unit_regression.log
+      - name: Replay only immutable Stage25 source records with true CPU finish times
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/replay_stage26b_archived_wait_calibration.py --original stage25-original/wait_trace.json --out stage26b/prequential.json | tee stage26b/replay.log
+          python3 jpdc/replay_stage26b_archived_wait_calibration.py --original stage25-original/wait_trace.json --out stage26b/prequential_repeat.json > stage26b/replay_repeat.log
+          cmp stage26b/prequential.json stage26b/prequential_repeat.json
+          echo JPDC_STAGE26B_IMMUTABLE_PREQUENTIAL_REPRODUCIBLE_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage26b-archive-only-prequential-seed89
+          path: stage26b/
+          if-no-files-found: warn
