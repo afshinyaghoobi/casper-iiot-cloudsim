@@ -1,4 +1,5 @@
 name: JPDC Stage23 immutable original source development evidence audit
+# Retry immutable analysis after correcting local report variable collision
 on:
   push:
     branches: [jpdc-seed0-repro-20261024]
