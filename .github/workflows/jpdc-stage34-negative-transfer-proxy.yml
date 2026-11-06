@@ -1,0 +1,57 @@
+name: JPDC Stage34 causal HIGH MISSION proxy negative transfer and archive replay
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage34-negative-transfer-proxy.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  proxy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: jpdc-stage27-cpu-nonnetwork-source-development-seed90
+          run-id: 42269844289
+          github-token: ${{ github.token }}
+          path: original-stage27
+      - name: Original E42 source, preregistration and Python compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage34
+          git rev-parse HEAD > stage34/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE34_HIGH_MISSION_PROXY_NEGATIVE_TRANSFER_PREREG_2026-11-06.md
+          test -s original-stage27/full_trace.json
+          python3 -m py_compile jpdc/causal_high_mission_proxy_stage34.py jpdc/test_causal_high_mission_proxy_stage34.py jpdc/replay_stage34_archived_high_mission_proxy.py
+      - name: Controlled negative-transfer counterexample and frozen causal regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/test_causal_high_mission_proxy_stage34.py | tee stage34/proxy_unit.log
+          python3 jpdc/test_causal_high_mission_proxy_stage34.py > stage34/proxy_unit_repeat.log
+          cmp stage34/proxy_unit.log stage34/proxy_unit_repeat.log
+          python3 jpdc/test_causal_recovery_epoch_stage32.py > stage34/stage32_regression.log
+          python3 jpdc/test_causal_cpu_shift_guard_stage30.py > stage34/stage30_regression.log
+          python3 jpdc/test_causal_nonnetwork_calibration_stage28.py > stage34/stage28_regression.log
+          python3 jpdc/test_queue_error_aware_dominance_stage24.py > stage34/stage24_regression.log
+          echo JPDC_STAGE34_UNIT_NEGATIVE_TRANSFER_AND_REGRESSION_PASS
+      - name: Read-only archived seed90 four-arm Stage34 versus Stage32, exact repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/replay_stage34_archived_high_mission_proxy.py --original original-stage27/full_trace.json --out stage34/proxy_replay.json | tee stage34/proxy_replay.log
+          python3 jpdc/replay_stage34_archived_high_mission_proxy.py --original original-stage27/full_trace.json --out stage34/proxy_replay_repeat.json > stage34/proxy_replay_repeat.log
+          cmp stage34/proxy_replay.json stage34/proxy_replay_repeat.json
+          echo JPDC_STAGE34_ARCHIVED_PROXY_REPLAY_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage34-causal-proxy-original-seed90-negative-transfer
+          path: stage34/
+          if-no-files-found: warn
