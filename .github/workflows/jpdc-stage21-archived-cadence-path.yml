@@ -1,0 +1,35 @@
+name: JPDC Stage21 immutable exact v857 update-delay source path check
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage21-archived-cadence-path.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: jpdc-stage21-exact-cloudsim-857-event-cadence-source-scan
+          run-id: 42235135939
+          github-token: ${{ github.token }}
+          path: stage21-original
+      - name: Audit original source-line path without new downloads or simulations
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s stage21-original/source_scan.json
+          mkdir -p stage21-archived
+          python3 jpdc/check_stage21_archived_event_cadence_path.py --original stage21-original/source_scan.json --out stage21-archived/path.json | tee stage21-archived/path.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage21-cloudsim857-source-cadence-path-check
+          path: stage21-archived/
+          if-no-files-found: warn
