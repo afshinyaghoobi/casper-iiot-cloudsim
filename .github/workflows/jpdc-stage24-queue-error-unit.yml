@@ -1,0 +1,41 @@
+name: JPDC Stage24 signed causal queue-error envelope controller unit gate
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage24-queue-error-unit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  queue-uncertainty:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify frozen original and prospectively recorded scientific assumptions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage24
+          git rev-parse HEAD > stage24/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE24_QUEUE_ERROR_ENVELOPES_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/queue_error_aware_dominance_stage24.py jpdc/test_queue_error_aware_dominance_stage24.py
+      - name: Run causal and adversarial signed queue-error fixtures byte-identically
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/test_queue_error_aware_dominance_stage24.py | tee stage24/queue_error.log
+          python3 jpdc/test_queue_error_aware_dominance_stage24.py > stage24/queue_error_repeat.log
+          cmp stage24/queue_error.log stage24/queue_error_repeat.log
+          python3 jpdc/test_robust_interval_dominance_stage22.py | tee stage24/stage22_regression.log
+          python3 jpdc/test_congestion_guard_stage15.py | tee stage24/stage15_regression.log
+          python3 jpdc/test_freshness_active_observation_stage13.py | tee stage24/stage13_regression.log
+          python3 jpdc/test_normalized_network_shock_epochs_stage10.py | tee stage24/stage10_regression.log
+          echo JPDC_STAGE24_SIGNED_QUEUE_INTERVAL_ALL_UNIT_GATES_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage24-queue-error-causal-unit-results
+          path: stage24/
+          if-no-files-found: warn
