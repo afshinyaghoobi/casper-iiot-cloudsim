@@ -1,0 +1,67 @@
+name: JPDC Stage29 frozen independent four-seed full-q validation
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage29-four-seed-full-q.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  frozen_seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        seed: [501, 502, 503, 504]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen science, exact preregistration, regression fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage29
+          git rev-parse HEAD > stage29/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE29_FOUR_SEED_FULL_Q_VALIDATION_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/run_stage29_independent_full_q.py jpdc/audit_stage29_complete_cohort.py
+          python3 jpdc/test_causal_nonnetwork_calibration_stage28.py > stage29/causal_unit.log
+      - name: One independent preregistered seed exact policy+source validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage29_independent_full_q.py --seed ${{ matrix.seed }} --out stage29/seed_${{ matrix.seed }}.json | tee stage29/seed_${{ matrix.seed }}.log
+          echo JPDC_STAGE29_SEED_RESULT_FILE_PASS ${{ matrix.seed }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage29-independent-seed-${{ matrix.seed }}
+          path: stage29/
+          if-no-files-found: warn
+  aggregate:
+    needs: [frozen_seed]
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage29-independent-seed-*
+          path: stage29-original
+          merge-multiple: false
+      - name: Aggregate ONLY complete fixed independent cohort and preserve negative gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage29-aggregate
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/audit_stage29_complete_cohort.py --directory stage29-original --out stage29-aggregate/cohort.json | tee stage29-aggregate/cohort.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage29-all-four-seed-frozen-cohort-audit
+          path: stage29-aggregate/
+          if-no-files-found: warn
