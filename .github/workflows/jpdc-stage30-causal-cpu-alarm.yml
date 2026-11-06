@@ -1,5 +1,5 @@
 name: JPDC Stage30 causal CPU shift alarm unit and frozen development replay
-# Repeat unchanged preregistered protocol after fixing synthetic fixture time spacing
+# Repeat unchanged preregistered protocol after correcting all synthetic fixture clock labels
 on:
   push:
     branches: [jpdc-seed0-repro-20261024]
