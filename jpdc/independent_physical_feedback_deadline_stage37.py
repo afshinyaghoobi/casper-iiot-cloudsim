@@ -79,7 +79,7 @@ E2E_POLICY="NEW_E2E_FEEDBACK_ONLY"
 COMBINED_POLICY="NEW_CPU_E2E_FEEDBACK"
 FEEDBACK_POLICIES=(CPU_POLICY,E2E_POLICY,COMBINED_POLICY)
 
-def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None):
+def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None,mission_audit_hook=None):
     if policy not in (*POLICIES,NEW_POLICY,PROBE_POLICY,ACTIVE_POLICY,GUARDED_POLICY,ROBUST_POLICY,*FEEDBACK_POLICIES):raise ValueError("invalid pilot policy")
     flags=(POLICY_FLAGS["PRED_GREEDY"] if policy in (NEW_POLICY,PROBE_POLICY,ACTIVE_POLICY,GUARDED_POLICY,ROBUST_POLICY,*FEEDBACK_POLICIES) else POLICY_FLAGS[policy])
     feedback_scheduler=CausalFeedbackDeadlineScheduler() if policy in FEEDBACK_POLICIES else None
@@ -118,6 +118,7 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None)
     physical_next=[0.0]*NODES
     last_finish=[0.0]*NODES
     running=[None]*NODES;queues=[deque() for _ in range(NODES)]
+    mission_dispatch_audit={}
     assigned=[[] for _ in range(NODES)]
     started=[[] for _ in range(NODES)]
     vq=VirtualQueue(NODES)
@@ -227,6 +228,15 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None)
                     if candidates:
                         j=min(candidates,key=lambda k:(last_observed[k],pred[k],k))
                         probe=True;probes+=1
+            if mission_audit_hook is not None and t[2]=="MISSION":
+                original_greedy=min(range(NODES),key=lambda k:(pred[k],k))
+                mission_dispatch_audit[i]=dict(
+                    task_index=i,task_class=t[2],arrival_ms=now,
+                    deadline_ms=t[3],chosen_node=j,
+                    original_greedy_node=original_greedy,
+                    nominal_chosen_latency_ms=pred[j],
+                    nominal_greedy_latency_ms=pred[original_greedy],
+                    differs_from_nominal_greedy=j!=original_greedy)
             cpu,net=physical_durations(seed,t,specs[j],scenario,affected)
             if i>=10000 and j in affected:
                 exposed+=1
@@ -277,6 +287,13 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None)
                 if latency>t[3]:
                     probe_violations+=1
                     if policy==PROBE_POLICY:probe_normal_deadline_misses+=1
+            if t[2]=="MISSION" and mission_audit_hook is not None:
+                audit=mission_dispatch_audit.pop(i)
+                mission_audit_hook(dict(**audit,
+                    actual_cpu_ms=cpu,actual_wait_ms=wait,
+                    actual_network_ms=net,actual_total_latency_ms=latency,
+                    actual_deadline_miss=bool(latency>t[3]),
+                    cpu_finished_ms=now))
             if t[2]=="MISSION":
                 rank_counts[rank]+=1
                 mission_results.append((i,i>=10000,cert,latency>t[3],family_covered,latency,eta,rank))
@@ -348,6 +365,8 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None)
         raise AssertionError("native deployment task conservation")
     if any(queues) or assigned!=started:
         raise AssertionError("native strict FIFO order violated")
+    if mission_audit_hook is not None and mission_dispatch_audit:
+        raise AssertionError("missing MISSION CPU-finish forensic labels")
     mission_results.sort(key=lambda v:v[0])
     post=[r for r in mission_results if r[1]]
     if len(mission_results)!=by_type["MISSION"]:
