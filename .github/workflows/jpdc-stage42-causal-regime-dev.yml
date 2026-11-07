@@ -1,0 +1,43 @@
+name: JPDC Stage42 causal CPU network regime selection development
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage42-causal-regime-dev.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [95, 96]
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Verify original FGCS E42, prereg and adversarial detector tests"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage42
+          git rev-parse HEAD > stage42/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE42_CAUSAL_REGIME_GATED_SCHEDULING_PREREG_2026-11-07.md
+          python3 -m py_compile jpdc/causal_regime_selector_stage42.py jpdc/test_causal_regime_selector_stage42.py jpdc/independent_physical_regime_gated_stage42.py jpdc/run_stage42_regime_development.py
+          python3 jpdc/test_causal_regime_selector_stage42.py | tee stage42/causal_unit.log
+          python3 jpdc/test_feedback_deadline_scheduler_stage37.py > stage42/stage37_regression.log
+      - name: "Frozen original and existing source parity with new actual MISSION deadline outcomes"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage42_regime_development.py --seed ${{ matrix.seed }} --out stage42/seed_${{ matrix.seed }}.json | tee stage42/seed_${{ matrix.seed }}.log
+          python3 jpdc/run_stage42_regime_development.py --seed ${{ matrix.seed }} --out stage42/seed_${{ matrix.seed }}_repeat.json > stage42/repeat.log
+          cmp stage42/seed_${{ matrix.seed }}.json stage42/seed_${{ matrix.seed }}_repeat.json
+          echo JPDC_STAGE42_SOURCE_REGIME_DEVELOPMENT_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage42-causal-regime-development-seed-${{ matrix.seed }}
+          path: stage42/
+          if-no-files-found: warn
