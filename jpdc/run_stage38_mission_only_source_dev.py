@@ -26,7 +26,12 @@ def run():
             if p in ("PRED_GREEDY","CASPER_FULL"):
                 assert original==frozen_stage6(SEED,sc,p,cal,N),(sc,p,"Stage6 exact parity")
             if p in ("NEW_CPU_FEEDBACK_ONLY","NEW_CPU_E2E_FEEDBACK"):
-                assert result==original_stage37(SEED,sc,p,cal,N),(sc,p,"Stage37 exact old policy drift")
+                old_rule=dict(result)
+                old_stats=dict(old_rule["stage37_feedback"])
+                old_stats.pop("background_changes_from_greedy")
+                old_stats.pop("mission_only_feedback")
+                old_rule["stage37_feedback"]=old_stats
+                assert old_rule==original_stage37(SEED,sc,p,cal,N),(sc,p,"Stage37 exact old policy drift")
             feedback=result.get("stage37_feedback")
             if feedback is not None:
                 assert feedback["decisions"]==feedback["causal_cpu_finishes"]==N
