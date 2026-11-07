@@ -1,4 +1,5 @@
 name: JPDC Stage42 causal CPU network regime selection development
+# Repeat preregistered dev seeds after correcting only an overstrong unit assertion
 on:
   push:
     branches: [jpdc-seed0-repro-20261024]
