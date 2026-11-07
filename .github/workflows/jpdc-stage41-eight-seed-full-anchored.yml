@@ -1,0 +1,74 @@
+name: JPDC Stage41 independent eight-seed FULL-anchored deadline validation
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage41-eight-seed-full-anchored.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        seed: [701, 702, 703, 704, 705, 706, 707, 708]
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Lock unchanged E42 and preregistered science protocol"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage41
+          git rev-parse HEAD > stage41/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE41_EIGHT_SEED_FULL_ANCHORED_HOLDOUT_PREREG_2026-11-07.md
+          python3 -m py_compile jpdc/run_stage41_full_anchored_holdout.py jpdc/audit_stage41_full_anchored_holdout.py
+          python3 jpdc/test_full_anchored_reranker_stage40.py > stage41/unit.log
+      - name: "Run original source physics 5 policies S2 and S3; retain adverse outcomes"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage41_full_anchored_holdout.py --seed ${{ matrix.seed }} --out stage41/seed_${{ matrix.seed }}.json | tee stage41/seed_${{ matrix.seed }}.log
+          echo JPDC_STAGE41_ONE_INDEPENDENT_SOURCE_SEED_PASS ${{ matrix.seed }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage41-source-seed-${{ matrix.seed }}
+          path: stage41/
+          if-no-files-found: warn
+  complete_cohort:
+    needs: [seed]
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage41-source-seed-*
+          path: stage41-source
+      - name: "Require all eight complete source seeds and exact paired mission statistics"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage41-aggregate
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/audit_stage41_full_anchored_holdout.py --input stage41-source --out stage41-aggregate/cohort.json | tee stage41-aggregate/cohort.log
+          python3 - <<'PY'
+          import json
+          a=json.load(open("stage41-aggregate/cohort.json"))
+          assert a["status"]=="PASS"
+          assert a["scientific_independent_replicates"]==8
+          assert a["dependent_task_policy_observations"]==960000
+          assert len(a["rows"])==10
+          print("JPDC_STAGE41_PRESERVE_COMPLETE_FROZEN_SOURCE_COHORT_AND_NEGATIVE_GATES")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage41-complete-eight-seed-anchored-source
+          path: stage41-aggregate/
+          if-no-files-found: warn
