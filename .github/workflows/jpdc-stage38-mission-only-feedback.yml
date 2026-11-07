@@ -1,0 +1,50 @@
+name: JPDC Stage38 mission-only feedback interference ablation source
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage38-mission-only-feedback.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preregistered novel source seed92, frozen E42, compile and causality
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage38
+          git rev-parse HEAD > stage38/git_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE38_MISSION_ONLY_FEEDBACK_PREREG_2026-11-07.md
+          python3 -m py_compile jpdc/independent_physical_mission_only_feedback_stage38.py jpdc/run_stage38_mission_only_source_dev.py
+          python3 jpdc/test_feedback_deadline_scheduler_stage37.py > stage38/stage37_causal_unit_regression.log
+      - name: Paired actual MISSION deadline outcomes and exact frozen source policy parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage38_mission_only_source_dev.py --out stage38/results.json | tee stage38/results.log
+          python3 jpdc/run_stage38_mission_only_source_dev.py --out stage38/results_repeat.json > stage38/results_repeat.log
+          cmp stage38/results.json stage38/results_repeat.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open("stage38/results.json"))
+          assert d["status"]=="PASS" and d["scientific_seed"]==92
+          assert len(d["task_policy_outcomes"])==12
+          assert d["dependent_task_policy_observations"]==144000
+          for r in d["task_policy_outcomes"]:
+              if r["policy"].startswith("NEW_MISSION_ONLY"):
+                  assert r["background_changes_from_greedy"]==0
+                  assert r["changes_from_greedy"]==r["mission_changes_from_greedy"]
+          print("JPDC_STAGE38_BACKGROUND_INTERFERENCE_GUARD_AND_ALL_12_ARMS_PASS")
+          PY
+          echo JPDC_STAGE38_TWELVE_ARM_DEVELOPMENT_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage38-mission-only-feedback-dev-seed92
+          path: stage38/
+          if-no-files-found: warn
