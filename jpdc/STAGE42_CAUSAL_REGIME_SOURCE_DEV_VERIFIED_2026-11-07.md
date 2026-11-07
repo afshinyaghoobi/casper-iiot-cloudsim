@@ -1,0 +1,25 @@
+# Stage42 actual source two-seed development — causal CPU-versus-network regime policy VERIFIED (2026-11-07)
+
+The user's requested new research standard is a **practical original scheduling algorithm**, potentially incrementally novel for JPDC, supported by actual deadline experiments. Six user-provided FGCS/JPDC 2026 full-text articles have been entered into `jpdc/references_2026_six_uploaded.bib` and a manuscript-ready related-work draft. No exact original DFAQ-LB/AUHS reproduction is claimed.
+
+## Method frozen prospectively, no scenario at routing
+`jpdc/STAGE42_CAUSAL_REGIME_GATED_SCHEDULING_PREREG_2026-11-07.md` preregistration commit `75a32068538ec202ec63c0d0f2e541b8179c5f30`, BEFORE any seed95–96 development results. A causal CPU vs NETWORK regime selector `jpdc/causal_regime_selector_stage42.py`, with two separate source streams (CPU actual/nominal ratio at **CPU finish only**, network ratio at **E2E delivery only**), first256 binary badness observations (ratio>=1.5) historical baseline and last64 recent, signal if recent share>=.35 AND increase>=.20 from baseline. Network mode iff network signal and no CPU signal; ambiguous, CPU, or insufficient data -> full baseline. No hidden affected node set, oracle scenario type, shock onset index or future physical E2E feedback ever consulted for routing; no hard deadline/safety proof.
+
+New isolated source `jpdc/independent_physical_regime_gated_stage42.py` and two class-aware policies: `NEW_REGIME_GATED_MISSION_E2E` and `NEW_REGIME_GATED_MISSION_COMBINED`. NORMAL/HIGH always get original `CASPER_FULL` policy with original rank/health/E17 adaptive and probe logic. MISSION on FULL regime uses exact CASPER_FULL route; MISSION on NETWORK regime uses unmodified Stage38 2ms-bounded nominal greedy options, causal last32 CPU positive residual p75(min4) and/or delivered network excess p90(min8), no certified interval. Original frozen E42 git SHA `34256ca7bff46f911cf20e8b94278fbd09175746` and E4.6 untouched.
+
+First [GitHub Actions 42408647939](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/42408647939) failed on overstrict TEST fixture expecting network mode not to activate from PREVIOUS E2E-delivered labels; correct behavior can activate before 64 network observations. **Only test timing assertion fixed**, code and thresholds frozen, next [GitHub Actions 42408742874](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/42408742874) **SUCCESS**, both fresh DEVELOPMENT source seeds95/96, original Stage6 and old Stage38 exact policy parity, adverse causal unit tests, full repeat byte-identical. 2×2 shock scenarios×6 policies×12000 source tasks=**288000 dependent task-policy observations, independent scientific DEV n2 source seeds**. 80k Stage3 original calibration per seed; strict Python FCFS only.
+
+| Seed | Scenario | POST MISSION denominator | GREEDY misses | CASPER_FULL misses | Prior Stage38 MISSION-only combined misses | NEW Stage42 gated E2E misses | NEW Stage42 gated combined misses | NETWORK mode dispatches all workload | MISSION NETWORK dispatches |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|
+|95|S2 CPU40-loss|83|6|7|6|7|7|0|0|
+|96|S2 CPU40-loss|92|1|1|0|1|1|0|0|
+|95|S3 NET50-loss|83|5|5|4|4|4|1962/12000|81|
+|96|S3 NET50-loss|92|0|0|0|0|0|1352/12000|57|
+
+**Development signal promising but SMALL**: S2 no NETWORK regime activated in both dev seeds, exactly FULL source outcomes; S3 the selector activated NETWORK after enough E2E evidence, with 1 MISSION fewer miss seed95, tied seed96. Difference from Stage38: background stays CASPER_FULL (not PRED_GREEDY) while regime controls MISSION switching. Original FULL S2 seed95 (7) worse than GREEDY6, demonstrating preservation of FULL is NOT automatic dominance over every baseline. No claim significance or independent sample. Stage42 source diagnostic mode count includes FULL workload, not strictly POST-only; method never reads hidden true phase.
+
+## Next independent science already prenotified
+`jpdc/STAGE43_EIGHT_SEED_CAUSAL_REGIME_HOLDOUT_PREREG_2026-11-07.md` committed `8831f06b48e34ebab6e39dcc7047957c50dad7db`, before independent source outcomes: 8 new seeds801–808, S2/S3, exact frozen GREEDY/FULL/Stage38 and two Stage42 gate arms, 960k dependent tasks, eight independent source science units. Mandatory full eight-seed aggregate with paired sign tests and predeclared S2/S3 reliability + classification gates; no tuning after results. Workflow `.github/workflows/jpdc-stage43-eight-seed-regime.yml`. If new method fails retention, report negative fully, not promote to final JPDC design.
+
+## Unresolved publication blockers
+Registered Python strict FCFS vs Java CloudSimPlus8.5.7 SpaceShared queue semantics **FAIL** max wait difference9.1214ms>5ms, cannot claim alternate-engine validation. Published DFAQ-LB/AUHS closest related works, not directly reproduced executable baselines. Original Stage39 / Stage41 validations were mixed and negative, no safe class-dependent q bound, no fresh independent external IIoT trace. No new PDF currently required.
