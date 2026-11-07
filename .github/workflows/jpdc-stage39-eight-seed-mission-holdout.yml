@@ -1,0 +1,74 @@
+name: JPDC Stage39 eight-seed held-out actual deadline scheduling comparison
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage39-eight-seed-mission-holdout.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source_seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        seed: [601, 602, 603, 604, 605, 606, 607, 608]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify frozen E42 and pre-outcome eight-seed protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage39
+          git rev-parse HEAD > stage39/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE39_EIGHT_SEED_MISSION_SCHEDULING_HOLDOUT_PREREG_2026-11-07.md
+          python3 -m py_compile jpdc/run_stage39_eight_seed_holdout.py jpdc/audit_stage39_eight_seed_holdout.py
+          python3 jpdc/test_feedback_deadline_scheduler_stage37.py > stage39/causal_unit.log
+      - name: One frozen independent source seed: original parity and seven policy arms per scenario
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage39_eight_seed_holdout.py --seed ${{ matrix.seed }} --out stage39/seed_${{ matrix.seed }}.json | tee stage39/seed_${{ matrix.seed }}.log
+          echo JPDC_STAGE39_ONE_SOURCE_SEED_COMPLETE ${{ matrix.seed }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage39-preregistered-seed-${{ matrix.seed }}
+          path: stage39/
+          if-no-files-found: warn
+  complete_scientific_cohort:
+    needs: [source_seed]
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage39-preregistered-seed-*
+          path: stage39-seed-artifacts
+      - name: Reject incomplete cohort; signed paired eight-seed MISSION deadline outcome audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage39-aggregate
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/audit_stage39_eight_seed_holdout.py --input stage39-seed-artifacts --out stage39-aggregate/cohort.json | tee stage39-aggregate/cohort.log
+          python3 - <<'PY'
+          import json
+          a=json.load(open("stage39-aggregate/cohort.json"))
+          assert a["status"]=="PASS" and a["scientific_independent_replicates"]==8
+          assert a["dependent_task_policy_observations"]==1344000
+          assert len(a["rows"])==14 and len(a["source_seeds"])==8
+          print("JPDC_STAGE39_FULL_EIGHT_SEED_ACTUAL_MISSION_OUTCOMES_PRESERVED")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage39-eight-seed-complete-mission-deadline-comparison
+          path: stage39-aggregate/
+          if-no-files-found: warn
