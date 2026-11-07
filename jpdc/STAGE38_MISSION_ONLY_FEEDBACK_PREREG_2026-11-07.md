@@ -1,0 +1,21 @@
+# JPDC Stage38 — scheduling-first MISSION-only feedback interference-ablation protocol (2026-11-07)
+
+## Pre-outcome scientific hypothesis
+Stage37 dev seed91 source trial actual S2 MISSION miss counts GREEDY6, CASPER_FULL4, CPU-only8, combined8; S3 GREEDY2, FULL2, CPU-only1, combined2, N89 postshock missions each scenario. Stage37b forensic task-level paired showed S2 CPU-only **6 new and4 saved** missed MISSION deadlines vs GREEDY, 32 MISSION task node assignments differ vs original Greedy even though only5 mission decisions explicitly diverged from their CURRENT greedy node; background NORMAL/HIGH dispatch interference through FCFS is a likely (not proven) contributor.
+
+## Frozen change BEFORE seed92 physics
+Use isolated clone `jpdc/independent_physical_mission_only_feedback_stage38.py` of Stage37 (NOT original E42/E4.6 or frozen Stage6). Add exactly two new policies:
+- `NEW_MISSION_ONLY_CPU_FEEDBACK`: at MISSION dispatch use exactly frozen Stage37 CPU-only node-score rule, 2ms nominal budget and 75th percentile of last32 positive CPU-finish errors after min4. At NON-MISSION dispatch use ORIGINAL PRED_GREEDY node (no rescheduling). CPU history still collects completed labels from all task classes.
+- `NEW_MISSION_ONLY_CPU_E2E_FEEDBACK`: at MISSION dispatch use exactly frozen combined CPU/E2E scoring and original 2ms nominal budget. At NORMAL/HIGH arrival use greedy. Actual network feedback enters only when E2E-delivered, original E2E 90th percentile min8 observations per node, last32, original source model unchanged.
+
+Both routes are NEVER certified for deadline safety, nor is a missed deadline impossible after a nominal 2ms budget. No hidden fault node mask, future CPU/network truth or stage shock boundary visible at dispatch. Retain all Stage37 policies for fair within-seed ablation. Baseline PRED_GREEDY and CASPER_FULL original JSON must remain EXACT Stage6 parity. All source strict Python FCFS physics and workload unchanged. The ONLY experiment design difference is whether new feedback is applied to background NORMAL/HIGH tasks.
+
+## First developmental seed and metrics, fixed before outcomes
+**Scientific development seed92**, never used in reported Stage12–37 source experiments, one new development scientific unit (not an independent multi-seed confirmation). Stage3 original native calibration 80000. S2 CPU40%-loss and S3 network50%-loss original scenarios. Each 12k tasks, PRED_GREEDY, CASPER_FULL, NEW_CPU_FEEDBACK_ONLY, NEW_CPU_E2E_FEEDBACK, NEW_MISSION_ONLY_CPU_FEEDBACK, NEW_MISSION_ONLY_CPU_E2E_FEEDBACK: **12 arms ×12k =144k dependent task-policy observations, n=1 seed**.
+
+Primary metric POST task-index10000 MISSION deadline miss integer count and denominator (all six policies and both scenarios), secondary all mission deadline misses, total and class-specific misses if available, E2E mean, queue wait, source physical deadline outcomes, changed MISSION decisions vs current greedy, NORMAL/HIGH route changes (must **equal zero for mission-only variants**), CPU/E2E delivered observation conservation and no routing budget violations. Repeat source results byte-identical; original Stage6 JSON exact parity for four baseline arms. Report S2 and S3 adverse effects; no extra seed or parameter tuning after negative results.
+
+If MISSION-only variants have no improvement, report FAIL of proposed interference hypothesis; if they improve in one source seed, that is NOT a new JPDC acceptance or independent superiority. Next proper gate freezes any promising method against genuinely untouched seed cohort and stronger fair baseline methods; Java CloudSimPlus v8.5.7 SpaceShared vs Python FCFS original queue wait parity FAIL max9.1214ms>5ms remains an unresolved domain issue.
+
+## References and new research standard
+Work should explicitly cite the six user-supplied 2026 FGCS/JPDC papers from `jpdc/references_2026_six_uploaded.bib`, with `jpdc/RELATED_WORK_2026_SIX_FULL_TEXT_COMPARISON_2026-11-07.md` explaining relation and non-equivalence. AUHS/DFAQ-LB are related but not implemented byte-for-byte here. Focus engineering/algorithmic novelty with clear ablation and actual deadline impact, not impossible theoretical perfect future coverage.
