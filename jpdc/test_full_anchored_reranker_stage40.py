@@ -38,7 +38,6 @@ def run():
     for i in range(4):
         a.observe_cpu(1,10.,10.,300.+i)
     assert take(a,v,sig,q,now=310.,mode="BOTH").node==1
-    assert take(a,v,sig,q,now=310.,deadline=100.0).reason=="baseline_no_screened_candidate" if False else True
     assert a.switches<=a.mission_decisions and a.reasons["nonmission_original_full"]==1
     # invalid future/out-of-order observations are rejected
     try:a.observe_network(1,12.,10.,-1.)
