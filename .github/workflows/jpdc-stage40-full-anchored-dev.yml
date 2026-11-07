@@ -1,0 +1,43 @@
+name: JPDC Stage40 CASPER_FULL anchored causal feedback development
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage40-full-anchored-dev.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [93, 94]
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Verify E42, preregistered dev seed and new unit"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage40
+          git rev-parse HEAD > stage40/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE40_FULL_ANCHORED_MISSION_E2E_PREREG_2026-11-07.md
+          python3 -m py_compile jpdc/casper_full_anchored_reranker_stage40.py jpdc/test_full_anchored_reranker_stage40.py jpdc/independent_physical_full_anchored_stage40.py jpdc/run_stage40_full_anchored_development.py
+          python3 jpdc/test_full_anchored_reranker_stage40.py | tee stage40/unit.log
+          python3 jpdc/test_feedback_deadline_scheduler_stage37.py > stage40/stage37_unit_regression.log
+      - name: "Original Stage6 exact parity, frozen Stage38 and causal Stage40 actual mission deadline"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage40_full_anchored_development.py --seed ${{ matrix.seed }} --out stage40/seed_${{ matrix.seed }}.json | tee stage40/seed_${{ matrix.seed }}.log
+          python3 jpdc/run_stage40_full_anchored_development.py --seed ${{ matrix.seed }} --out stage40/seed_${{ matrix.seed }}_repeat.json > stage40/repeat.log
+          cmp stage40/seed_${{ matrix.seed }}.json stage40/seed_${{ matrix.seed }}_repeat.json
+          echo JPDC_STAGE40_FROZEN_SOURCE_RERANKER_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage40-development-source-${{ matrix.seed }}
+          path: stage40/
+          if-no-files-found: warn
