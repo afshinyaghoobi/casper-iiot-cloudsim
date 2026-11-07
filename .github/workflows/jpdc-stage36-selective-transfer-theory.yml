@@ -1,0 +1,40 @@
+name: JPDC Stage36 selective risk identifiability and conditional-TV exact audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage36-selective-transfer-theory.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finite-theory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen E42, original Stage36 theoretical preregistration and compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage36
+          git rev-parse HEAD > stage36/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE36_SELECTIVE_TRANSFER_IDENTIFIABILITY_PREREG_2026-11-06.md
+          python3 -m py_compile jpdc/audit_stage36_selective_transfer_limits.py jpdc/test_stage36_selective_transfer_limits.py
+      - name: Exact-rational exhaustive source/target worlds, repeated byte identical
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/test_stage36_selective_transfer_limits.py | tee stage36/selective_theory.log
+          python3 jpdc/test_stage36_selective_transfer_limits.py > stage36/selective_theory_repeat.log
+          cmp stage36/selective_theory.log stage36/selective_theory_repeat.log
+          python3 jpdc/test_causal_high_mission_proxy_stage34.py | tee stage36/stage34_negative_transfer_regression.log
+          python3 jpdc/test_causal_recovery_epoch_stage32.py > stage36/stage32_regression.log
+          python3 jpdc/test_causal_nonnetwork_calibration_stage28.py > stage36/stage28_regression.log
+          echo JPDC_STAGE36_FROZEN_MATH_EXHAUSTIVE_REGRESSION_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage36-finite-risk-identifiability-proof-tests
+          path: stage36/
+          if-no-files-found: warn
