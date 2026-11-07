@@ -1,0 +1,54 @@
+name: JPDC Stage37 actual causal CPU plus E2E deadline scheduling pilot
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage37-deadline-feedback-pilot.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  science:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen FGCS E42, preregistered scheduler and compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage37
+          git rev-parse HEAD > stage37/git_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE37_SCHEDULING_FIRST_FEEDBACK_PREREG_2026-11-07.md
+          python3 -m py_compile jpdc/feedback_deadline_scheduler.py jpdc/independent_physical_feedback_deadline_stage37.py jpdc/run_stage37_scheduling_feedback_dev.py jpdc/test_feedback_deadline_scheduler_stage37.py
+      - name: Causal feedback and budget unit, repeated byte identical
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/test_feedback_deadline_scheduler_stage37.py | tee stage37/unit.log
+          python3 jpdc/test_feedback_deadline_scheduler_stage37.py > stage37/unit_repeat.log
+          cmp stage37/unit.log stage37/unit_repeat.log
+          python3 jpdc/test_causal_nonnetwork_calibration_stage28.py > stage37/stage28_regression.log
+      - name: Source physical deadline experiment seed91, original Stage6 exact parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage37_scheduling_feedback_dev.py --out stage37/results.json | tee stage37/results.log
+          python3 jpdc/run_stage37_scheduling_feedback_dev.py --out stage37/results_repeat.json > stage37/results_repeat.log
+          cmp stage37/results.json stage37/results_repeat.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open("stage37/results.json"))
+          assert r["status"]=="PASS" and r["scientific_seed"]==91
+          assert len(r["output_rows"])==10 and r["dependent_task_policy_observations"]==120000
+          assert sum(x["source_stage6_exact_policy_json_parity"] for x in r["output_rows"])==4
+          assert all(x["scheduling_feedback"] is None or not x["scheduling_feedback"]["risk_certificate"] for x in r["output_rows"])
+          print("JPDC_STAGE37_TEN_ARMS_FROZEN_BASELINES_AND_SOURCE_COUNTS_PASS")
+          PY
+          echo JPDC_STAGE37_SCHEDULER_SOURCE_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage37-feedback-deadline-development-seed91
+          path: stage37/
+          if-no-files-found: warn
