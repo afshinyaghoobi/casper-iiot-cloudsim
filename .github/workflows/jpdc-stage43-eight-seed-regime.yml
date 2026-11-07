@@ -1,0 +1,74 @@
+name: JPDC Stage43 independent eight-source-seed regime deadline experiment
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage43-eight-seed-regime.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        seed: [801, 802, 803, 804, 805, 806, 807, 808]
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Original E42 freeze, source preregistration and causal unit tests"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage43
+          git rev-parse HEAD > stage43/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE43_EIGHT_SEED_CAUSAL_REGIME_HOLDOUT_PREREG_2026-11-07.md
+          python3 -m py_compile jpdc/run_stage43_regime_independent.py jpdc/audit_stage43_eight_seed_regime.py
+          python3 jpdc/test_causal_regime_selector_stage42.py > stage43/causal_regime_unit.log
+          python3 jpdc/test_feedback_deadline_scheduler_stage37.py > stage43/scheduler_unit.log
+      - name: "Original Stage6 and frozen Stage38 exact parity in each independent seed"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage43_regime_independent.py --seed ${{ matrix.seed }} --out stage43/seed_${{ matrix.seed }}.json | tee stage43/seed_${{ matrix.seed }}.log
+          echo JPDC_STAGE43_SOURCE_SEED_COMPLETE ${{ matrix.seed }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage43-source-seed-${{ matrix.seed }}
+          path: stage43/
+          if-no-files-found: warn
+  complete_science:
+    needs: [seed]
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage43-source-seed-*
+          path: stage43-source
+      - name: "Require all 8 source seeds and archive every signed difference"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage43-aggregate
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/audit_stage43_eight_seed_regime.py --input stage43-source --out stage43-aggregate/cohort.json | tee stage43-aggregate/cohort.log
+          python3 - <<'PY'
+          import json
+          d=json.load(open("stage43-aggregate/cohort.json"))
+          assert d["status"]=="PASS" and d["independent_source_scientific_n"]==8
+          assert d["dependent_task_policy_observations"]==960000
+          assert len(d["rows"])==10
+          print("JPDC_STAGE43_FULL_COHORT_AND_FAILING_GATES_PRESERVED")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage43-full-eight-seed-causal-regime-cohort
+          path: stage43-aggregate/
+          if-no-files-found: warn
