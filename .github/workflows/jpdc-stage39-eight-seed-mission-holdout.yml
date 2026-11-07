@@ -28,7 +28,7 @@ jobs:
           test -s jpdc/STAGE39_EIGHT_SEED_MISSION_SCHEDULING_HOLDOUT_PREREG_2026-11-07.md
           python3 -m py_compile jpdc/run_stage39_eight_seed_holdout.py jpdc/audit_stage39_eight_seed_holdout.py
           python3 jpdc/test_feedback_deadline_scheduler_stage37.py > stage39/causal_unit.log
-      - name: One frozen independent source seed: original parity and seven policy arms per scenario
+      - name: "One frozen independent source seed: original parity and seven policy arms per scenario"
         shell: bash
         run: |
           set -euo pipefail
