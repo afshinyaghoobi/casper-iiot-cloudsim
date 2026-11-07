@@ -1,4 +1,5 @@
 name: JPDC Stage38 mission-only feedback interference ablation source
+# Rerun original fixed protocol after source parity normalized for audit-only extra keys
 on:
   push:
     branches: [jpdc-seed0-repro-20261024]
