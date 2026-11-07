@@ -20,10 +20,11 @@ def run():
     assert r.cpu_baseline_share==r.network_baseline_share==0.
     assert r.regime=="FULL"
     for i in range(64):
+        before=d.select(256.5+i).regime
         d.observe_cpu_finish(10.,10.,257.+i)
-        # Not delivered until the E2E call; CPU completion itself
-        # may never create a network-mode decision.
-        assert d.select(257.+i).regime=="FULL"
+        # A CPU completion alone may not change the network hypothesis;
+        # previously delivered E2E reports can already have activated it.
+        assert d.select(257.+i).regime==before
         d.observe_network_e2e(20.,10.,257.+i)
     r=d.select(321.)
     assert r.regime=="NETWORK" and r.network_signal and not r.cpu_signal
