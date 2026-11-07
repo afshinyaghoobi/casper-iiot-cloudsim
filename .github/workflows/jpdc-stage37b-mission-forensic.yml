@@ -1,0 +1,50 @@
+name: JPDC Stage37b matched MISSION forensic after adverse CPU pilot
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage37b-mission-forensic.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  forensic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify original E42 and explicitly retrospective research protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage37b
+          git rev-parse HEAD > stage37b/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE37B_MATCHED_MISSION_FORENSIC_PROTOCOL_2026-11-07.md
+          python3 -m py_compile jpdc/independent_physical_feedback_deadline_stage37.py jpdc/run_stage37b_paired_mission_forensic.py
+          python3 jpdc/test_feedback_deadline_scheduler_stage37.py > stage37b/unit.log
+      - name: Same physical seed91 all five arms in two scenarios, passive trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage37b_paired_mission_forensic.py --out stage37b/task_level.json | tee stage37b/forensic.log
+          python3 jpdc/run_stage37b_paired_mission_forensic.py --out stage37b/task_level_repeat.json > stage37b/forensic_repeat.log
+          cmp stage37b/task_level.json stage37b/task_level_repeat.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open("stage37b/task_level.json"))
+          assert d["status"]=="PASS" and d["source_seed"]==91
+          assert d["retrospective_after_stage37_outcomes"]
+          assert len(d["results"])==10
+          assert sum(r["original_stage6_exact_parity"] for r in d["results"])==4
+          for r in d["results"]:
+              assert r["post_mission_count"]==89
+              assert len(r["post_mission_missed_task_details"])==r["post_mission_misses"]
+          print("JPDC_STAGE37B_ALL_MISSION_TRACE_PARITY_AND_CAUSAL_CONSERVATION_PASS")
+          PY
+          echo JPDC_STAGE37B_BYTE_IDENTICAL_TASK_FORENSIC_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage37b-task-matched-mission-seed91-diagnostics
+          path: stage37b/
+          if-no-files-found: warn
