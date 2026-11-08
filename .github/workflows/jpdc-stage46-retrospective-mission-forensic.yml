@@ -1,0 +1,54 @@
+name: JPDC Stage46 retrospective matched MISSION harm audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage46-retrospective-mission-forensic.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  forensic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [901, 903]
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Confirm original E42 source and explicitly retrospective protocol"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage46
+          git rev-parse HEAD > stage46/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE46_RETROSPECTIVE_MISSION_INTERFERENCE_PROTOCOL_2026-11-07.md
+          python3 -m py_compile jpdc/run_stage46_retrospective_mission_forensic.py
+          python3 jpdc/test_causal_node_regime_stage44.py > stage46/node_causal_unit.log
+      - name: "Reconstruct original frozen six policy task-level mission outcomes"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage46_retrospective_mission_forensic.py --seed ${{ matrix.seed }} --out stage46/seed_${{ matrix.seed }}.json | tee stage46/seed_${{ matrix.seed }}.log
+          python3 jpdc/run_stage46_retrospective_mission_forensic.py --seed ${{ matrix.seed }} --out stage46/seed_${{ matrix.seed }}_repeat.json > stage46/seed_repeat.log
+          cmp stage46/seed_${{ matrix.seed }}.json stage46/seed_${{ matrix.seed }}_repeat.json
+          python3 - <<'PY'
+          import glob,json
+          f=glob.glob("stage46/seed_*.json")
+          assert len(f)==2
+          d=json.load(open(next(x for x in f if not x.endswith("_repeat.json"))))
+          assert d["status"]=="PASS"
+          assert d["already_examined_stage45_source_seed"]
+          assert d["independent_efficacy_replicates"]==0
+          assert d["frozen_original_policy_parity"]
+          assert len(d["task_paired_forensic"])==6
+          print("JPDC_STAGE46_ORIGINAL_SOURCE_POLICY_AND_MISSION_TASK_PARITY_PASS")
+          PY
+          echo JPDC_STAGE46_RETROSPECTIVE_SOURCE_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage46-retrospective-task-forensic-${{ matrix.seed }}
+          path: stage46/
+          if-no-files-found: warn
