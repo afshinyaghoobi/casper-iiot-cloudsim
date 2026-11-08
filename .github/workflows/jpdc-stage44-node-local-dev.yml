@@ -1,0 +1,43 @@
+name: JPDC Stage44 node-local causal hotspot development
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage44-node-local-dev.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [97, 98]
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Original FGCS E42 frozen and preregistered node-local causal tests"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage44
+          git rev-parse HEAD > stage44/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE44_NODE_LOCAL_REGIME_PREREG_2026-11-07.md
+          python3 -m py_compile jpdc/causal_node_regime_selector_stage44.py jpdc/test_causal_node_regime_stage44.py jpdc/independent_physical_node_local_regime_stage44.py jpdc/run_stage44_node_local_development.py
+          python3 jpdc/test_causal_node_regime_stage44.py | tee stage44/adversarial_unit.log
+          python3 jpdc/test_causal_regime_selector_stage42.py > stage44/stage42_causal_regression.log
+      - name: "Source six policy arms S2 S3, exact Stage6 Stage38 Stage42 policy parity"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage44_node_local_development.py --seed ${{ matrix.seed }} --out stage44/seed_${{ matrix.seed }}.json | tee stage44/seed_${{ matrix.seed }}.log
+          python3 jpdc/run_stage44_node_local_development.py --seed ${{ matrix.seed }} --out stage44/seed_${{ matrix.seed }}_repeat.json > stage44/repeat.log
+          cmp stage44/seed_${{ matrix.seed }}.json stage44/seed_${{ matrix.seed }}_repeat.json
+          echo JPDC_STAGE44_NODE_LOCAL_SOURCE_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage44-node-local-dev-seed-${{ matrix.seed }}
+          path: stage44/
+          if-no-files-found: warn
