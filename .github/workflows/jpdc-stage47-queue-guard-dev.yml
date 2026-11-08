@@ -1,0 +1,44 @@
+name: JPDC Stage47 prospective shared-queue gate development
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage47-queue-guard-dev.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [99, 100]
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Check frozen E42 and Stage47 preregistration, new causal unit"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage47
+          git rev-parse HEAD > stage47/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE47_CAUSAL_QUEUE_EXTERNALITY_GATE_PREREG_2026-11-07.md
+          python3 -m py_compile jpdc/queue_externality_gate_stage47.py jpdc/test_queue_externality_gate_stage47.py jpdc/independent_physical_queue_guard_stage47.py jpdc/run_stage47_queue_guard_development.py
+          python3 jpdc/test_queue_externality_gate_stage47.py | tee stage47/gate_adversarial_unit.log
+          python3 jpdc/test_causal_node_regime_stage44.py > stage47/stage44_regression.log
+          python3 jpdc/test_feedback_deadline_scheduler_stage37.py > stage47/stage37_regression.log
+      - name: "Run full frozen native source experiments and exact prior source parity"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage47_queue_guard_development.py --seed ${{ matrix.seed }} --out stage47/seed_${{ matrix.seed }}.json | tee stage47/seed_${{ matrix.seed }}.log
+          python3 jpdc/run_stage47_queue_guard_development.py --seed ${{ matrix.seed }} --out stage47/seed_${{ matrix.seed }}_repeat.json > stage47/seed_repeat.log
+          cmp stage47/seed_${{ matrix.seed }}.json stage47/seed_${{ matrix.seed }}_repeat.json
+          echo JPDC_STAGE47_SOURCE_DEVELOPMENT_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage47-queue-externality-dev-${{ matrix.seed }}
+          path: stage47/
+          if-no-files-found: warn
