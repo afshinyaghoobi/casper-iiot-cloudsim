@@ -1,0 +1,74 @@
+name: JPDC Stage45 independent eight-seed node-local mission validation
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage45-eight-seed-node-local.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  science_seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 105
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        seed: [901, 902, 903, 904, 905, 906, 907, 908]
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Verify original E42 and frozen prospective Stage45 science"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage45
+          git rev-parse HEAD > stage45/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE45_EIGHT_SEED_NODE_LOCAL_HOLDOUT_PREREG_2026-11-07.md
+          python3 -m py_compile jpdc/run_stage45_eight_seed_node_local.py jpdc/audit_stage45_eight_seed_node_local.py
+          python3 jpdc/test_causal_node_regime_stage44.py > stage45/node_causal_unit.log
+          python3 jpdc/test_causal_regime_selector_stage42.py > stage45/global_causal_unit.log
+      - name: "Source twelve original parity arms and node-local regime science for one seed"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage45_eight_seed_node_local.py --seed ${{ matrix.seed }} --out stage45/seed_${{ matrix.seed }}.json | tee stage45/seed_${{ matrix.seed }}.log
+          echo JPDC_STAGE45_ONE_INDEPENDENT_NODE_LOCAL_SOURCE_SEED_PASS ${{ matrix.seed }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage45-fixed-node-seed-${{ matrix.seed }}
+          path: stage45/
+          if-no-files-found: warn
+  complete_cohort:
+    needs: [science_seed]
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage45-fixed-node-seed-*
+          path: stage45-source
+      - name: "Reject incomplete eight seed cohort and archive every candidate outcome"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage45-aggregate
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/audit_stage45_eight_seed_node_local.py --input stage45-source --out stage45-aggregate/cohort.json | tee stage45-aggregate/cohort.log
+          python3 - <<'PY'
+          import json
+          r=json.load(open("stage45-aggregate/cohort.json"))
+          assert r["status"]=="PASS" and r["independent_scientific_source_n"]==8
+          assert r["dependent_task_policy_observations"]==1152000
+          assert len(r["rows"])==12
+          print("JPDC_STAGE45_ALL_PREREGISTERED_SCIENTIFIC_UNITS_AND_FAILURES_PRESERVED")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage45-full-eight-seed-node-local-science
+          path: stage45-aggregate/
+          if-no-files-found: warn
