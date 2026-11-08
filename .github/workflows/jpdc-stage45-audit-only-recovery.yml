@@ -1,0 +1,52 @@
+name: JPDC Stage45 audit-only recovery from frozen eight source artifacts
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage45-audit-only-recovery.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit_original_8_of_8:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Check frozen E42, original protocol, audit-only recovery note"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage45-recovered
+          git rev-parse HEAD > stage45-recovered/recovery_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE45_EIGHT_SEED_NODE_LOCAL_HOLDOUT_PREREG_2026-11-07.md
+          test -s jpdc/STAGE45_AUDIT_ONLY_RECOVERY_PROTOCOL_2026-11-07.md
+          python3 -m py_compile jpdc/audit_stage45_eight_seed_node_local.py
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 42430334460
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: jpdc-stage45-fixed-node-seed-*
+          path: source-stage45-frozen
+      - name: "Strict all-eight original archived outcome audit; no science rerun"
+        shell: bash
+        run: |
+          set -euo pipefail
+          find source-stage45-frozen -name 'seed_*.json' | sort | tee stage45-recovered/input_files.txt
+          test "$(find source-stage45-frozen -name 'seed_*.json' | wc -l)" -eq 8
+          python3 jpdc/audit_stage45_eight_seed_node_local.py --input source-stage45-frozen --out stage45-recovered/cohort.json | tee stage45-recovered/cohort.log
+          python3 - <<'PY'
+          import json
+          a=json.load(open("stage45-recovered/cohort.json"))
+          assert a["status"]=="PASS" and a["independent_scientific_source_n"]==8
+          assert a["dependent_task_policy_observations"]==1152000
+          assert len(a["rows"])==12
+          print("JPDC_STAGE45_EIGHT_ORIGINAL_SOURCE_ARTIFACTS_RECOVERED_AUDIT_SUCCESS")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage45-original-eight-seed-audit-corrected-only
+          path: stage45-recovered/
+          if-no-files-found: warn
