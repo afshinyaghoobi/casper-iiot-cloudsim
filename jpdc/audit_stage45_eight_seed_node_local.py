@@ -23,7 +23,7 @@ def audit(folder):
         seed=d["scientific_seed"]
         assert seed in SEEDS and seed not in rows,("duplicate/unregistered source",seed)
         assert d["status"]=="PASS" and d["independent_source_scientific_unit"]==1
-        assert d["task_policy_dependent_observations"]==144000
+        assert d["dependent_task_policy_observations"]==144000
         r={(z["scenario"],z["policy"]):z for z in d["rows"]}
         assert len(r)==12 and set(r)=={(sc,p) for sc in SCENARIOS for p in POLICIES}
         for x in r.values():
