@@ -1,0 +1,75 @@
+name: JPDC Stage48 eight independent queue-guard physical source seeds
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage48-eight-seed-queue-guard.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source_seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 105
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        seed: [1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008]
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Verify frozen E42 and Stage48 pre-outcome science"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage48
+          git rev-parse HEAD > stage48/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE48_EIGHT_SEED_QUEUE_GUARD_HOLDOUT_PREREG_2026-11-07.md
+          python3 -m py_compile jpdc/run_stage48_queue_guard_independent.py jpdc/audit_stage48_queue_guard_independent.py
+          python3 jpdc/test_queue_externality_gate_stage47.py > stage48/queue_gate_unit.log
+          python3 jpdc/test_causal_node_regime_stage44.py > stage48/node_regime_unit.log
+      - name: "Run original Stage6 and frozen Stage42 Stage44 policy exact parity"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage48_queue_guard_independent.py --seed ${{ matrix.seed }} --out stage48/seed_${{ matrix.seed }}.json | tee stage48/seed_${{ matrix.seed }}.log
+          echo JPDC_STAGE48_ONE_FIXED_INDEPENDENT_SOURCE_SEED_PASS ${{ matrix.seed }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage48-seed-${{ matrix.seed }}
+          path: stage48/
+          if-no-files-found: warn
+  complete_eight_seed_cohort:
+    needs: [source_seed]
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage48-seed-*
+          path: stage48-sources
+      - name: "Audit all eight no-cherry-pick paired MISSION deadline observations"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage48-aggregate
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          python3 jpdc/audit_stage48_queue_guard_independent.py --input stage48-sources --out stage48-aggregate/cohort.json | tee stage48-aggregate/cohort.log
+          python3 - <<'PY'
+          import json
+          a=json.load(open("stage48-aggregate/cohort.json"))
+          assert a["status"]=="PASS"
+          assert a["independent_source_n"]==8
+          assert a["dependent_task_policy_observations"]==1152000
+          assert len(a["rows"])==12
+          print("JPDC_STAGE48_FULL_EIGHT_SOURCE_INDEPENDENT_COHORT_ARCHIVED")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage48-eight-seed-full-causal-queue-guard-cohort
+          path: stage48-aggregate/
+          if-no-files-found: warn
