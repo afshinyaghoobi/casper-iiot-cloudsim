@@ -1,0 +1,46 @@
+name: JPDC Stage49 native CloudSim857 clock sensitivity and matched FCFS
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage49-native-clock-fcfs.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native_micro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Frozen FGCS source, prereg and real Java compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage49
+          git rev-parse HEAD > stage49/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE49_CLOUDSIM_CLOCK_VS_STRICT_FCFS_PREREG_2026-11-08.md
+          python3 -m py_compile jpdc/audit_stage49_cloudsim_vs_fcfs.py
+          mvn -B -q -DskipTests compile
+      - name: Run all fixed 3 actual native 857 event clocks and matched strict FCFS
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage49ClockSensitivity | grep -E '^STAGE49_|^JPDC_STAGE49_' > stage49/native.log
+          python3 jpdc/audit_stage49_cloudsim_vs_fcfs.py --input stage49/native.log --out stage49/audit.json | tee stage49/audit.log
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage49ClockSensitivity | grep -E '^STAGE49_|^JPDC_STAGE49_' > stage49/native_repeat.log
+          cmp stage49/native.log stage49/native_repeat.log
+          python3 jpdc/audit_stage49_cloudsim_vs_fcfs.py --input stage49/native_repeat.log --out stage49/audit_repeat.json > stage49/audit_repeat.log
+          cmp stage49/audit.json stage49/audit_repeat.json
+          echo JPDC_STAGE49_CLOUDSIM_857_THREE_CLOCK_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage49-original-native-three-clock-vs-fcfs
+          path: stage49/
+          if-no-files-found: warn
