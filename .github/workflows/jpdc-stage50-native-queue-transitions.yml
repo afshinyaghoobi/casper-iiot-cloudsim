@@ -25,7 +25,8 @@ jobs:
           git rev-parse HEAD > stage50/source_commit.txt
           test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
           test -s jpdc/STAGE50_QUEUE_TRANSITION_TRACE_PREREG_2026-11-12.md
-          python3 -m py_compile jpdc/audit_stage50_queue_transitions.py
+          python3 -m py_compile jpdc/audit_stage50_queue_transitions.py jpdc/test_stage50_queue_trace_contract.py
+          python3 jpdc/test_stage50_queue_trace_contract.py
           mvn -B -q -DskipTests compile
       - name: Actual native CloudSim 8.5.7 three-case trace and audited deterministic repeat
         shell: bash
