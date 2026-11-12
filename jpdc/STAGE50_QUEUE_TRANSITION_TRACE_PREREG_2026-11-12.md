@@ -1,0 +1,18 @@
+# Stage50 preregistration — CloudSimPlus 8.5.7 queue transition timing audit (2026-11-12)
+
+## Scientific purpose
+Investigate, without altering CASPER, why Stage49 reported CloudSimPlus SpaceShared cloudlet wait differs from an independently calculated strict FCFS clock. This is a mechanistic **trace semantics** investigation, not a new scheduler, a repair of 30k parity, or an independent deadline efficacy trial.
+
+## Prior fixed evidence
+Stage49 report: `jpdc/STAGE49_NATIVE_CLOUDSIM_CLOCK_FCFS_VERIFIED_2026-11-08.md`; source run 42543963631. Stage49 fixed 3 cloudlets, CPU demand milliseconds [8.099623,4.730689,9.120283], intended arrival offsets milliseconds [0,5.318920,8.0997406], min simulation events seconds [0.000001,0.005,0.02], one CloudSimPlus8.5.7 VM/PE. Existing full 30k Python FCFS–Java SpaceShared wait parity failed max error 9.12140093294972 ms > tolerance 5 ms; retain failure regardless of outcome.
+
+## Locked experiment and observables
+Use the exact same three micro fixtures/event settings, Java17, CloudSimPlus 8.5.7 and service and arrival offsets as Stage49; no tuning from outcome. New isolated passive Stage50 Java subclass must log BEFORE and AFTER every scheduler `cloudletSubmitInternal` and `updateProcessing`; include precise simulation clock, ordered EXEC and WAIT CloudletExecution IDs, and native reported per-cloudlet `getStartWaitTime()`, `getTotalExecutionTime()`, plus finish callback clock. For transitions, infer only **first externally observed transition into the EXEC list** (not the physical CPU start). Record first observed WAIT-list membership and count transitions WAIT→EXEC, EXEC→WAIT, and any simultaneous state/event ambiguity. Do not claim an EXEC-list observation proves exact CPU start.
+
+A separate Python auditor will parse the complete passive records and construct a deterministic per-cloudlet table: first actual scheduler submission timestamp, first seen waiting, first seen executing, last seen executing, finish callback clock, native wait and execution, reference ideal FCFS wait using actual submission clock + requested CPU service (the exact Stage49 convention). Report `native_wait - (first_exec_observed - observed_submit)` **only as a descriptive difference between two different operational definitions**. All clocks milliseconds, deterministic tie order by event log sequence; preserve repeated timestamps and multiple callbacks. Never silently replace missing transitions with inferred clocks.
+
+## Predeclared checks and failure reporting
+Require exactly 3 submissions and 3 finishes per fixed scenario; all 3 task IDs mapped unambiguously, finite nonnegative event clocks and reported waits, no unknown IDs in queue snapshots, each task observed in EXEC at least once or report an explicit FAIL. Make absolutely no blanket FCFS/Java equivalence assertion. For each scenario, record all task records and discrepancies even when tests fail. Repeat entire native Java run and JSON audit and check byte-for-byte equality. Compare Stage50 unchanged common outputs against Stage49 where possible, but distinguish passive trace observation from changed scheduler behavior. Preserve original E42 Git blob SHA 34256ca7bff46f911cf20e8b94278fbd09175746 and E4.6, original Stage49 and older sources unchanged.
+
+## Interpretation
+If event/clock accounting still does not explain observed wait, record unresolved discrepancy and prioritize original 30k real native trace and alternative queue discipline rather than another threshold-based policy. Study size is three test fixtures, **no independent seed-level statistical claim**. Stage48 negative incremental finding (guard S3 26 misses vs NodeLocal 25) persists. Six prior 2026 article PDFs are retained; no need to request them again.
