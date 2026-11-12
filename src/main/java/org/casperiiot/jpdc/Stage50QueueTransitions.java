@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * Original E42/E4.6 and Stage19/20 source are immutable.
  * All outputs are PASSIVE observations, never scheduler interference.
  */
-public final class Stage50ClockSensitivity {
+public final class Stage50QueueTransitions {
     private static final long MIPS = 1_000_000_000L;
     private static final double BASE_SECONDS=1.0;
     private static final double[] SERVICE_MS={8.099623,4.730689,9.120283};
