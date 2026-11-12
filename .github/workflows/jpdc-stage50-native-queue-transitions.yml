@@ -1,0 +1,46 @@
+name: JPDC Stage50 passive native SpaceShared queue transitions
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths: ['.github/workflows/jpdc-stage50-native-queue-transitions.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  transitions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Frozen source and prereg integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage50
+          git rev-parse HEAD > stage50/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE50_QUEUE_TRANSITION_TRACE_PREREG_2026-11-12.md
+          python3 -m py_compile jpdc/audit_stage50_queue_transitions.py
+          mvn -B -q -DskipTests compile
+      - name: Actual native CloudSim 8.5.7 three-case trace and audited deterministic repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage50QueueTransitions | grep -E '^STAGE50_|^JPDC_STAGE50_' > stage50/native.log
+          python3 jpdc/audit_stage50_queue_transitions.py --input stage50/native.log --out stage50/audit.json | tee stage50/audit.log
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage50QueueTransitions | grep -E '^STAGE50_|^JPDC_STAGE50_' > stage50/native_repeat.log
+          cmp stage50/native.log stage50/native_repeat.log
+          python3 jpdc/audit_stage50_queue_transitions.py --input stage50/native_repeat.log --out stage50/audit_repeat.json > stage50/audit_repeat.log
+          cmp stage50/audit.json stage50/audit_repeat.json
+          echo JPDC_STAGE50_NATIVE_TRANSITIONS_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage50-native-transitions-all-clocks
+          path: stage50/
+          if-no-files-found: warn
