@@ -1,0 +1,50 @@
+name: JPDC Stage54 posthoc source-seed robustness audit only
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage54-source-robustness.yml'
+      - 'jpdc/audit_stage54_source_robustness.py'
+      - 'jpdc/STAGE54_POSTHOC_SOURCE_ROBUSTNESS_PROTOCOL_2026-11-13.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  posthoc_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recover already verified Stage52 original outcome audit only
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43369267053
+          github-token: ${{ github.token }}
+          name: jpdc-stage52-audit-only-recovery-original-source-cohort
+          path: stage54-original-stage52
+      - name: Source freeze and posthoc statistical audit repeated exactly
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage54
+          git rev-parse HEAD > stage54/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE54_POSTHOC_SOURCE_ROBUSTNESS_PROTOCOL_2026-11-13.md
+          test -s stage54-original-stage52/audit.json
+          cmp stage54-original-stage52/audit.json stage54-original-stage52/audit_repeat.json
+          python3 -m py_compile jpdc/audit_stage54_source_robustness.py
+          python3 jpdc/audit_stage54_source_robustness.py --input stage54-original-stage52/audit.json --out stage54/robustness.json | tee stage54/robustness.log
+          python3 jpdc/audit_stage54_source_robustness.py --input stage54-original-stage52/audit.json --out stage54/robustness_repeat.json > stage54/robustness_repeat.log
+          cmp stage54/robustness.json stage54/robustness_repeat.json
+          cmp stage54/robustness.log stage54/robustness_repeat.log
+          echo JPDC_STAGE54_POSTHOC_SOURCE_ROBUSTNESS_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage54-posthoc-robustness-from-frozen-stage52
+          path: stage54/
+          if-no-files-found: warn
