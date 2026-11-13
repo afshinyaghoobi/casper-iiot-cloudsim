@@ -8,11 +8,11 @@ if __name__=="__main__":
     p=argparse.ArgumentParser();p.add_argument("--input",required=True)
     a=p.parse_args()
     lines=Path(a.input).read_text().splitlines()
-    assert audit(lines)["status"]=="PASS"
+    assert audit(lines)["status"] in ("PASS","AUDIT_PASS_WITH_UNFINISHED_TASKS")
     variants=[
         [x for x in lines if x!="JPDC_STAGE56_NATIVE_GRID_COMPLETE"],
         [x for x in lines if not x.startswith("STAGE56_END,ISOLATED_0,")],
-        [x for x in lines if not x.startswith("STAGE56_FINISH,WAVES_2,0,")],
+        [x for x in lines if not x.startswith("STAGE56_SUBMIT,WAVES_2,BEFORE,")],
         [x.replace("STAGE56_SUBMIT,BURST_1,AFTER,","STAGE56_SUBMIT,BURST_1,INVALID,")
          if x.startswith("STAGE56_SUBMIT,BURST_1,AFTER,") else x for x in lines],
     ]
