@@ -1,0 +1,27 @@
+# Stage57 verified: online-MCT naive comparator is an exact PRED_GREEDY alias (2026-11-13)
+
+## Real QA evidence and scope
+- Prospective methodological preregistration: `jpdc/STAGE57_BASELINE_FIDELITY_ALIAS_PREREG_2026-11-13.md`, commit `d6ad2f26b0b2101d21c6ef65484348523065cbea`, *before* test runs. Original E42 Git blob SHA `34256ca7bff46f911cf20e8b94278fbd09175746` and E4.6 unchanged.
+- Actual GitHub Actions [run **43446299190**](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/43446299190), source SHA `3f681ae17125a17e76583754da5582ac1a1e845f`, **SUCCESS all 3 independent QA source-seed jobs**, each source and repeated JSON exact byte-identical. Negative formula/eligibility fixtures passed.
+- Retrieved original artifacts `jpdc-stage57-alias-seed-1301` (14047394081), `...-1302` (14047004273), `...-1303` (14047703847), decoded actual `source.json` and compared against `repeat.json` and QA results. QA seed1301/1302/1303 ×S0/S2/S3 ×1200 arrivals = **10,800 dependent scheduling decisions**, 0 policy-decision disagreements. Source state uses same causal virtual queue, no future fault oracle, no delayed feedback. This is **policy identity QA, not an efficacy holdout**.
+- Per original task, `predicted_latency = RTT + (in+out)*8000/BW + predicted_backlog + 12*work/cap`; Online-MCT adapted candidate uses `arrival_clock + same predicted latency`. Adding a fixed arrival-time constant does not affect argmin under same eligible set/tie policy; the methods are mathematically equivalent for this specific cost definition. Both live on exactly the same predictor and queue observations. Minor floating-point rounding in candidate score should not be misinterpreted as independent method behavior.
+- Result: original **PRED_GREEDY** and this proposed **online one-step MCT adaptation are aliases**, not two separately meaningful baselines. It would be methodologically misleading to report another efficacy curve with a distinct name under identical prediction and eligibility. This does NOT mean original Braun (2001) offline MCT was reproduced, or that every legitimate online MCT variant is necessarily identical.
+
+## Method fidelity and 2026 literature
+| Source | Original mechanism / objective | CASPER mapping verdict |
+|---|---|---|
+| Braun et al. (2001) MCT / static independent task mapping | static heterogeneous assignment with available-job information | arrival-only same predictor is PRED_GREEDY alias; no added baseline |
+| Wu et al., *Future Generation Computer Systems* 182:108460 (2026), DFAQ-LB, DOI 10.1016/j.future.2026.108460 | elastic queue regulation, multidimensional VM health, short-term queue trends and possibly migration; evaluates wait/makespan/completion in CloudSim | related conceptual method; Stage51/52 queue-pressure controls are **NOT** faithful DFAQ-LB; S2 harm 18 vs FULL6 remains documented |
+| Lei et al., *Journal of Parallel and Distributed Computing* 216:105308 (2026), AUHS, DOI 10.1016/j.jpdc.2026.105308 | FaaS containers, workflow/task/function hierarchy, cross-workflow sorting, response/deadline and satisfaction constraints | NOT faithful on single independent cloudlet arrivals; separate container/DAG workload required |
+| Topcuoglu et al., IEEE TPDS (2002), HEFT | DAG precedence/ranking and insertion | one-step min predicted finish isn't HEFT, do not relabel |
+
+External article context: https://www.sciencedirect.com/science/article/pii/S0167739X26000944 and https://www.sciencedirect.com/science/article/abs/pii/S0743731526000869. The six previously supplied 2026 full-text citations are retained at `jpdc/references_2026_six_uploaded.bib`; no need to request copies again unless original full-text-specific implementation details become necessary.
+
+## Manuscript implications and defensible next step
+1. Keep PRED_GREEDY and CASPER_FULL as original executable controls; do **not** insert online-MCT alias as a third independent efficacy comparator. Include a small paragraph or supplement identifying its formal equivalence to avoid baseline inflation.
+2. Preserve Stage52 independent adverse CPU results (queue controls18 vs FULL6) and descriptive network result (queue+E2E12 vs FULL22 with p=.453125) rather than selectively claiming gain. Stage54 adjusted Holm comparison evidence remains posthoc.
+3. For a genuinely published-method-faithful comparison, first extract full DFAQ-LB pseudocode/state, check whether original migration/queue/health inputs are exposed at dispatch, design a compatible simulator containing those mechanics, and state deviations explicitly. If faithful transfer is impossible, use reproducible source-available **domain-matched** online method with distinct objective and demonstrate non-alias on deterministic examples *before* holdout. Do not call a threshold-only heuristic state of the art.
+4. Before claiming cross-engine portability, report Stage56 original nine-case completion **FAIL** and Stage56B technical diagnostic: 9 unfinished Java cloudlets at ISOLATED 20ms, large wait divergences in BURST/WAVES; preserve predeclared original 30k Python↔Java max wait9.1214ms>5ms FAIL.
+5. The main JPDC scientific bottleneck is a structurally distinct useful policy with strong controls and genuinely independent physical external validation, not the quantity of stages. No fresh algorithm or positive superiority result was invented here.
+
+**Final classification:** Stage57 software/identity QA COMPLETE & VERIFIED; added independent empirical baselines = **ZERO**; added scientific efficacy seeds = **ZERO**.
