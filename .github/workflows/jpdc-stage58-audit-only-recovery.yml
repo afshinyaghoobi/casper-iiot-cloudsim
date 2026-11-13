@@ -1,0 +1,54 @@
+name: JPDC Stage58 audit-only recovery of original DEV sources
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage58-audit-only-recovery.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit_original_only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download original two Stage58 DEV source artifacts only — no rerun
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43478398443
+          github-token: ${{ github.token }}
+          pattern: jpdc-stage58-classic-load-seed-*
+          path: stage58-original-sources
+          merge-multiple: false
+      - name: Audit unchanged original Stage58 source results and repeat deterministically
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage58-original-audit
+          git rev-parse HEAD > stage58-original-audit/audit_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          for seed in 1311 1312; do
+            dir="stage58-original-sources/jpdc-stage58-classic-load-seed-$seed"
+            test -s "$dir/source.json"
+            test "$(cat "$dir/source_commit.txt")" = 67818b1765c221c85a8d7e0cede107b74ccc8a1a
+            cmp "$dir/source.json" "$dir/repeat.json"
+            cmp "$dir/source.log" "$dir/repeat.log"
+            grep 'JPDC_STAGE51_DEV_SOURCE_COMPLETE_PASS' "$dir/source.log"
+          done
+          python3 -m py_compile jpdc/audit_stage58_dev_cohort.py
+          python3 jpdc/audit_stage58_dev_cohort.py --source-dir stage58-original-sources --out stage58-original-audit/audit.json | tee stage58-original-audit/audit.log
+          python3 jpdc/audit_stage58_dev_cohort.py --source-dir stage58-original-sources --out stage58-original-audit/audit_repeat.json > stage58-original-audit/audit_repeat.log
+          cmp stage58-original-audit/audit.json stage58-original-audit/audit_repeat.json
+          grep 'JPDC_STAGE58_DEV_COHORT_AUDIT_PASS' stage58-original-audit/audit.log
+          echo JPDC_STAGE58_ORIGINAL_SCIENCE_AUDIT_ONLY_RECOVERY_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage58-original-dev-cohort-audit-only
+          path: stage58-original-audit/
+          if-no-files-found: warn
