@@ -8,6 +8,7 @@ on:
       - 'jpdc/audit_stage56_java_python_queue_grid.py'
       - 'jpdc/test_stage56_native_log_negative.py'
       - 'jpdc/STAGE56_REAL_JAVA_VS_PYTHON_QUEUE_SEMANTICS_PREREG_2026-11-13.md'
+      - 'jpdc/STAGE56B_FAILURE_PRESERVING_DIAGNOSTIC_AMENDMENT_2026-11-13.md'
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,6 +31,7 @@ jobs:
           git rev-parse HEAD > stage56/source_commit.txt
           test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
           test -s jpdc/STAGE56_REAL_JAVA_VS_PYTHON_QUEUE_SEMANTICS_PREREG_2026-11-13.md
+          test -s jpdc/STAGE56B_FAILURE_PRESERVING_DIAGNOSTIC_AMENDMENT_2026-11-13.md
           python3 -m py_compile jpdc/audit_stage56_java_python_queue_grid.py jpdc/test_stage56_native_log_negative.py
           mvn -B -q -DskipTests compile
       - name: Actual CloudSimPlus grid and independent Python strict-FCFS audit
@@ -52,8 +54,8 @@ jobs:
           cmp stage56/native.log stage56/native_repeat.log
           python3 jpdc/audit_stage56_java_python_queue_grid.py --input stage56/native_repeat.log --out stage56/audit_repeat.json > stage56/audit_repeat.log
           cmp stage56/audit.json stage56/audit_repeat.json
-          grep 'JPDC_STAGE56_REAL_NATIVE_VS_INDEPENDENT_FCFS_AUDIT_PASS' stage56/audit.log
-          echo JPDC_STAGE56_FULL_NATIVE_AND_AUDIT_BYTE_IDENTICAL_PASS
+          grep 'JPDC_STAGE56_FAILURE_PRESERVING_AUDIT_PASS' stage56/audit.log
+          echo JPDC_STAGE56_FULL_EVIDENCE_LOG_BYTE_IDENTICAL_DIAGNOSTIC_PASS
       - if: always()
         uses: actions/upload-artifact@v4
         with:
