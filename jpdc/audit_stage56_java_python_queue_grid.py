@@ -42,6 +42,7 @@ def audit(lines):
             after={}
             finishes={}
             outcomes={}
+            unfinished={}
             case_records=[]
             ends=[]
             for seq,line in enumerate(lines):
@@ -55,7 +56,7 @@ def audit(lines):
                     assert len(p)==5
                     case_records.append((p[2],number(p[3]),int(p[4])))
                 elif kind=="STAGE56_END":
-                    assert len(p)==5
+                    assert len(p)==6
                     ends.append([int(x) for x in p[2:]])
                 elif kind=="STAGE56_SUBMIT":
                     assert len(p)==7
@@ -88,6 +89,13 @@ def audit(lines):
                     ix,cid=int(p[2]),int(p[3])
                     assert ix not in finishes and cid>=0
                     finishes[ix]=(cid,number(p[4]))
+                elif kind=="STAGE56_UNFINISHED":
+                    assert len(p)==6
+                    ix,cid=int(p[2]),int(p[3])
+                    assert ix not in unfinished and cid>=0
+                    unfinished[ix]=dict(cloudlet=cid,
+                        arrival_offset_ms=number(p[4]),
+                        requested_service_ms=number(p[5]))
                 elif kind=="STAGE56_OUTCOME":
                     assert len(p)==8
                     ix,cid=int(p[2]),int(p[3])
@@ -99,17 +107,24 @@ def audit(lines):
                 else:
                     raise AssertionError(("unknown stage56 record",line))
             assert case_records==[(profile,gap,N)],(name,case_records)
-            assert ends==[[N,N,N]],(name,ends)
-            assert len(before)==len(after)==len(finishes)==len(outcomes)==N
-            assert set(outcomes)==set(finishes)==set(range(N))
-            outcome_ids=[outcomes[i]["cloudlet"] for i in range(N)]
+            assert len(ends)==1 and ends[0][:2]==[N,N],(name,ends)
+            assert ends[0][2]==len(finishes) and ends[0][3]==len(unfinished)
+            assert len(before)==len(after)==N
+            assert len(finishes)==len(outcomes) and len(finishes)+len(unfinished)==N
+            assert set(outcomes)==set(finishes)
+            assert not (set(outcomes)&set(unfinished))
+            assert set(outcomes)|set(unfinished)==set(range(N))
+            joined={**outcomes,**unfinished}
+            outcome_ids=[joined[i]["cloudlet"] for i in range(N)]
             assert len(set(outcome_ids))==N
             assert set(outcome_ids)==set(before)==set(after)
             for i in range(N):
-                assert finishes[i][0]==outcome_ids[i]
-                assert abs(outcomes[i]["arrival_offset_ms"]-offsets[i])<1e-6
-                assert abs(outcomes[i]["requested_service_ms"]-SERVICES[i])<1e-6
-                assert finishes[i][1]+1e-6>=before[outcome_ids[i]]["clock_ms"]
+                d=joined[i]
+                assert abs(d["arrival_offset_ms"]-offsets[i])<1e-6
+                assert abs(d["requested_service_ms"]-SERVICES[i])<1e-6
+                if i in outcomes:
+                    assert finishes[i][0]==outcome_ids[i]
+                    assert finishes[i][1]+1e-6>=before[outcome_ids[i]]["clock_ms"]
             assert events
             # A scheduler observes an event stream in native time; prohibit time reversal.
             for prev,next_event in zip(events,events[1:]):
@@ -122,6 +137,16 @@ def audit(lines):
                 ex=e["exec_ids"];wa=e["waiting_ids"]
                 assert set(ex).issubset(ids) and set(wa).issubset(ids)
                 assert len(ex)<=1 and not (set(ex)&set(wa))
+            if unfinished:
+                allcases[name]=dict(profile=profile,clock_gap_s=gap,
+                    status="INCOMPLETE_NATIVE_CLOUDSIM",task_count=N,
+                    native_completed=len(finishes),native_unfinished=len(unfinished),
+                    unfinished_task_indices=sorted(unfinished),
+                    unfinished_cloudlet_ids=[unfinished[i]["cloudlet"] for i in sorted(unfinished)],
+                    observed_submission_count=len(before),
+                    strict_fcfs_wait_fidelity_assessed=False,
+                    reason="CloudSim simulation shutdown with incomplete Cloudlets; no invented waits")
+                continue
             # Independently predicted strict FIFO from native observed submits ONLY.
             ordered=sorted(ids,key=lambda cid:(before[cid]["clock_ms"],before[cid]["seq"]))
             by_id={outcomes[i]["cloudlet"]:i for i in range(N)}
@@ -159,7 +184,8 @@ def audit(lines):
                     native_execution_ms=out["native_execution_ms"],
                     requested_service_ms=out["requested_service_ms"]))
             errs=[abs(x["wait_signed_difference_ms"]) for x in rows]
-            allcases[name]=dict(profile=profile,clock_gap_s=gap,task_count=N,
+            allcases[name]=dict(profile=profile,clock_gap_s=gap,
+                status="COMPLETE_NATIVE_CLOUDSIM",task_count=N,
                 native_admission_id_order=ordered,native_first_exec_id_order=exec_order,
                 exec_first_observation_pair_inversions=inversions,
                 mean_absolute_wait_difference_ms=sum(errs)/N,
@@ -170,7 +196,13 @@ def audit(lines):
                     abs(x["wait_minus_first_exec_observation_ms"]) for x in rows),
                 rows=rows)
     assert len(allcases)==9
-    return dict(status="PASS",native_runtime="CloudSimPlus 8.5.7 Java17 SpaceShared",
+    incomplete=[name for name,c in allcases.items() if c["status"]=="INCOMPLETE_NATIVE_CLOUDSIM"]
+    complete=[name for name,c in allcases.items() if c["status"]=="COMPLETE_NATIVE_CLOUDSIM"]
+    return dict(status="AUDIT_PASS_WITH_UNFINISHED_TASKS" if incomplete else "PASS",
+                original_full_nine_case_completion_gate="FAIL" if incomplete else "PASS",
+                incomplete_cases=incomplete,completed_cases=complete,
+                total_unfinished_cloudlets=sum(allcases[name]["native_unfinished"] for name in incomplete),
+                native_runtime="CloudSimPlus 8.5.7 Java17 SpaceShared",
                 independent_reference="Python strict FCFS, native observed scheduler submission clocks",
                 task_observations=9*N,
                 fixture_cases=9,
@@ -189,8 +221,11 @@ if __name__=="__main__":
     p=Path(a.out);p.parent.mkdir(parents=True,exist_ok=True)
     p.write_text(json.dumps(obj,indent=2,sort_keys=True,allow_nan=False)+"\n")
     for name,case in sorted(obj["cases"].items()):
+        if case["status"]=="INCOMPLETE_NATIVE_CLOUDSIM":
+            print("JPDC_STAGE56_INCOMPLETE_NATIVE",name,"UNFINISHED",case["native_unfinished"])
+            continue
         print("JPDC_STAGE56_NATIVE_VS_IDEAL",name,
               "MAX_AE",case["max_absolute_wait_difference_ms"],
               "GT5",case["count_wait_difference_gt_5ms"],
               "INVERSIONS",case["exec_first_observation_pair_inversions"])
-    print("JPDC_STAGE56_REAL_NATIVE_VS_INDEPENDENT_FCFS_AUDIT_PASS")
+    print("JPDC_STAGE56_FAILURE_PRESERVING_AUDIT_PASS")
