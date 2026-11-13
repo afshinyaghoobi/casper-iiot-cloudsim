@@ -36,7 +36,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage56NativeQueueGrid | grep -E '^STAGE56_|^JPDC_STAGE56_' > stage56/native.log
+          set +e
+          mvn -B -e exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage56NativeQueueGrid > stage56/native_full.log 2>&1
+          native_code=$?
+          set -e
+          grep -E '^STAGE56_|^JPDC_STAGE56_' stage56/native_full.log > stage56/native.log || true
+          if [ "$native_code" -ne 0 ]; then
+            tail -n 110 stage56/native_full.log
+            echo "JPDC_STAGE56_NATIVE_JAVA_FAIL_EXIT=$native_code"
+            exit "$native_code"
+          fi
           python3 jpdc/audit_stage56_java_python_queue_grid.py --input stage56/native.log --out stage56/audit.json | tee stage56/audit.log
           python3 jpdc/test_stage56_native_log_negative.py --input stage56/native.log | tee stage56/negative.log
           mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage56NativeQueueGrid | grep -E '^STAGE56_|^JPDC_STAGE56_' > stage56/native_repeat.log
