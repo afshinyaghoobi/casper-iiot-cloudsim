@@ -2,7 +2,12 @@ name: JPDC Stage50 passive native SpaceShared queue transitions
 on:
   push:
     branches: [jpdc-seed0-repro-20261024]
-    paths: ['.github/workflows/jpdc-stage50-native-queue-transitions.yml']
+    paths:
+      - '.github/workflows/jpdc-stage50-native-queue-transitions.yml'
+      - 'src/main/java/org/casperiiot/jpdc/Stage50QueueTransitions.java'
+      - 'jpdc/audit_stage50_queue_transitions.py'
+      - 'jpdc/test_stage50_queue_trace_contract.py'
+      - 'jpdc/STAGE50_QUEUE_TRANSITION_TRACE_PREREG_2026-11-12.md'
   workflow_dispatch:
 permissions:
   contents: read
