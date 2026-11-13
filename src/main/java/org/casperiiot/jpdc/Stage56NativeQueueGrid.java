@@ -92,22 +92,30 @@ public final class Stage56NativeQueueGrid {
         }
         broker.submitCloudletList(jobs);
         sim.start();
-        if(broker.getCloudletFinishedList().size()!=SVC.length)
-            throw new AssertionError("Stage56 missing finished real cloudlets");
+        // Stage56B failure-preserving posthoc diagnostic: never hide unfinished
+        // Cloudlets or invent wait times for jobs without a native finish.
+        Set<Cloudlet> finished=new HashSet<>(broker.getCloudletFinishedList());
         System.out.printf(Locale.US,"STAGE56_CASE,%s,%s,%.9f,%d%n",caseName,
             PROFILES[profile],GAPS[gapIndex],SVC.length);
         for(String x:logs)System.out.println(x);
         for(int i=0;i<SVC.length;i++){
             Cloudlet c=jobs.get(i);
-            System.out.printf(Locale.US,
-              "STAGE56_OUTCOME,%s,%d,%d,%.12f,%.12f,%.12f,%.12f%n",
-              caseName,i,c.getId(),c.getStartWaitTime()*1000.0,
-              c.getTotalExecutionTime()*1000.0,ARR[profile][i],SVC[i]);
+            if(finished.contains(c)) {
+                System.out.printf(Locale.US,
+                  "STAGE56_OUTCOME,%s,%d,%d,%.12f,%.12f,%.12f,%.12f%n",
+                  caseName,i,c.getId(),c.getStartWaitTime()*1000.0,
+                  c.getTotalExecutionTime()*1000.0,ARR[profile][i],SVC[i]);
+            } else {
+                System.out.printf(Locale.US,
+                  "STAGE56_UNFINISHED,%s,%d,%d,%.12f,%.12f%n",
+                  caseName,i,c.getId(),ARR[profile][i],SVC[i]);
+            }
         }
-        System.out.printf(Locale.US,"STAGE56_END,%s,%d,%d,%d%n",caseName,
+        System.out.printf(Locale.US,"STAGE56_END,%s,%d,%d,%d,%d%n",caseName,
             logs.stream().filter(x->x.startsWith("STAGE56_SUBMIT,"+caseName+",BEFORE,")).count(),
             logs.stream().filter(x->x.startsWith("STAGE56_SUBMIT,"+caseName+",AFTER,")).count(),
-            logs.stream().filter(x->x.startsWith("STAGE56_FINISH,"+caseName+",")).count());
+            logs.stream().filter(x->x.startsWith("STAGE56_FINISH,"+caseName+",")).count(),
+            SVC.length-finished.size());
     }
     public static void main(String[] args){
         for(int profile=0;profile<PROFILES.length;profile++)
