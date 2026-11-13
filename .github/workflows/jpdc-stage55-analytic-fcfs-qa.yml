@@ -1,0 +1,53 @@
+name: JPDC Stage55 frozen-route analytic FCFS QA
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage55-analytic-fcfs-qa.yml'
+      - 'jpdc/analytic_fcfs_reference_stage55.py'
+      - 'jpdc/test_stage55_analytic_reference.py'
+      - 'jpdc/run_stage55_analytic_crosscheck.py'
+      - 'jpdc/STAGE55_ANALYTIC_FCFS_CROSSCHECK_PROTOCOL_2026-11-13.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qa:
+    name: qa-seed-${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [1201, 1202]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: E42 freeze, preregistration and negative reference checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage55
+          git rev-parse HEAD > stage55/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE55_ANALYTIC_FCFS_CROSSCHECK_PROTOCOL_2026-11-13.md
+          python3 -m py_compile jpdc/analytic_fcfs_reference_stage55.py jpdc/test_stage55_analytic_reference.py jpdc/run_stage55_analytic_crosscheck.py
+          python3 jpdc/test_stage55_analytic_reference.py
+      - name: Genuine event-engine and independent recurrence, deterministic repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage55_analytic_crosscheck.py --seed ${{ matrix.seed }} --out stage55/source.json > stage55/source.log
+          python3 jpdc/run_stage55_analytic_crosscheck.py --seed ${{ matrix.seed }} --out stage55/repeat.json > stage55/repeat.log
+          cmp stage55/source.json stage55/repeat.json
+          cmp stage55/source.log stage55/repeat.log
+          grep 'JPDC_STAGE55_SOURCE_QA_COMPLETE_PASS' stage55/source.log
+          echo JPDC_STAGE55_SOURCE_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage55-analytic-seed-${{ matrix.seed }}
+          path: stage55/
+          if-no-files-found: warn
