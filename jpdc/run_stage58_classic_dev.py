@@ -52,7 +52,7 @@ def run(seed):
                      mean_wait_ms=result["mean_wait_ms"],
                      baseline=diag)
             rows.append(row)
-            print("JPDC_STAGE51_DEV_SOURCE_ROW",json.dumps(row,sort_keys=True),flush=True)
+            print("JPDC_STAGE58_DEV_SOURCE_ROW",json.dumps(row,sort_keys=True),flush=True)
     assert len(rows)==8
     for sc in SCENARIOS:
         same={r["post_mission_n"] for r in rows if r["scenario"]==sc}
@@ -71,4 +71,4 @@ if __name__=="__main__":
     dest=Path(args.out)
     dest.parent.mkdir(parents=True,exist_ok=True)
     dest.write_text(json.dumps(data,sort_keys=True,indent=2,allow_nan=False)+"\n")
-    print("JPDC_STAGE51_DEV_SOURCE_COMPLETE_PASS",args.seed,flush=True)
+    print("JPDC_STAGE58_DEV_SOURCE_COMPLETE_PASS",args.seed,flush=True)
