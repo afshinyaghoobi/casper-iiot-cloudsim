@@ -29,7 +29,12 @@ def main():
     assert all(len(x["rows"])==3 for x in report["cases"])
     assert all(len(x["transitions"])>=3 for x in report["cases"])
     # The auditor must reject truncated and malformed source logs.
-    for mutated in (lines[:-1],
+    duplicate_submit_after = list(lines)
+    after_record = next(x for x in lines if x.startswith("STAGE50_SUBMIT,MICRO_1US,AFTER,"))
+    duplicate_submit_after.insert(duplicate_submit_after.index(after_record) + 1, after_record)
+    invalid_phase = [x.replace("STAGE50_SUBMIT,MICRO_5MS,AFTER,", "STAGE50_SUBMIT,MICRO_5MS,UNKNOWN,") if x.startswith("STAGE50_SUBMIT,MICRO_5MS,AFTER,") else x for x in lines]
+    invalid_queue_id = [x.replace(",0,", ",-99,") if x.startswith("STAGE50_UPDATE,MICRO_1US,BEFORE,") else x for x in lines]
+    for mutated in (lines[:-1], duplicate_submit_after, invalid_phase, invalid_queue_id,
                     [z for z in lines if not z.startswith("STAGE50_FINISH,MICRO_5MS,1,")],
                     [z.replace("STAGE50_SUBMIT,MICRO_20MS,BEFORE,", "STAGE50_SUBMIT,MICRO_20MS,BEFORE,-")
                      if z.startswith("STAGE50_SUBMIT,MICRO_20MS,BEFORE,") else z for z in lines]):
