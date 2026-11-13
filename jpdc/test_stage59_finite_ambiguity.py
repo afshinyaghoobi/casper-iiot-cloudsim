@@ -32,7 +32,7 @@ def run():
     assert d.switched_from_nominal and d.robust_feasible_in_given_worlds
     assert d.worst_case_deadline_miss==0
     assert d.worst_case_latency_regret_ms==2
-    assert max(2*(1-p/15),28*(p/15) for p in (0,1,15))>=28/15
+    assert all(max(2*(1-p/15), 28*(p/15)) >= 28/15-1e-12 for p in (0,1,15))
     # For randomized node0 probability 1/15, the worst expected regret is 28/15.
     assert abs(2*(1-1/15)-28/15)<1e-12
 
