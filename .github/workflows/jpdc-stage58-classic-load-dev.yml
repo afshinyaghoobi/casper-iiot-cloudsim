@@ -1,0 +1,54 @@
+name: JPDC Stage58 distinct classic least-inflight baseline DEV
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage58-classic-load-dev.yml'
+      - 'jpdc/STAGE58_CLASSIC_LEAST_INFLIGHT_DEV_PREREG_2026-11-13.md'
+      - 'jpdc/classic_least_inflight_stage58.py'
+      - 'jpdc/independent_physical_classic_load_stage58.py'
+      - 'jpdc/test_stage58_classic_baseline.py'
+      - 'jpdc/run_stage58_classic_dev.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original_source_dev:
+    name: dev-seed-${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [1311, 1312]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen source and causal classic baseline contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage58
+          git rev-parse HEAD > stage58/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE58_CLASSIC_LEAST_INFLIGHT_DEV_PREREG_2026-11-13.md
+          python3 -m py_compile jpdc/classic_least_inflight_stage58.py jpdc/independent_physical_classic_load_stage58.py jpdc/test_stage58_classic_baseline.py jpdc/run_stage58_classic_dev.py
+          python3 jpdc/test_stage58_classic_baseline.py
+      - name: Exact paired DEV sources, frozen Stage6 control parity and repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage58_classic_dev.py --seed ${{ matrix.seed }} --out stage58/source.json > stage58/source.log
+          python3 jpdc/run_stage58_classic_dev.py --seed ${{ matrix.seed }} --out stage58/repeat.json > stage58/repeat.log
+          cmp stage58/source.json stage58/repeat.json
+          cmp stage58/source.log stage58/repeat.log
+          grep 'JPDC_STAGE58_DEV_SOURCE_COMPLETE_PASS' stage58/source.log
+          echo JPDC_STAGE58_DEV_SOURCE_PARITY_AND_REPEAT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage58-classic-load-seed-${{ matrix.seed }}
+          path: stage58/
+          if-no-files-found: warn
