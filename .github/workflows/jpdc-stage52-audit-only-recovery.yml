@@ -1,0 +1,45 @@
+name: JPDC Stage52 audit-only recovery of original eight source artifacts
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage52-audit-only-recovery.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit_only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recover exact original eight source outputs; no resimulation
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43369034814
+          github-token: ${{ github.token }}
+          pattern: jpdc-stage52-holdout-seed-*
+          path: stage52-sources
+          merge-multiple: false
+      - name: Re-audit untouched full source cohort, no parameters changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage52-cohort
+          python3 -m py_compile jpdc/audit_stage52_eight_seed_cohort.py
+          python3 jpdc/audit_stage52_eight_seed_cohort.py --source-dir stage52-sources --out stage52-cohort/audit.json | tee stage52-cohort/audit.log
+          test -s stage52-cohort/audit.json
+          grep 'JPDC_STAGE52_ALL_EIGHT_SOURCE_COHORT_AUDIT_PASS' stage52-cohort/audit.log
+          python3 jpdc/audit_stage52_eight_seed_cohort.py --source-dir stage52-sources --out stage52-cohort/audit_repeat.json > stage52-cohort/audit_repeat.log
+          cmp stage52-cohort/audit.json stage52-cohort/audit_repeat.json
+          echo JPDC_STAGE52_EIGHT_SOURCE_AUDIT_ONLY_RECOVERY_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage52-audit-only-recovery-original-source-cohort
+          path: stage52-cohort/
+          if-no-files-found: warn
