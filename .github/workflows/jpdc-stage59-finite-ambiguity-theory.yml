@@ -1,0 +1,41 @@
+name: JPDC Stage59 finite ambiguity deadline proof QA only
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage59-finite-ambiguity-theory.yml'
+      - 'jpdc/STAGE59_FINITE_AMBIGUITY_DEADLINE_MINIMAX_PREREG_2026-11-13.md'
+      - 'jpdc/finite_ambiguity_deadline_stage59.py'
+      - 'jpdc/test_stage59_finite_ambiguity.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finite_world_theory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Source frozen, preregistration, exhaustive counterexample contract twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage59
+          git rev-parse HEAD > stage59/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE59_FINITE_AMBIGUITY_DEADLINE_MINIMAX_PREREG_2026-11-13.md
+          python3 -m py_compile jpdc/finite_ambiguity_deadline_stage59.py jpdc/test_stage59_finite_ambiguity.py
+          python3 jpdc/test_stage59_finite_ambiguity.py > stage59/test.log
+          python3 jpdc/test_stage59_finite_ambiguity.py > stage59/test_repeat.log
+          cmp stage59/test.log stage59/test_repeat.log
+          grep 'JPDC_STAGE59_AMBIGUITY_EXHAUSTIVE_PASS' stage59/test.log
+          echo JPDC_STAGE59_THEORY_REPEAT_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage59-hypothetical-minimax-proof-contract
+          path: stage59/
+          if-no-files-found: warn
