@@ -27,7 +27,7 @@ def run(seed):
                 old=dict(result)
                 old.pop("shadow_network_epoch")
                 assert old==frozen_stage6(seed,sc,policy,cal,TASK_COUNT),("Stage6 parity",seed,sc,policy)
-            diag=result.get("stage58_comparator")
+            diag=result.get("stage58_classic_baseline")
             if policy in POLICIES[2:]:
                 assert diag is not None and diag["policy"]==policy
                 assert diag["decisions"]==TASK_COUNT
