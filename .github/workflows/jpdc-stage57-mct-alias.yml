@@ -1,0 +1,46 @@
+name: JPDC Stage57 Online MCT baseline alias fidelity audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage57-mct-alias.yml'
+      - 'jpdc/audit_stage57_online_mct_alias.py'
+      - 'jpdc/STAGE57_BASELINE_FIDELITY_ALIAS_PREREG_2026-11-13.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  alias_qa:
+    name: qa-seed-${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [1301,1302,1303]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Original freeze and independent policy-fidelity audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage57
+          git rev-parse HEAD > stage57/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE57_BASELINE_FIDELITY_ALIAS_PREREG_2026-11-13.md
+          python3 -m py_compile jpdc/audit_stage57_online_mct_alias.py
+          python3 jpdc/audit_stage57_online_mct_alias.py --seed ${{ matrix.seed }} --out stage57/source.json > stage57/source.log
+          python3 jpdc/audit_stage57_online_mct_alias.py --seed ${{ matrix.seed }} --out stage57/repeat.json > stage57/repeat.log
+          cmp stage57/source.json stage57/repeat.json
+          cmp stage57/source.log stage57/repeat.log
+          grep 'JPDC_STAGE57_MCT_ALIAS_AUDIT_PASS' stage57/source.log
+          echo JPDC_STAGE57_MCT_ALIAS_DETERMINISTIC_AUDIT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage57-alias-seed-${{ matrix.seed }}
+          path: stage57/
+          if-no-files-found: warn
