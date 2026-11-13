@@ -19,7 +19,10 @@ def finite_nonnegative(x):
 
 
 def ids(raw):
-    return [int(x) for x in raw.split(";") if x]
+    values = [int(x) for x in raw.split(";") if x]
+    assert all(x >= 0 for x in values), ("negative task id", values)
+    assert len(values) == len(set(values)), ("duplicate queue task id", values)
+    return values
 
 
 def audit(lines):
@@ -30,6 +33,9 @@ def audit(lines):
         submissions = {}
         outcomes = {}
         finishes = {}
+        after_submissions = {}
+        update_before = 0
+        update_after = 0
         header = None
         done = None
         for seq, line in enumerate(lines):
@@ -48,6 +54,8 @@ def audit(lines):
                 assert len(p) == 7, (name, line)
                 _, _, phase, clock, task_id, running, waiting = p
                 task_id = int(task_id)
+                assert task_id >= 0
+                assert phase in ("BEFORE", "AFTER"), (name, phase)
                 event = dict(seq=seq, kind="SUBMIT_" + phase,
                              clock_ms=finite_nonnegative(clock), submitted=task_id,
                              exec_ids=ids(running), wait_ids=ids(waiting))
@@ -55,9 +63,19 @@ def audit(lines):
                 if phase == "BEFORE":
                     assert task_id not in submissions
                     submissions[task_id] = event["clock_ms"]
+                else:
+                    assert task_id in submissions, ("AFTER without BEFORE", name, task_id)
+                    assert task_id not in after_submissions, ("duplicate AFTER", name, task_id)
+                    assert abs(submissions[task_id] - event["clock_ms"]) <= TOL, ("submit clock changed", name, task_id)
+                    after_submissions[task_id] = event["clock_ms"]
             elif p[0] == "STAGE50_UPDATE":
                 assert len(p) == 6, (name, line)
                 _, _, phase, clock, running, waiting = p
+                assert phase in ("BEFORE", "AFTER"), (name, phase)
+                if phase == "BEFORE":
+                    update_before += 1
+                else:
+                    update_after += 1
                 events.append(dict(seq=seq, kind="UPDATE_" + phase,
                                    clock_ms=finite_nonnegative(clock),
                                    exec_ids=ids(running), wait_ids=ids(waiting)))
@@ -85,7 +103,8 @@ def audit(lines):
         assert math.isclose(float(header["minEventSec"]), EVENT_GAPS[case_index],
                             abs_tol=1e-10)
         assert int(done["submissions"]) == int(done["finishes"]) == 3
-        assert len(submissions) == len(outcomes) == len(finishes) == 3
+        assert len(submissions) == len(after_submissions) == len(outcomes) == len(finishes) == 3
+        assert update_before == update_after and update_before > 0
         all_ids = {v["id"] for v in outcomes.values()}
         assert len(all_ids) == 3 and set(submissions) == all_ids
         assert set(outcomes) == set(finishes) == {0, 1, 2}
@@ -94,6 +113,9 @@ def audit(lines):
             assert set(ev["wait_ids"]).issubset(all_ids)
             assert not (set(ev["exec_ids"]) & set(ev["wait_ids"]))
             assert len(ev["exec_ids"]) <= 1, (name, ev)
+        # Passive logs must have nondecreasing simulation clocks in emitted order.
+        for prev, nxt in zip(events, events[1:]):
+            assert nxt["clock_ms"] + TOL >= prev["clock_ms"], ("nonmonotone event clock", name, prev, nxt)
         states = {task_id: [] for task_id in all_ids}
         transitions = []
         current = {task_id: "ABSENT" for task_id in all_ids}
@@ -122,6 +144,7 @@ def audit(lines):
             o, f = outcomes[idx], finishes[idx]
             task_id = o["id"]
             assert task_id == f["id"]
+            assert f["callback_ms"] + TOL >= submissions[task_id], ("finish before submission", name, task_id)
             assert abs(o["native_wait_ms"] - f["native_wait_ms"]) <= TOL
             assert abs(o["native_execution_ms"] - f["native_execution_ms"]) <= TOL
             assert abs(o["requested_service_ms"] - SERVICE[idx]) <= TOL
