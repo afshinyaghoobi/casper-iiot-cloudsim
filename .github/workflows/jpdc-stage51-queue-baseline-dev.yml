@@ -1,0 +1,54 @@
+name: JPDC Stage51 independent queue-pressure comparator DEV
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage51-queue-baseline-dev.yml'
+      - 'jpdc/queue_pressure_baseline_stage51.py'
+      - 'jpdc/independent_physical_queue_baseline_stage51.py'
+      - 'jpdc/test_stage51_queue_pressure_baseline.py'
+      - 'jpdc/run_stage51_queue_baseline_dev.py'
+      - 'jpdc/STAGE51_QUEUE_PRESSURE_BASELINE_DEV_PREREG_2026-11-12.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source:
+    name: dev-seed-${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [101, 102]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Source freeze and causal comparator unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage51
+          git rev-parse HEAD > stage51/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE51_QUEUE_PRESSURE_BASELINE_DEV_PREREG_2026-11-12.md
+          python3 -m py_compile jpdc/queue_pressure_baseline_stage51.py jpdc/independent_physical_queue_baseline_stage51.py jpdc/test_stage51_queue_pressure_baseline.py jpdc/run_stage51_queue_baseline_dev.py
+          python3 jpdc/test_stage51_queue_pressure_baseline.py
+      - name: Fixed original-source DEV and deterministic repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage51_queue_baseline_dev.py --seed ${{ matrix.seed }} --out stage51/source.json > stage51/source.log
+          python3 jpdc/run_stage51_queue_baseline_dev.py --seed ${{ matrix.seed }} --out stage51/repeat.json > stage51/repeat.log
+          cmp stage51/source.json stage51/repeat.json
+          cmp stage51/source.log stage51/repeat.log
+          grep 'JPDC_STAGE51_DEV_SOURCE_COMPLETE_PASS' stage51/source.log
+          echo JPDC_STAGE51_DEV_DETERMINISTIC_SOURCE_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage51-dev-seed-${{ matrix.seed }}
+          path: stage51/
+          if-no-files-found: warn
