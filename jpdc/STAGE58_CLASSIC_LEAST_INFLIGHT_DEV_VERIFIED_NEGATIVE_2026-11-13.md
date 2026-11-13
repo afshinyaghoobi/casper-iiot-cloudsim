@@ -1,5 +1,13 @@
 # Stage58 VERIFIED negative: classic least-inflight online DEV controls (2026-11-13)
 
+## After-result **technical marker-only fix** — full original method reproducibility confirmed
+
+Following original [run43478398443](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/43478398443) CI FAILURE and unchanged-original-source audit-only [run43478912668](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/43478912668) SUCCESS, corrected **ONLY** the stale `JPDC_STAGE51_...` source log-marker strings to `JPDC_STAGE58_...` in the DEV runner. Fix commit `bdd1b53ac258f963863438d9e1e83490d783d851`. Neither baseline code nor simulator physics, seed protocol, calibrated data or outcome JSON structure changed.
+
+The corrected original-workflow [**run43479230750**](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/43479230750) completed **SUCCESS for both seed1311 and seed1312**, causal selector contract, frozen E42 hash, Stage6 original GREEDY/FULL JSON parity, both full scientific-source repetitions and byte-identical JSON/log reruns. Corrected artifacts `jpdc-stage58-classic-load-seed-1311` ID **14063404983**, `...-1312` ID **14064715952** were downloaded and compared directly with archived original red-workflow source artifacts. **The full scientific source.json files are BYTE-FOR-BYTE IDENTICAL to the originals for both seeds**, not merely same aggregate counts. Seed1311 SHA256 `f887d293905a4277e0bae1eb923fabd88d1b273387272ea51e17abbab24e52d7`; seed1312 SHA256 `50a5ad504174a00bab27a6aea233b26f2aa3696d7a8532c477ee1a076ae23c48`. Therefore amended code produces no new independent science, and negative DEV conclusions below remain exactly unchanged.
+
+**Preserve original run's FAILURE status in historical audit**. The subsequent audit-only and corrected technical replay successes do not retroactively change its recorded CI conclusion.
+
 ## Scientific status, provenance and limitations
 **This is 2-source-seed DEV ONLY, n=2 independent seed streams**, not independent holdout or journal-level significance evidence. Original before-outcome preregistration `jpdc/STAGE58_CLASSIC_LEAST_INFLIGHT_DEV_PREREG_2026-11-13.md`, commit `d0ad7f07f18d0b33159daae75f3242ca73458ac8`; independent pure scorer `jpdc/classic_least_inflight_stage58.py`, isolated strict-FCFS source `jpdc/independent_physical_classic_load_stage58.py`, tests `jpdc/test_stage58_classic_baseline.py` and runner `jpdc/run_stage58_classic_dev.py`. Controls:
 - `LEAST_INFLIGHT` argmin `(running+waiting,j)`.
