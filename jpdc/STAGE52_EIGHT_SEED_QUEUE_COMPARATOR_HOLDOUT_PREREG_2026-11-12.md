@@ -1,0 +1,20 @@
+# Stage52 preregistered independent eight-seed source holdout: queue-pressure comparators (2026-11-12 CST)
+
+## Pre-outcome source freeze and rationale
+Stage51 development [GitHub Actions 43368607001](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/43368607001) PASSED two independent source seeds 101/102, original Stage6 source parity and deterministic repeat. Stage51 DEV S3 post-shock mission misses pooled over 187 MISSION jobs: PRED_GREEDY4, CASPER_FULL4, QUEUE_PRESSURE_05 2, QUEUE_PRESSURE_E2E_05 1; all methods S2 2/187. **This n2 development evidence is NOT statistical proof.** No parameters will be altered after reviewing it.
+
+Freeze exact baseline names QUEUE_PRESSURE_05 and QUEUE_PRESSURE_E2E_05, alpha=0.5, queue-pressure cap20 ms, delayed delivered-network excess cap20ms, deterministic node-ID tie break. Freeze pure baseline Git blob `c0fdd686a451e528a68e7265cd8d3f2ac3bd9af9`, independent Stage51 simulator clone Git blob `249f71030c791472dfdba6ebe38e91ff58b06d9a`. These are conceptually queue/feedback-inspired **NOT** Wu et al. DFAQ-LB author code. E42 original Git blob `34256ca7bff46f911cf20e8b94278fbd09175746`, E4.6 untouched.
+
+## Prospective independent source cohort
+Exactly **eight new source seeds [1101,1102,1103,1104,1105,1106,1107,1108]**, previously unused by Stage51 DEV 101/102 and all known holdout cohorts 601–608,701–708,801–808,901–908,1001–1008. These eight constitute the scientific units. Per source seed: original Stage3 80,000-task S0 calibration; two frozen scenarios S2_HIDDEN_COMPUTE_40LOSS and S3_HIDDEN_NETWORK_50LOSS; exactly four policies PRED_GREEDY,CASPER_FULL,QUEUE_PRESSURE_05,QUEUE_PRESSURE_E2E_05 with 12,000 arrival tasks each. Total **768,000 dependent task-policy observations**, **n=8 independent source seeds**; never use task-level n for significance. No seed substitutions, re-selection or parameter refitting after results.
+
+## Primary/secondary outcomes and gates
+- Primary integer: POSTshock MISSION task missed-deadline count per source seed/policy/scenario; denominators must match across policies within each scenario and seed.
+- Primary contrasts S3: QUEUE_PRESSURE_E2E_05 vs CASPER_FULL, then QUEUE_PRESSURE_05 vs CASPER_FULL; negative delta favors comparator. Also show comparator vs PRED_GREEDY and E2E vs queue-only. S2 harm guard: mean paired delta of both queue comparators vs CASPER_FULL must be <=0 or report FAIL. S3 strict mean improvement vs CASPER_FULL is directional criterion; report PASS/FAIL, not posthoc removal.
+- Paired exact two-sided sign test at source-seed level on non-tied differences, ties excluded with number reported. Directional significance only if p<0.05 *without treating four correlated comparisons as independent confirmatory discoveries*. Exploratory family comparisons disclosed. Descriptive counts and per-seed contrasts even if nonsignificant/adverse.
+- Secondary: all-MISSION deadline misses, mean all-task latency and wait per source, route switches vs original PRED_GREEDY, impact of E2E addition; no claim of causal task rescue from pooled results.
+- Technical gates: 8/8 source jobs and one complete aggregate 8-seed audit, every full source result and exact repeated JSON/log identical, full Stage6 original PRED_GREEDY/CASPER_FULL JSON exact parity, frozen source blobs and prereg, no incomplete artifacts, causal input contract tests and no hidden scenario used at dispatch. Any job fail = full cohort NOT verified until resolved without policy changes. Keep failed audit source logs.
+- No 99% conformal coverage, hard deadline bound, original DFAQ-LB reproduction, Python/Java queue parity or independent IIoT real-trace claim. The previously predeclared original 30k Java SpaceShared vs Python strict-FCFS wait max9.1214009ms>5ms remains FAIL.
+
+## Decision integrity
+Do not retune on holdout seed1101–1108 then treat them as untouched. If negative, report negative. If favorable, still qualified by synthetic strict-FCFS backend; more external physical validation required before JPDC submission.
