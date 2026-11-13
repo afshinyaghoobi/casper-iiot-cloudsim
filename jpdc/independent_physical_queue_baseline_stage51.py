@@ -228,22 +228,7 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None,
                 nominal_net_vector=[
                     specs[k][3]+(t[5]+t[6])*8000.0/specs[k][2]
                     for k in range(NODES)]
-                if policy in STAGE51_POLICIES:
-        assert stage51_decisions==count and 0<=stage51_mission_switches<=stage51_switches<=count
-        result["stage51_comparator"]={
-            "label":policy,"authors_original_DFAQ_LB_implementation":False,
-            "simulation_engine":"Python strict FCFS only",
-            "source_oracle_at_dispatch":False,
-            "issue_time_queue_only":policy==QUEUE_ONLY,
-            "delayed_network_e2e_only_after_delivery":True,
-            "decisions":stage51_decisions,
-            "switches_vs_pred_greedy":stage51_switches,
-            "mission_switches_vs_pred_greedy":stage51_mission_switches,
-            "selected_queue_pressure_sum_ms":stage51_qpen_sum,
-            "selected_delivered_e2e_penalty_sum_ms":stage51_e2epen_sum,
-            "post_mission_deadline_misses":sum(int(r[3]) for r in post)
-        }
-    if policy==ROBUST_POLICY:
+                if policy==ROBUST_POLICY:
                     active_selection=fresh_controller.select(
                         now,pred,nominal_net_vector,t[3],
                         t[2]=="NORMAL",t[2]=="MISSION")
@@ -610,6 +595,21 @@ def simulate(seed_index,scenario,policy,calibration,count=12000,trace_hook=None,
             "uses_hidden_fault_map_at_dispatch":False,
             "risk_certificate":False,
             "simulation_backend":"native_Python_stochastic_strict_FCFS"
+        }
+    if policy in STAGE51_POLICIES:
+        assert stage51_decisions==count and 0<=stage51_mission_switches<=stage51_switches<=count
+        result["stage51_comparator"]={
+            "label":policy,"authors_original_DFAQ_LB_implementation":False,
+            "simulation_engine":"Python strict FCFS only",
+            "source_oracle_at_dispatch":False,
+            "issue_time_queue_only":policy==QUEUE_ONLY,
+            "delayed_network_e2e_only_after_delivery":True,
+            "decisions":stage51_decisions,
+            "switches_vs_pred_greedy":stage51_switches,
+            "mission_switches_vs_pred_greedy":stage51_mission_switches,
+            "selected_queue_pressure_sum_ms":stage51_qpen_sum,
+            "selected_delivered_e2e_penalty_sum_ms":stage51_e2epen_sum,
+            "post_mission_deadline_misses":sum(int(r[3]) for r in post)
         }
     if policy==ROBUST_POLICY:
         assert fresh_controller is not None
