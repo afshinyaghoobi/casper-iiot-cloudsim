@@ -1,0 +1,53 @@
+name: JPDC Stage56 true Java vs Python fixed queue-load grid
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage56-native-python-queue-grid.yml'
+      - 'src/main/java/org/casperiiot/jpdc/Stage56NativeQueueGrid.java'
+      - 'jpdc/audit_stage56_java_python_queue_grid.py'
+      - 'jpdc/test_stage56_native_log_negative.py'
+      - 'jpdc/STAGE56_REAL_JAVA_VS_PYTHON_QUEUE_SEMANTICS_PREREG_2026-11-13.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cross_runtime_queue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Source freeze and preregistered native grid compilation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage56
+          git rev-parse HEAD > stage56/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE56_REAL_JAVA_VS_PYTHON_QUEUE_SEMANTICS_PREREG_2026-11-13.md
+          python3 -m py_compile jpdc/audit_stage56_java_python_queue_grid.py jpdc/test_stage56_native_log_negative.py
+          mvn -B -q -DskipTests compile
+      - name: Actual CloudSimPlus grid and independent Python strict-FCFS audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage56NativeQueueGrid | grep -E '^STAGE56_|^JPDC_STAGE56_' > stage56/native.log
+          python3 jpdc/audit_stage56_java_python_queue_grid.py --input stage56/native.log --out stage56/audit.json | tee stage56/audit.log
+          python3 jpdc/test_stage56_native_log_negative.py --input stage56/native.log | tee stage56/negative.log
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage56NativeQueueGrid | grep -E '^STAGE56_|^JPDC_STAGE56_' > stage56/native_repeat.log
+          cmp stage56/native.log stage56/native_repeat.log
+          python3 jpdc/audit_stage56_java_python_queue_grid.py --input stage56/native_repeat.log --out stage56/audit_repeat.json > stage56/audit_repeat.log
+          cmp stage56/audit.json stage56/audit_repeat.json
+          grep 'JPDC_STAGE56_REAL_NATIVE_VS_INDEPENDENT_FCFS_AUDIT_PASS' stage56/audit.log
+          echo JPDC_STAGE56_FULL_NATIVE_AND_AUDIT_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage56-real-native-multi-load-grid
+          path: stage56/
+          if-no-files-found: warn
