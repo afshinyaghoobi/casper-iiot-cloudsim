@@ -1,0 +1,78 @@
+name: JPDC Stage52 eight new seed queue comparator independent holdout
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage52-eight-seed-queue-comparator.yml'
+      - 'jpdc/run_stage52_queue_baseline_holdout.py'
+      - 'jpdc/audit_stage52_eight_seed_cohort.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source:
+    name: source-seed-${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen preregistered policy and original source integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage52
+          git rev-parse HEAD > stage52/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/queue_pressure_baseline_stage51.py)" = c0fdd686a451e528a68e7265cd8d3f2ac3bd9af9
+          test "$(git hash-object jpdc/independent_physical_queue_baseline_stage51.py)" = 249f71030c791472dfdba6ebe38e91ff58b06d9a
+          test -s jpdc/STAGE52_EIGHT_SEED_QUEUE_COMPARATOR_HOLDOUT_PREREG_2026-11-12.md
+          python3 -m py_compile jpdc/run_stage52_queue_baseline_holdout.py jpdc/audit_stage52_eight_seed_cohort.py
+          python3 jpdc/test_stage51_queue_pressure_baseline.py
+      - name: Independent original source seed paired outcomes and exact repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage52_queue_baseline_holdout.py --seed ${{ matrix.seed }} --out stage52/source.json > stage52/source.log
+          python3 jpdc/run_stage52_queue_baseline_holdout.py --seed ${{ matrix.seed }} --out stage52/repeat.json > stage52/repeat.log
+          cmp stage52/source.json stage52/repeat.json
+          cmp stage52/source.log stage52/repeat.log
+          grep 'JPDC_STAGE52_HOLDOUT_SOURCE_COMPLETE_PASS' stage52/source.log
+          echo JPDC_STAGE52_SOURCE_REPEAT_AND_PARITY_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage52-holdout-seed-${{ matrix.seed }}
+          path: stage52/
+          if-no-files-found: warn
+  cohort:
+    needs: source
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jpdc-stage52-holdout-seed-*
+          path: stage52-sources
+          merge-multiple: false
+      - name: Require complete paired cohort and exact seed level audit
+        run: |
+          set -euo pipefail
+          python3 jpdc/audit_stage52_eight_seed_cohort.py --source-dir stage52-sources --out stage52-cohort/audit.json | tee stage52-cohort/audit.log
+          echo JPDC_STAGE52_INDEPENDENT_EIGHT_SEED_AUDIT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage52-eight-seed-cohort-audit
+          path: stage52-cohort/
+          if-no-files-found: warn
