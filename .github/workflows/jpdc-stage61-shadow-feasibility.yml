@@ -1,0 +1,53 @@
+name: JPDC Stage61 original-source passive world feasibility DEV
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage61-shadow-feasibility.yml'
+      - 'jpdc/STAGE61_SHADOW_CAUSAL_WORLD_FEASIBILITY_PREREG_2026-11-14.md'
+      - 'jpdc/shadow_causal_feasibility_stage61.py'
+      - 'jpdc/independent_physical_shadow_stage61.py'
+      - 'jpdc/run_stage61_shadow_feasibility.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source_shadow:
+    name: DEV-seed-${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [1411, 1412]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen E42, Stage60 causal contract and Stage61 prereg checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage61
+          git rev-parse HEAD > stage61/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE61_SHADOW_CAUSAL_WORLD_FEASIBILITY_PREREG_2026-11-14.md
+          python3 -m py_compile jpdc/causal_ambiguity_builder_stage60.py jpdc/shadow_causal_feasibility_stage61.py jpdc/independent_physical_shadow_stage61.py jpdc/run_stage61_shadow_feasibility.py
+          python3 jpdc/test_stage60_causal_ambiguity.py
+      - name: Real original-source shadow feasibility + exact Stage6 parity and repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage61_shadow_feasibility.py --seed ${{ matrix.seed }} --out stage61/source.json > stage61/source.log 2> stage61/source.stderr
+          python3 jpdc/run_stage61_shadow_feasibility.py --seed ${{ matrix.seed }} --out stage61/repeat.json > stage61/repeat.log 2> stage61/repeat.stderr
+          cmp stage61/source.json stage61/repeat.json
+          cmp stage61/source.log stage61/repeat.log
+          grep 'JPDC_STAGE61_SOURCE_SHADOW_AND_STAGE6_PARITY_PASS' stage61/source.log
+          echo JPDC_STAGE61_ORIGINAL_SOURCE_SHADOW_REPEAT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage61-shadow-feasibility-seed-${{ matrix.seed }}
+          path: stage61/
+          if-no-files-found: warn
