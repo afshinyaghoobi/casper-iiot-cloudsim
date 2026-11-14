@@ -1,0 +1,41 @@
+name: JPDC Stage60 causal delivered-feedback ambiguity builder QA
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage60-causal-world-builder.yml'
+      - 'jpdc/STAGE60_CAUSAL_AMBIGUITY_BUILDER_PREREG_2026-11-14.md'
+      - 'jpdc/causal_ambiguity_builder_stage60.py'
+      - 'jpdc/test_stage60_causal_ambiguity.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  causal_world_contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: E42 freeze, timing leakage, all-node abstention and reproducibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage60
+          git rev-parse HEAD > stage60/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE60_CAUSAL_AMBIGUITY_BUILDER_PREREG_2026-11-14.md
+          python3 -m py_compile jpdc/finite_ambiguity_deadline_stage59.py jpdc/causal_ambiguity_builder_stage60.py jpdc/test_stage60_causal_ambiguity.py
+          python3 jpdc/test_stage60_causal_ambiguity.py > stage60/contract.log
+          python3 jpdc/test_stage60_causal_ambiguity.py > stage60/contract_repeat.log
+          cmp stage60/contract.log stage60/contract_repeat.log
+          grep 'JPDC_STAGE60_CAUSAL_FAIL_CLOSED_PASS' stage60/contract.log
+          echo JPDC_STAGE60_NO_ORACLE_REPEAT_BYTE_IDENTICAL_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage60-delivered-feedback-world-contract
+          path: stage60/
+          if-no-files-found: warn
