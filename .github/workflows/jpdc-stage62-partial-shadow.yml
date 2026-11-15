@@ -1,0 +1,56 @@
+name: JPDC Stage62 partial-observation passive feasibility DEV
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage62-partial-shadow.yml'
+      - 'jpdc/STAGE62_PARTIAL_OBSERVATION_SHADOW_PREREG_2026-11-14.md'
+      - 'jpdc/partial_observation_selector_stage62.py'
+      - 'jpdc/test_stage62_partial_observation.py'
+      - 'jpdc/shadow_partial_feasibility_stage62.py'
+      - 'jpdc/independent_physical_partial_stage62.py'
+      - 'jpdc/run_stage62_partial_shadow.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source_shadow:
+    name: DEV-seed-${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [1511, 1512]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: E42 freeze, partial causal inputs, and preregistration
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage62
+          git rev-parse HEAD > stage62/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE62_PARTIAL_OBSERVATION_SHADOW_PREREG_2026-11-14.md
+          python3 -m py_compile jpdc/partial_observation_selector_stage62.py jpdc/test_stage62_partial_observation.py jpdc/shadow_partial_feasibility_stage62.py jpdc/independent_physical_partial_stage62.py jpdc/run_stage62_partial_shadow.py
+          python3 jpdc/test_stage60_causal_ambiguity.py
+          python3 jpdc/test_stage62_partial_observation.py
+      - name: Original-source Stage62 partial shadow + strict Stage6 parity and repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage62_partial_shadow.py --seed ${{ matrix.seed }} --out stage62/source.json > stage62/source.log 2> stage62/source.stderr
+          python3 jpdc/run_stage62_partial_shadow.py --seed ${{ matrix.seed }} --out stage62/repeat.json > stage62/repeat.log 2> stage62/repeat.stderr
+          cmp stage62/source.json stage62/repeat.json
+          cmp stage62/source.log stage62/repeat.log
+          grep 'JPDC_STAGE62_SOURCE_SHADOW_AND_STAGE6_PARITY_PASS' stage62/source.log
+          echo JPDC_STAGE62_SHADOW_SOURCE_DETERMINISTIC_AND_STAGE6_PARITY_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage62-partial-shadow-seed-${{ matrix.seed }}
+          path: stage62/
+          if-no-files-found: warn
