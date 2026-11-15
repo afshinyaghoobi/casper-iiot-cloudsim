@@ -1,0 +1,53 @@
+name: JPDC Stage64 live partial minimax FULL fallback DEV
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage64-live-partial-dev.yml'
+      - 'jpdc/STAGE64_PARTIAL_MINIMAX_LIVE_DEV_PREREG_2026-11-14.md'
+      - 'jpdc/independent_physical_partial_live_stage64.py'
+      - 'jpdc/run_stage64_live_partial_dev.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source_development:
+    name: DEV-seed-${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [1711,1712]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen original E42, Stage62 non-oracle test and Stage64 prereg
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage64
+          git rev-parse HEAD > stage64/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE64_PARTIAL_MINIMAX_LIVE_DEV_PREREG_2026-11-14.md
+          python3 -m py_compile jpdc/independent_physical_partial_live_stage64.py jpdc/run_stage64_live_partial_dev.py
+          python3 jpdc/test_stage60_causal_ambiguity.py
+          python3 jpdc/test_stage62_partial_observation.py
+      - name: New original-source actual policy vs frozen controls, deterministic replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage64_live_partial_dev.py --seed ${{ matrix.seed }} --out stage64/source.json > stage64/source.log 2> stage64/source.stderr
+          python3 jpdc/run_stage64_live_partial_dev.py --seed ${{ matrix.seed }} --out stage64/repeat.json > stage64/repeat.log 2> stage64/repeat.stderr
+          cmp stage64/source.json stage64/repeat.json
+          cmp stage64/source.log stage64/repeat.log
+          grep 'JPDC_STAGE64_DEV_SOURCE_COMPLETE_PASS' stage64/source.log
+          echo JPDC_STAGE64_ORIGINAL_SOURCE_PARITY_AND_REPEAT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage64-live-partial-dev-seed-${{ matrix.seed }}
+          path: stage64/
+          if-no-files-found: warn
