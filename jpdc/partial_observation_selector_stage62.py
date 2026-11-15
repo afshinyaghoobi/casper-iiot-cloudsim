@@ -41,7 +41,13 @@ def choose_partial(builder,now_ms,predicted_ms,nominal_network_ms,deadline_ms):
         if cpu_ok and net_ok:eligible.append(j)
     if len(eligible)<2:unavailable.append("FEWER_THAN_TWO_ELIGIBLE_NODES")
     if greedy not in eligible:unavailable.append("GLOBAL_NOMINAL_GREEDY_NOT_OBSERVED")
-    if unavailable:
+    # Missing *excluded* nodes are diagnostic, not a reason to reject a
+    # safe-to-rank observed subset. Only explicit global gates can block.
+    blockers=[reason for reason in unavailable if (
+        reason=="TELEMETRY_MISSING_OR_STALE" or
+        reason=="FEWER_THAN_TWO_ELIGIBLE_NODES" or
+        reason=="GLOBAL_NOMINAL_GREEDY_NOT_OBSERVED")]
+    if blockers:
         return PartialChoice("ABSTAIN_UNVERIFIED",tuple(eligible),greedy,None,
                              tuple(unavailable))
     # All cost scenarios use observed historically delivered per-node residuals.
