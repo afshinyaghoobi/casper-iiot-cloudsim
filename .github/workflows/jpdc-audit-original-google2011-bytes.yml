@@ -1,0 +1,48 @@
+name: JPDC audit archived original Google2011 real trace bytes only
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-audit-original-google2011-bytes.yml'
+      - 'jpdc/audit_google2011_original_bytes_independent.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent_original_bytes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recover EXACT original successful sampled GCS artifact without new network sampling
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43686198961
+          github-token: ${{ github.token }}
+          name: jpdc-original-google2011-bounded-task-events-original-source
+          path: google-original
+      - name: Independent parser against archived bytes, repeat and immutable guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p original-google-audit
+          git rev-parse HEAD > original-google-audit/audit_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          python3 -m py_compile jpdc/audit_google2011_original_bytes_independent.py
+          python3 jpdc/audit_google2011_original_bytes_independent.py --original-dir google-original --out original-google-audit/audit.json | tee original-google-audit/audit.log
+          python3 jpdc/audit_google2011_original_bytes_independent.py --original-dir google-original --out original-google-audit/repeat.json > original-google-audit/repeat.log
+          cmp original-google-audit/audit.json original-google-audit/repeat.json
+          cmp original-google-audit/audit.log original-google-audit/repeat.log
+          grep JPDC_GOOGLE2011_ORIGINAL_128_RECORDS_INDEPENDENT_AUDIT_PASS original-google-audit/audit.log
+          echo JPDC_ORIGINAL_REAL_TRACE_BYTES_SOURCE_AUDIT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-original-byte-independent-audit
+          path: original-google-audit/
+          if-no-files-found: warn
