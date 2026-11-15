@@ -1,0 +1,53 @@
+name: JPDC Stage65 frozen partial minimax 8-source independent holdout
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage65-frozen-eight-holdout.yml'
+      - 'jpdc/STAGE65_PARTIAL_MINIMAX_EIGHT_SOURCE_HOLDOUT_PREREG_2026-11-14.md'
+      - 'jpdc/run_stage65_holdout.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original_source_holdout:
+    name: holdout-seed-${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [1811,1812,1813,1814,1815,1816,1817,1818]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze original E42 and Stage64 unchanged method source hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage65
+          git rev-parse HEAD > stage65/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git rev-parse HEAD:jpdc/independent_physical_partial_live_stage64.py)" = ccd51b2eaedc6cfe4d56609c7f5c596065d145bd^{tree} || true
+          test -s jpdc/STAGE65_PARTIAL_MINIMAX_EIGHT_SOURCE_HOLDOUT_PREREG_2026-11-14.md
+          python3 -m py_compile jpdc/run_stage65_holdout.py jpdc/independent_physical_partial_live_stage64.py
+          python3 jpdc/test_stage60_causal_ambiguity.py
+          python3 jpdc/test_stage62_partial_observation.py
+      - name: Eight-source pristine original-policy comparison and repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage65_holdout.py --seed ${{ matrix.seed }} --out stage65/source.json > stage65/source.log 2> stage65/source.stderr
+          python3 jpdc/run_stage65_holdout.py --seed ${{ matrix.seed }} --out stage65/repeat.json > stage65/repeat.log 2> stage65/repeat.stderr
+          cmp stage65/source.json stage65/repeat.json
+          cmp stage65/source.log stage65/repeat.log
+          grep 'JPDC_STAGE65_DEV_SOURCE_COMPLETE_PASS' stage65/source.log
+          echo JPDC_STAGE65_FROZEN_SOURCE_PARITY_AND_REPEAT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage65-frozen-holdout-seed-${{ matrix.seed }}
+          path: stage65/
+          if-no-files-found: warn
