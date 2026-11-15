@@ -56,6 +56,8 @@ def independent_archive_audit(base):
     keys=set()
     first_submit={}
     paired={}
+    prior_types=collections.defaultdict(list)
+    submit_predecessor={}
     for index,row in enumerate(rows):
         t=int(row[0]);job=int(row[2]);task=int(row[3]);kind=int(row[5])
         assert t>=0 and job>=0 and task>=0 and kind in EVENT_CODES
@@ -69,9 +71,11 @@ def independent_archive_audit(base):
         if row[9]=="":missing["missing_cpu_request"]+=1
         if kind==0 and key not in first_submit:
             first_submit[key]=t
+            submit_predecessor[key]=prior_types[key][-1] if prior_types[key] else None
         elif kind==1 and key in first_submit and key not in paired:
             assert t>=first_submit[key]
             paired[key]=t-first_submit[key]
+        prior_types[key].append(kind)
     assert times==sorted(times)
     assert events==EXPECTED_EVENTS
     assert len(keys)==85 and len(job_ids)==11
@@ -81,6 +85,13 @@ def independent_archive_audit(base):
     assert all(v>0 for v in times)
     assert times[0]==1253400885155 and times[-1]==1253403232545
     spans=list(paired.values())
+    # This is retrospective within the already selected original 128 rows.
+    # Each observed SUBMIT->SCHEDULE is a resubmission after FAIL/KILL,
+    # not evidence of the task's first-ever queue admission.
+    predecessor_counts=collections.Counter(
+        EVENT_CODES[submit_predecessor[k]] if submit_predecessor[k] is not None
+        else "NO_PRIOR_EVENT_WITHIN_PREFIX" for k in paired)
+    assert predecessor_counts=={"FAIL":9,"KILL":3}
     assert min(spans)==2271807 and max(spans)==2272691
     assert statistics.median(spans)==2272332.5
     assert original["sample_selection"]=="FIRST_128_COMPLETE_ROWS_OF_PREREGISTERED_PARTITION_INDEX_250"
@@ -106,6 +117,9 @@ def independent_archive_audit(base):
         timestamp_min_us=min(times),timestamp_max_us=max(times),
         observed_matching_submit_schedule_pairs=len(spans),
         matching_pairs_distinct_jobs=2,
+        matching_submit_predecessor_event_counts=dict(sorted(predecessor_counts.items())),
+        all_12_pairs_are_resubmits_after_prior_fail_or_kill=True,
+        first_ever_submission_delay_not_established=True,
         observed_schedule_minus_submit_median_us=statistics.median(spans),
         observed_schedule_minus_submit_min_us=min(spans),
         observed_schedule_minus_submit_max_us=max(spans),
