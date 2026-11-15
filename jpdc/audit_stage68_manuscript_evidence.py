@@ -44,7 +44,7 @@ def main():
         assert normalized(val) in normalized(matrix),("matrix lacks",val)
     for val in ("9.12140093294972","5 ms","4,840","4,349","4,532",
                 "207/212","200/204","208/212","1.000","0.125",
-                "eight independent source seeds","counterfactual","retrospective",
+                "eight new independent source seeds","counterfactual","retrospective",
                 "no independently acquired"):
         assert normalized(val) in normalized(draft),("draft lacks",val)
     for bad in ("proves that our scheduler is superior",
