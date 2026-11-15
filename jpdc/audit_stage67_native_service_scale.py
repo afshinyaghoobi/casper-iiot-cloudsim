@@ -26,6 +26,23 @@ def ids(raw):
     return values
 
 
+def detect_queue_bypass(events,submissions):
+    """Return direct native queue-list evidence: newer EXEC while older WAIT."""
+    discovered=[]
+    for ev in events:
+        for older in ev["wait_ids"]:
+            for later in ev["exec_ids"]:
+                if older not in submissions or later not in submissions:
+                    raise AssertionError("queue contains unknown submission")
+                if submissions[older]+TOL<submissions[later]:
+                    discovered.append(dict(older_cloudlet_id=older,
+                        later_cloudlet_id=later,
+                        older_submit_ms=submissions[older],
+                        later_submit_ms=submissions[later],
+                        observed_at_ms=ev["clock_ms"],event=ev["kind"]))
+    return discovered
+
+
 def audit(lines):
     assert "JPDC_STAGE67_NATIVE_SERVICE_SCALE_SIX_CASES_COMPLETE" in lines
     output = []
@@ -169,16 +186,7 @@ def audit(lines):
                                  o["native_wait_ms"] - (first_exec - submissions[task_id]))))
         # Native state evidence, not inferred from finish order or nominal task ID.
         # A later submitted cloudlet in EXEC while an older one is still WAIT.
-        bypass_events=[]
-        for ev in events:
-            for older in ev["wait_ids"]:
-                for later in ev["exec_ids"]:
-                    if submissions[older]+TOL<submissions[later]:
-                        bypass_events.append(dict(
-                            older_cloudlet_id=older, later_cloudlet_id=later,
-                            older_submit_ms=submissions[older],
-                            later_submit_ms=submissions[later],
-                            observed_at_ms=ev["clock_ms"], event=ev["kind"]))
+        bypass_events=detect_queue_bypass(events,submissions)
         max_wait_discrepancy=max(abs(x["reported_native_wait_ms"]-x["ideal_strict_fcfs_wait_ms"])
                                  for x in rows)
         output.append(dict(case=name, event_gap_s=EVENT_GAPS[case_index],
