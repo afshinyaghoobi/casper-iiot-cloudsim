@@ -1,0 +1,48 @@
+name: JPDC Stage67 archived real native service scale audit only
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage67-original-artifact-audit.yml'
+      - 'jpdc/audit_stage67_original_artifact.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original_native_artifact_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download real original Stage67 CloudSim native six cases, never resimulate
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43665010131
+          github-token: ${{ github.token }}
+          name: jpdc-stage67-native-scale-six-cases
+          path: original-stage67
+      - name: Independent evidence reparse and byte-identical repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage67-audit
+          git rev-parse HEAD > stage67-audit/audit_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(cat original-stage67/source_commit.txt)" = 9c3bc5ae2dbd4d0b95b54b09cc8d9f3993ba9afc
+          python3 -m py_compile jpdc/audit_stage67_native_service_scale.py jpdc/audit_stage67_original_artifact.py
+          python3 jpdc/audit_stage67_original_artifact.py --source-dir original-stage67 --out stage67-audit/audit.json | tee stage67-audit/audit.log
+          python3 jpdc/audit_stage67_original_artifact.py --source-dir original-stage67 --out stage67-audit/audit_repeat.json > stage67-audit/audit_repeat.log
+          cmp stage67-audit/audit.json stage67-audit/audit_repeat.json
+          cmp stage67-audit/audit.log stage67-audit/audit_repeat.log
+          grep 'JPDC_STAGE67_ORIGINAL_NATIVE_ARTIFACT_INDEPENDENT_AUDIT_PASS' stage67-audit/audit.log
+          echo JPDC_STAGE67_NATIVE_ARCHIVE_CROSSCHECK_SUCCESS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage67-original-native-six-case-audit-only
+          path: stage67-audit/
+          if-no-files-found: warn
