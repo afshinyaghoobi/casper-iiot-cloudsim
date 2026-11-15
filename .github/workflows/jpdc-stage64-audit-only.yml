@@ -1,0 +1,56 @@
+name: JPDC Stage64 original live policy DEV artifacts-only audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage64-audit-only.yml'
+      - 'jpdc/audit_stage64_live_dev_cohort.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original_source_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download exact Stage64 original source artifacts without resimulation
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43661340696
+          github-token: ${{ github.token }}
+          pattern: jpdc-stage64-live-partial-dev-seed-*
+          path: stage64-original
+          merge-multiple: false
+      - name: Verify source SHA, repeats, and all predeclared safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage64-cohort
+          git rev-parse HEAD > stage64-cohort/audit_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          for seed in 1711 1712; do
+            d="stage64-original/jpdc-stage64-live-partial-dev-seed-$seed"
+            test -s "$d/source.json"
+            test "$(cat "$d/source_commit.txt")" = 9a2f44fd95b5e36606b55fb1743d2d0bde7aa7da
+            cmp "$d/source.json" "$d/repeat.json"
+            cmp "$d/source.log" "$d/repeat.log"
+            grep 'JPDC_STAGE64_DEV_SOURCE_COMPLETE_PASS' "$d/source.log"
+          done
+          python3 -m py_compile jpdc/audit_stage64_live_dev_cohort.py
+          python3 jpdc/audit_stage64_live_dev_cohort.py --source-dir stage64-original --out stage64-cohort/cohort.json | tee stage64-cohort/cohort.log
+          python3 jpdc/audit_stage64_live_dev_cohort.py --source-dir stage64-original --out stage64-cohort/cohort_repeat.json > stage64-cohort/cohort_repeat.log
+          cmp stage64-cohort/cohort.json stage64-cohort/cohort_repeat.json
+          cmp stage64-cohort/cohort.log stage64-cohort/cohort_repeat.log
+          grep 'JPDC_STAGE64_ORIGINAL_SOURCE_COHORT_AUDIT_PASS' stage64-cohort/cohort.log
+          echo JPDC_STAGE64_DEV_SCIENTIFIC_GATE_PRESERVED_EVEN_IF_FAILED
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage64-original-live-dev-cohort-audit-only
+          path: stage64-cohort/
+          if-no-files-found: warn
