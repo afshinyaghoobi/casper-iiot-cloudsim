@@ -47,7 +47,10 @@ def verify_original_prefix(prefix, *, storage_metadata, request_metadata=None):
     # Truncated gzip is expected. zlib incremental decode DOES NOT require
     # the gzip checksum trailer to have arrived inside our bounded prefix.
     inflater = zlib.decompressobj(16 + zlib.MAX_WBITS)
-    inflated = inflater.decompress(prefix, MAX_INFLATED + 1)
+    # Bounded prefix streaming: a 256-KiB compressed source block may expand
+    # beyond our 1-MiB safety quota. Consume AT MOST the allowed inflated
+    # bytes without rejecting the original source for compressing well.
+    inflated = inflater.decompress(prefix, MAX_INFLATED)
     if len(inflated) > MAX_INFLATED:
         raise ValueError("inflation quota exceeded")
     # Only full newline-terminated original records are examined; do not
