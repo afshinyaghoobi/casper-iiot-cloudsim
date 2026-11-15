@@ -1,0 +1,57 @@
+name: JPDC official Google2011 fixed 1024-record longitudinal history window
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-original-longitudinal-window.yml'
+      - 'jpdc/GOOGLE2011_JOB_HISTORY_WINDOW_PREREG_2026-11-15.md'
+      - 'jpdc/google2011_longitudinal_history_window.py'
+      - 'jpdc/test_google2011_longitudinal_history_window.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original_source_1024_events:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify frozen CASPER and prereg source, synthetic negative parser cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p original-longitudinal
+          git rev-parse HEAD > original-longitudinal/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_JOB_HISTORY_WINDOW_PREREG_2026-11-15.md
+          python3 -m py_compile jpdc/google2011_longitudinal_history_window.py jpdc/test_google2011_longitudinal_history_window.py
+          python3 jpdc/test_google2011_longitudinal_history_window.py | tee original-longitudinal/synthetic_contracts.log
+      - name: Acquire exactly bounded original publisher GCS file part375 and deterministic offline repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/google2011_longitudinal_history_window.py --out-dir original-longitudinal > original-longitudinal/source.log 2> original-longitudinal/source.stderr
+          cp original-longitudinal/audit.json original-longitudinal/audit_first.json
+          python3 jpdc/google2011_longitudinal_history_window.py --out-dir original-longitudinal --reparse-only > original-longitudinal/reparse.log
+          cmp original-longitudinal/audit_first.json original-longitudinal/audit.json
+          grep 'JPDC_GOOGLE2011_LONGITUDINAL_SOURCE_AND_CENSORING_AUDIT_PASS' original-longitudinal/source.log
+          python3 - <<'PY'
+          import json
+          x=json.load(open('original-longitudinal/audit.json'))
+          assert x['source_uri']=='gs://clusterdata-2011-2/task_events/part-00375-of-00500.csv.gz'
+          assert x['original_rows_audited']==1024
+          assert x['original_Stage65_scientific_safety']=='FAIL'
+          assert x['original_Java_Python_cross_runtime_fidelity']=='FAIL'
+          assert not x['real_task_deadlines_observed'] and not x['network_bytes_observed']
+          print('JPDC_GOOGLE2011_ORIGINAL_SOURCE_CENSORING_REPLAY_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-original-part375-longitudinal-1024-rows
+          path: original-longitudinal/
+          if-no-files-found: warn
