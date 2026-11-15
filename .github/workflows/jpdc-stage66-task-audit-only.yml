@@ -1,0 +1,57 @@
+name: JPDC Stage66 original retrospective task forensics artifact audit only
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage66-task-audit-only.yml'
+      - 'jpdc/audit_stage66_task_forensics_cohort.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exact_original_forensics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download EXACT original Stage66 retrospective task artifacts — no task rerun
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43662373211
+          github-token: ${{ github.token }}
+          pattern: jpdc-stage66-posthoc-task-forensics-*
+          path: stage66-original
+          merge-multiple: false
+      - name: Verify source SHA, original repeats, historical source outcomes, task discordance
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage66-cohort
+          git rev-parse HEAD > stage66-cohort/audit_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          for seed in 1811 1815 1816 1818; do
+            d="stage66-original/jpdc-stage66-posthoc-task-forensics-$seed"
+            test -s "$d/source.json"
+            test "$(cat "$d/retrospective_code_sha.txt")" = 78b2518fe3d3233f7ee5d798a8a00017a7dfa4a9
+            cmp "$d/source.json" "$d/repeat.json"
+            cmp "$d/source.log" "$d/repeat.log"
+            grep 'JPDC_STAGE66_ORIGINAL_TASK_FORENSIC_PARITY_PASS' "$d/source.log"
+          done
+          python3 -m py_compile jpdc/audit_stage66_task_forensics_cohort.py
+          python3 jpdc/audit_stage66_task_forensics_cohort.py --source-dir stage66-original --out stage66-cohort/cohort.json | tee stage66-cohort/cohort.log
+          python3 jpdc/audit_stage66_task_forensics_cohort.py --source-dir stage66-original --out stage66-cohort/cohort_repeat.json > stage66-cohort/cohort_repeat.log
+          cmp stage66-cohort/cohort.json stage66-cohort/cohort_repeat.json
+          cmp stage66-cohort/cohort.log stage66-cohort/cohort_repeat.log
+          grep 'JPDC_STAGE66_ORIGINAL_PAIRED_TASK_COHORT_AUDIT_PASS' stage66-cohort/cohort.log
+          echo JPDC_STAGE66_POSTHOC_TASK_DISCORDANCE_AUDIT_ONLY_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage66-posthoc-original-task-cohort-audit
+          path: stage66-cohort/
+          if-no-files-found: warn
