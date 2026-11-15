@@ -1,0 +1,56 @@
+name: JPDC Stage65 original 8-seed holdout artifacts only audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage65-holdout-audit-only.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audited_original_sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recover EXACT original eight Stage65 sources without new physics
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43661658894
+          github-token: ${{ github.token }}
+          pattern: jpdc-stage65-frozen-holdout-seed-*
+          path: stage65-original
+          merge-multiple: false
+      - name: Audit paired source n8 and original prereg safety gates without excluding seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage65-cohort
+          git rev-parse HEAD > stage65-cohort/audit_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          for seed in 1811 1812 1813 1814 1815 1816 1817 1818; do
+            d="stage65-original/jpdc-stage65-frozen-holdout-seed-$seed"
+            test -s "$d/source.json"
+            test "$(cat "$d/source_commit.txt")" = fd138174ac662b14a88421524f87b7dfa886c6fc
+            cmp "$d/source.json" "$d/repeat.json"
+            cmp "$d/source.log" "$d/repeat.log"
+            grep 'JPDC_STAGE65_DEV_SOURCE_COMPLETE_PASS' "$d/source.log"
+          done
+          python3 -m py_compile jpdc/audit_stage65_holdout_cohort.py
+          python3 jpdc/audit_stage65_holdout_cohort.py --source-dir stage65-original --out stage65-cohort/cohort.json | tee stage65-cohort/cohort.log
+          python3 jpdc/audit_stage65_holdout_cohort.py --source-dir stage65-original --out stage65-cohort/cohort_repeat.json > stage65-cohort/cohort_repeat.log
+          cmp stage65-cohort/cohort.json stage65-cohort/cohort_repeat.json
+          cmp stage65-cohort/cohort.log stage65-cohort/cohort_repeat.log
+          grep 'JPDC_STAGE65_ORIGINAL_HOLDOUT_AUDIT_PASS' stage65-cohort/cohort.log
+          echo JPDC_STAGE65_ORIGINAL_EIGHT_SOURCE_AUDIT_EVEN_IF_SAFETY_FAILS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage65-original-eight-source-holdout-cohort-audit
+          path: stage65-cohort/
+          if-no-files-found: warn
