@@ -1,0 +1,48 @@
+name: JPDC original Google2011 longitudinal 1024-row independent source audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-longitudinal-independent-audit.yml'
+      - 'jpdc/audit_google2011_longitudinal_original_bytes.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent_archival_1024:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download EXACT original independent historical 1024-row source artifact
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43735040240
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-original-part375-longitudinal-1024-rows
+          path: original-source-375
+      - name: Verify original raw gzip independently, preserve original E42 and rejected method
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p longitudinal-independent
+          git rev-parse HEAD > longitudinal-independent/audit_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          python3 -m py_compile jpdc/audit_google2011_longitudinal_original_bytes.py
+          python3 jpdc/audit_google2011_longitudinal_original_bytes.py --original-dir original-source-375 --out longitudinal-independent/audit.json | tee longitudinal-independent/audit.log
+          python3 jpdc/audit_google2011_longitudinal_original_bytes.py --original-dir original-source-375 --out longitudinal-independent/audit_repeat.json > longitudinal-independent/audit_repeat.log
+          cmp longitudinal-independent/audit.json longitudinal-independent/audit_repeat.json
+          cmp longitudinal-independent/audit.log longitudinal-independent/audit_repeat.log
+          grep 'JPDC_GOOGLE2011_ORIGINAL_1024_ROWS_SECOND_PARSER_PASS' longitudinal-independent/audit.log
+          echo JPDC_GOOGLE2011_LONGITUDINAL_INDEPENDENT_ORIGINAL_BYTES_REPEAT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-longitudinal-original-bytes-independent-audit
+          path: longitudinal-independent/
+          if-no-files-found: warn
