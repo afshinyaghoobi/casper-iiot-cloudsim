@@ -1,0 +1,27 @@
+# External-trace **versioned task event semantics** — actual source-document audit
+2026-11-15. **Actual publisher schema inspected, zero new raw trace rows acquired**, no new performance test. Intended to improve Stage69's source admission, not silently grant an external workload.
+
+## Scientific issue found: timestamps and event-code enums differ across trace versions
+| Trace/version | Specific publisher-supported field/event distinction | What is observable from DOCUMENTATION | What is NOT established |
+|---|---|---|---|
+| [Alibaba 2017 official schema](https://github.com/alibaba/clusterdata/blob/master/cluster-trace-v2017/schema.csv) | `batch_task.csv` field 1 explicitly **task create time**; `batch_instance.csv` field 1 **start_timestamp** | Documented task creation timestamp is a more defensible *submission-time proxy* than execution start, pending source-row/scheduling semantics check; contains per-task requested cores | Exact submission-to-scheduler meaning, relative deadlines, per-task E2E bytes, dataset usage/republication rights, actual rows, machine join and censoring **UNVERIFIED** |
+| [Alibaba 2018 official schema](https://github.com/alibaba/clusterdata/blob/master/cluster-trace-v2018/schema.txt) | `batch_task.csv` `start_time` and `end_time`; `batch_instance.csv` start and end, in seconds | Task start/end observations and planned CPUs, DAG indications; machine normalized `net_in/net_out` | `start_time` **NOT PROVEN submit/creation**, normalized machine network NOT per-task MB; actual deadlines and reuse rights unknown |
+| [Google Borg 2011 v2.1 official trace documentation](https://github.com/google/cluster-data/blob/master/ClusterData2011_2.md) and [publisher's original format/schema document](https://drive.google.com/file/d/0B5g07T_gRDg9Z0lsSTEtTWtpOW8/view) | Version 2 task-event transition **SUBMIT=0, SCHEDULE=1, EVICT=2, FAIL=3, FINISH=4, KILL=5, LOST=6, UPDATE_PENDING=7, UPDATE_RUNNING=8**; distinguish original submit/eligibility vs scheduling; timestamps generally in microseconds in v2.1 tables (verify field-by-field from exact schema) | Official recorded task events, plus separate CPU/memory resource requests; official Google license CC BY | Never infer per-task network bytes/deadline or actual CPU execution from a resource request; no original records accessed in this project yet |
+| [Google Borg 2019 v3 official protobuf](https://github.com/google/cluster-data/blob/master/clusterdata_trace_format_v3.proto) | **DIFFERENT enum**: `SUBMIT=0, QUEUE=1, ENABLE=2, SCHEDULE=3, EVICT=4, FAIL=5, FINISH=6, KILL=7, LOST=8`; do NOT reuse v2.1 mapping | Version-specific event labels, without inspecting actual BigQuery rows | Treating v3 code 3 as v2.1 FAIL or v2.1 code1 as v3 SCHEDULE is a semantic bug; event table columns and row data not audited here |
+
+The primary [Google cluster-data root README](https://github.com/google/cluster-data) states trace and documentation under CC BY. For Alibaba, availability of an official public GitHub **schema** is not automatically a license to redistribute raw data. Do not claim Alibaba raw dataset use rights without the actual publisher terms. Google data-center workloads are **not actual IIoT factory fieldwork**.
+
+**Critical conclusion:** Stage69's provisional Google 2011 source could support a **trace-driven arrival/resource-only** experiment after real rows are acquired and original schema verified. Alibaba 2017's explicit `task create time` makes it a potentially better semantic arrival source than Alibaba 2018, but unresolved reuse rights and missing network/deadline prevent full admission. This is a source-priority correction based on versioned first-party schemas, not external empirical validation.
+
+## Software mapping contract to guard future work
+- Never use a single cross-version numeric event dictionary; map only with explicit `dataset_version` and exact event table type.
+- For Google v2.1 and v3, `SCHEDULE` is **not** `SUBMIT`; `QUEUE`/eligibility changes must not be recoded as new job creation.
+- For Alibaba 2017 task create-time, it remains a *creation-time candidate*, not a proven arrival until original rows and semantics checked.
+- For Alibaba 2018 task execution start, mark `EXECUTION_START_ONLY`, never `SUBMISSION_OBSERVED`.
+- Do not transform normalized machine-level network utilization into task payload bytes. Do not treat a requested CPU allocation as measured CPU work or unknown deadline as infinity/zero in an experimental workload.
+- All future actual data slices require original URL/object identifier, retrieval date, original row encoding, checksum, field-by-field unit validation and missingness/censoring report, plus time/cluster disjoint splits. Do not spend funds on BigQuery without user agreement.
+
+## Evidence classification
+**Verified from source documentation**: field labels and version-specific enum values. **Software-verifiable**: future parser rejects ambiguous codes and retains typed event distinctions. **UNRESOLVED**: full dataset use rights, real task arrival measurement, CPU work units, deadline and network, original row accuracy, policy efficacy, external IIoT transferability.
+
+No new dataset rows, task simulation, policy performance effect, statistical significance or new independent source seeds are claimed here. Original Stage65 prospective safety failure and original Java/Python queue parity failure remain unchanged.
