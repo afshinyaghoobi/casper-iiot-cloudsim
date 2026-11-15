@@ -1,0 +1,56 @@
+name: JPDC Stage63 chosen-node time-ordered residual coverage DEV
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage63-temporal-coverage.yml'
+      - 'jpdc/STAGE63_CHOSEN_NODE_TEMPORAL_COVERAGE_PREREG_2026-11-14.md'
+      - 'jpdc/shadow_chosen_node_coverage_stage63.py'
+      - 'jpdc/independent_physical_temporal_stage63.py'
+      - 'jpdc/run_stage63_temporal_coverage.py'
+      - 'jpdc/test_stage63_temporal_coverage.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original_source:
+    name: DEV-seed-${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [1611,1612]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen E42, source prereg, Stage63 snapshot causal contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage63
+          git rev-parse HEAD > stage63/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE63_CHOSEN_NODE_TEMPORAL_COVERAGE_PREREG_2026-11-14.md
+          python3 -m py_compile jpdc/shadow_chosen_node_coverage_stage63.py jpdc/independent_physical_temporal_stage63.py jpdc/run_stage63_temporal_coverage.py jpdc/test_stage63_temporal_coverage.py
+          python3 jpdc/test_stage60_causal_ambiguity.py
+          python3 jpdc/test_stage62_partial_observation.py
+          python3 jpdc/test_stage63_temporal_coverage.py
+      - name: Original-source shadow coverage, frozen Stage6 parity and deterministic repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/run_stage63_temporal_coverage.py --seed ${{ matrix.seed }} --out stage63/source.json > stage63/source.log 2> stage63/source.stderr
+          python3 jpdc/run_stage63_temporal_coverage.py --seed ${{ matrix.seed }} --out stage63/repeat.json > stage63/repeat.log 2> stage63/repeat.stderr
+          cmp stage63/source.json stage63/repeat.json
+          cmp stage63/source.log stage63/repeat.log
+          grep 'JPDC_STAGE63_SOURCE_SHADOW_AND_STAGE6_PARITY_PASS' stage63/source.log
+          echo JPDC_STAGE63_TEMPORAL_COVERAGE_SOURCE_REPEAT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage63-chosen-node-source-${{ matrix.seed }}
+          path: stage63/
+          if-no-files-found: warn
