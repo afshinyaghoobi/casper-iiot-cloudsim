@@ -32,7 +32,7 @@ def run(seed):
             assert extra["CPU_completion_deliveries"]==TASK_COUNT
             assert extra["E2E_delivered_feedback"]==TASK_COUNT
             assert extra["coverage_empirically_calibrated"] is False
-            assert extra["stage63_scope"]=="restricted_observed_candidate_subset_only"
+            assert extra["stage62_scope"]=="restricted_observed_candidate_subset_only"
             assert extra["stage63_no_counterfactual_unselected_nodes"] is True
             assert extra["stage63_no_coverage_calibration_claim"] is True
             assert extra["stage63_chosen_node_temporal_coverage"]["ALL_MISSION"]["mission"]==actual["mission_tasks"]
