@@ -1,0 +1,57 @@
+name: JPDC actual Google 2011 two publisher source-partition overlap
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-two-partition-overlap.yml'
+      - 'jpdc/GOOGLE2011_TWO_PARTITION_OVERLAP_PREREG_2026-11-15.md'
+      - 'jpdc/google2011_two_partition_overlap.py'
+      - 'jpdc/test_google2011_two_partition_overlap.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  two_original_source_partitions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen original protections, prereg, negative sample-overlap fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p original-two-sources
+          git rev-parse HEAD > original-two-sources/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_TWO_PARTITION_OVERLAP_PREREG_2026-11-15.md
+          python3 -m py_compile jpdc/google2011_two_partition_overlap.py jpdc/test_google2011_two_partition_overlap.py
+          python3 jpdc/test_google2011_two_partition_overlap.py | tee original-two-sources/synthetic_fixture.log
+      - name: Acquire exactly two genuine GCS prefixes and compare observed source job/time overlap
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/google2011_two_partition_overlap.py --out-dir original-two-sources > original-two-sources/source.log 2> original-two-sources/source.stderr
+          cp original-two-sources/cohort.json original-two-sources/cohort_original.json
+          python3 jpdc/google2011_two_partition_overlap.py --out-dir original-two-sources --reparse-only > original-two-sources/reparse.log
+          cmp original-two-sources/cohort.json original-two-sources/cohort_original.json
+          grep JPDC_GOOGLE2011_TWO_PARTITION_ORIGINAL_SOURCE_AUDIT_PASS original-two-sources/source.log
+          python3 - <<'PY'
+          import json
+          x=json.load(open('original-two-sources/cohort.json'))
+          assert x['total_original_event_rows_examined']==2048
+          assert x['full_partition_job_independence']=='UNRESOLVED_FULL_SOURCE_INDEPENDENCE'
+          assert x['original_stage65_safety']=='FAIL'
+          assert x['original_java_python_cross_runtime_parity']=='FAIL'
+          assert not x['no_new_scheduling_policy_experiment'] is False
+          print('JPDC_TWO_ORIGINAL_GOOGLE_SOURCES_TECHNICAL_CHECK_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-two-original-source-prefixes-overlap
+          path: original-two-sources/
+          if-no-files-found: warn
