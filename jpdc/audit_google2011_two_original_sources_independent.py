@@ -59,7 +59,8 @@ def verify(directory):
     shared_keys=keys[0]&keys[1]
     assert len(shared_jobs)==2
     assert len(shared_keys)==27
-    assert {j for j,_ in shared_keys}==shared_jobs
+    assert {j for j,_ in shared_keys}.issubset(shared_jobs)
+    assert len({j for j,_ in shared_keys})==1
     time_overlap=max(times[0][0],times[1][0])<=min(times[0][-1],times[1][-1])
     assert not time_overlap
     gap=max(times[0][0]-times[1][-1],times[1][0]-times[0][-1])
@@ -79,6 +80,7 @@ def verify(directory):
         source_time_intervals_overlap=False,
         original_job_ids_shared=len(shared_jobs),
         original_job_task_pairs_shared=len(shared_keys),
+        shared_jobs_with_at_least_one_shared_task_index=len({j for j,_ in shared_keys}),
         original_source_task_identity_reuse_explanation="UNRESOLVED",
         cannot_infer_full_trace_statistical_independence=True,
         no_scheduling_policy_efficacy=True,
