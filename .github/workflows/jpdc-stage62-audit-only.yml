@@ -1,0 +1,56 @@
+name: JPDC Stage62 audit-only original-source partial availability
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage62-audit-only.yml'
+      - 'jpdc/audit_stage62_partial_cohort.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original_artifacts_only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download ONLY the original Stage62 source artifacts, no physics rerun
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43657109943
+          github-token: ${{ github.token }}
+          pattern: jpdc-stage62-partial-shadow-seed-*
+          path: stage62-original
+          merge-multiple: false
+      - name: Verify originals, exact repeats and predeclared feasibility gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage62-cohort
+          git rev-parse HEAD > stage62-cohort/audit_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          for seed in 1511 1512; do
+            d="stage62-original/jpdc-stage62-partial-shadow-seed-$seed"
+            test -s "$d/source.json"
+            test "$(cat "$d/source_commit.txt")" = ae246aea488aba21ef28bb7b2411ecfd353a1334
+            cmp "$d/source.json" "$d/repeat.json"
+            cmp "$d/source.log" "$d/repeat.log"
+            grep 'JPDC_STAGE62_SOURCE_SHADOW_AND_STAGE6_PARITY_PASS' "$d/source.log"
+          done
+          python3 -m py_compile jpdc/audit_stage62_partial_cohort.py
+          python3 jpdc/audit_stage62_partial_cohort.py --source-dir stage62-original --out stage62-cohort/cohort.json | tee stage62-cohort/cohort.log
+          python3 jpdc/audit_stage62_partial_cohort.py --source-dir stage62-original --out stage62-cohort/cohort_repeat.json > stage62-cohort/cohort_repeat.log
+          cmp stage62-cohort/cohort.json stage62-cohort/cohort_repeat.json
+          cmp stage62-cohort/cohort.log stage62-cohort/cohort_repeat.log
+          grep 'JPDC_STAGE62_ORIGINAL_COHORT_AUDIT_PASS' stage62-cohort/cohort.log
+          echo JPDC_STAGE62_ORIGINAL_SOURCE_PARTIAL_OBSERVABILITY_AUDIT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage62-original-subset-cohort-audit-only
+          path: stage62-cohort/
+          if-no-files-found: warn
