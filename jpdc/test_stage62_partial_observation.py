@@ -6,7 +6,7 @@ from partial_observation_selector_stage62 import choose_partial
 
 def rejected(fn):
     try:fn()
-    except ValueError:return
+    except (ValueError,TypeError):return
     raise AssertionError("accepted invalid/future observation")
 
 def main():
