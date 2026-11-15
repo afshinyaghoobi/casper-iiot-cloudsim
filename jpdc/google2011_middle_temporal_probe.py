@@ -75,7 +75,12 @@ def same_original_records(prefix, storage):
         pair_stats=dict(count=0,status="NO_PAIRED_SUBMIT_SCHEDULE_IN_PREFIX")
     return {
         **base,
+        # The generic prior-source parser used "lexicographically first".
+        # This specimen was prospectively fixed as object index250 instead.
+        "sample_selection":"FIRST_128_COMPLETE_ROWS_OF_PREREGISTERED_PARTITION_INDEX_250",
         "sampling_note":"PURPOSEFULLY_SELECTED_MIDDLE_PARTITION_FIRST_128_ROWS_NOT_REPRESENTATIVE",
+        "sampled_distinct_job_ids":len({int(row[2]) for row in sample}),
+        "observed_pair_distinct_job_ids":len({int(sample[x["job_task_index_in_sample"]][2]) for x in pairs}),
         "exact_preregistered_partition_index":250,
         "new_nonzero_temporal_source_event_count":sum(x>0 for x in times),
         "nonzero_time_exploratory_gate":(
