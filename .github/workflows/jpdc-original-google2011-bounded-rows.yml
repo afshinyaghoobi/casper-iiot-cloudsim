@@ -1,0 +1,49 @@
+name: JPDC bounded real Google 2011 original task-event audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-original-google2011-bounded-rows.yml'
+      - 'jpdc/ORIGINAL_GOOGLE_2011_BOUNDED_TRACE_PREREG_2026-11-15.md'
+      - 'jpdc/google2011_original_bounded_rows.py'
+      - 'jpdc/test_google2011_original_bounded_rows.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bounded_publisher_original_rows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze original code and verify synthetic negative fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p original-google2011
+          git rev-parse HEAD > original-google2011/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/ORIGINAL_GOOGLE_2011_BOUNDED_TRACE_PREREG_2026-11-15.md
+          python3 -m py_compile jpdc/google2011_original_bounded_rows.py jpdc/test_google2011_original_bounded_rows.py
+          python3 jpdc/test_google2011_original_bounded_rows.py | tee original-google2011/fixtures.log
+      - name: Download one genuine bounded GCS prefix or FAIL; reparse offline deterministically
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/google2011_original_bounded_rows.py --out-dir original-google2011 > original-google2011/acquisition.log 2> original-google2011/acquisition.stderr
+          cp original-google2011/audit.json original-google2011/audit_first.json
+          python3 jpdc/google2011_original_bounded_rows.py --out-dir original-google2011 --reparse-only > original-google2011/offline_reparse.log
+          cmp original-google2011/audit_first.json original-google2011/audit.json
+          grep JPDC_ORIGINAL_GOOGLE2011_REAL_ROWS_SOURCE_AUDIT_PASS original-google2011/acquisition.log
+          grep JPDC_ORIGINAL_GOOGLE2011_REAL_ROWS_SOURCE_AUDIT_PASS original-google2011/offline_reparse.log
+          echo JPDC_REAL_GOOGLE2011_ORIGINAL_PREFIX_RETRIEVAL_AND_OFFLINE_REPLAY_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-original-google2011-bounded-task-events-original-source
+          path: original-google2011/
+          if-no-files-found: warn
