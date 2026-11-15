@@ -30,7 +30,9 @@ jobs:
           mkdir -p stage65
           git rev-parse HEAD > stage65/source_commit.txt
           test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
-          test "$(git rev-parse HEAD:jpdc/independent_physical_partial_live_stage64.py)" = ccd51b2eaedc6cfe4d56609c7f5c596065d145bd^{tree} || true
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test "$(git hash-object jpdc/partial_observation_selector_stage62.py)" = 338dd1de5c17028b3f60f1d635964b52e152df14
+          test "$(git hash-object jpdc/causal_ambiguity_builder_stage60.py)" = 2bcb069b25964b2982e1f56de9725d2faa970762
           test -s jpdc/STAGE65_PARTIAL_MINIMAX_EIGHT_SOURCE_HOLDOUT_PREREG_2026-11-14.md
           python3 -m py_compile jpdc/run_stage65_holdout.py jpdc/independent_physical_partial_live_stage64.py
           python3 jpdc/test_stage60_causal_ambiguity.py
