@@ -41,6 +41,26 @@ def run():
     assert admission_from_schema_only(creation_or_submit_field=True,original_rows_checked=100,
                 measured_deadline=True,measured_network_bytes=True)=="PENDING_PHYSICAL_UNITS_AND_PROVENANCE_AUDIT"
     must_raise(lambda: admission_from_schema_only(original_rows_checked=-1),ValueError)
+    # Equation-guide finding: the nominal-network vector is validated in
+    # Stage62 but does NOT enter the objective directly. Predicted E2E
+    # latency already contains nominal network assumptions. Capture exact
+    # implemented semantics, not an ungrounded assertion of a proven bug.
+    from types import SimpleNamespace
+    from partial_observation_selector_stage62 import choose_partial
+    observed={0,1}
+    builder=SimpleNamespace(
+        last_event=0.0,telemetry_time=100.0,
+        cpu=[[0.2]*4 if j in observed else [] for j in range(21)],
+        net=[[0.1]*8 if j in observed else [] for j in range(21)],
+        last_cpu_measurement=[100.0 if j in observed else None for j in range(21)],
+        last_net_measurement=[100.0 if j in observed else None for j in range(21)],
+    )
+    preds=[10.0,11.0]+[100.0]*19
+    first=choose_partial(builder,100.0,preds,[1.0]*21,80.0)
+    second=choose_partial(builder,100.0,preds,[9999.0]*21,80.0)
+    assert first.status=="READY_PARTIAL_UNCALIBRATED"
+    assert first==second, "nominal_network_ms unexpectedly altered unchanged predicted E2E inputs"
+    assert first.eligible_nodes==(0,1)
     # Exact sign tests independently enumerate all conditional sign choices.
     assert exact_two_sided_sign_by_enumeration([])["two_sided_p"] == 1.0
     assert exact_two_sided_sign_by_enumeration([0,-2,0,-5,1,1,-2,0])["two_sided_p"] == 1.0
