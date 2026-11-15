@@ -1,0 +1,70 @@
+name: JPDC independent research-quality skills integration gate
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-research-quality-integrated.yml'
+      - 'jpdc/RESEARCH_SKILL_INTEGRATION_QUALITY_GATES_2026-11-15.md'
+      - 'jpdc/EXTERNAL_TRACE_VERSIONED_SEMANTICS_2026-11-15.md'
+      - 'jpdc/trace_versioned_semantics_verifier.py'
+      - 'jpdc/verify_original_stage65_independent_math.py'
+      - 'jpdc/test_research_quality_integrated_gates.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent_original_evidence_and_schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download original independent Stage65 audit artifact, not resimulation
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43661753183
+          github-token: ${{ github.token }}
+          name: jpdc-stage65-original-eight-source-holdout-cohort-audit
+          path: original-stage65-audit
+      - name: Immutable originals and source-version semantics negative fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p quality-gate
+          git rev-parse HEAD > quality-gate/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test "$(git hash-object jpdc/partial_observation_selector_stage62.py)" = 338dd1de5c17028b3f60f1d635964b52e152df14
+          test -s jpdc/RESEARCH_SKILL_INTEGRATION_QUALITY_GATES_2026-11-15.md
+          test -s jpdc/EXTERNAL_TRACE_VERSIONED_SEMANTICS_2026-11-15.md
+          python3 -m py_compile jpdc/trace_versioned_semantics_verifier.py jpdc/verify_original_stage65_independent_math.py jpdc/test_research_quality_integrated_gates.py
+          python3 jpdc/test_research_quality_integrated_gates.py | tee quality-gate/negative_contracts.log
+      - name: Independent enumeration from ORIGINAL archived n8 paired cell counts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp original-stage65-audit/cohort.json original-stage65-audit/cohort_repeat.json
+          python3 jpdc/verify_original_stage65_independent_math.py --original-cohort original-stage65-audit/cohort.json --out quality-gate/independent_recompute.json | tee quality-gate/recompute.log
+          python3 jpdc/verify_original_stage65_independent_math.py --original-cohort original-stage65-audit/cohort.json --out quality-gate/independent_recompute_repeat.json > quality-gate/recompute_repeat.log
+          cmp quality-gate/independent_recompute.json quality-gate/independent_recompute_repeat.json
+          cmp quality-gate/recompute.log quality-gate/recompute_repeat.log
+          grep 'JPDC_INDEPENDENT_STAGE65_MATH_FROM_ORIGINAL_ARCHIVE_PASS' quality-gate/recompute.log
+          python3 - <<'PY'
+          import json
+          a=json.load(open('quality-gate/independent_recompute.json'))
+          assert a['original_stage65_safety']=='FAIL'
+          assert a['original_java_python_queue_parity']=='FAIL'
+          assert a['scenarios']['S2_HIDDEN_COMPUTE_40LOSS']['source_postshock_harm']==[1815,1816]
+          assert a['scenarios']['S2_HIDDEN_COMPUTE_40LOSS']['exact_conditional_sign_test']['two_sided_p']==1.0
+          assert a['scenarios']['S3_HIDDEN_NETWORK_50LOSS']['exact_conditional_sign_test']['two_sided_p']==.125
+          PY
+          echo JPDC_RESEARCH_INTEGRATED_SKILLS_EVIDENCE_GATES_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-original-independent-research-quality-audit
+          path: quality-gate/
+          if-no-files-found: warn
