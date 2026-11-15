@@ -1,0 +1,49 @@
+name: JPDC actual Google2011 prereg middle-partition temporal source audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-middle-original-temporal.yml'
+      - 'jpdc/GOOGLE2011_MIDDLE_PARTITION_TEMPORAL_PREREG_2026-11-15.md'
+      - 'jpdc/google2011_middle_temporal_probe.py'
+      - 'jpdc/test_google2011_middle_temporal_probe.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original_middle_real_rows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen original code, exact predeclared specimen and synthetic parser tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p middle-google2011
+          git rev-parse HEAD > middle-google2011/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_MIDDLE_PARTITION_TEMPORAL_PREREG_2026-11-15.md
+          python3 -m py_compile jpdc/google2011_middle_temporal_probe.py jpdc/test_google2011_middle_temporal_probe.py
+          python3 jpdc/test_google2011_middle_temporal_probe.py | tee middle-google2011/synthetic_only_contract.log
+      - name: Fetch original EXACT GCS index250 bounded range and offline reparse
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/google2011_middle_temporal_probe.py --out-dir middle-google2011 > middle-google2011/source.log 2> middle-google2011/source.stderr
+          cp middle-google2011/audit.json middle-google2011/audit_first.json
+          python3 jpdc/google2011_middle_temporal_probe.py --out-dir middle-google2011 --reparse-only > middle-google2011/reparse.log 2> middle-google2011/reparse.stderr
+          cmp middle-google2011/audit_first.json middle-google2011/audit.json
+          grep JPDC_GOOGLE2011_MIDDLE_REAL_SOURCE_PREFIX_AUDIT_PASS middle-google2011/source.log
+          grep JPDC_GOOGLE2011_MIDDLE_REAL_SOURCE_PREFIX_AUDIT_PASS middle-google2011/reparse.log
+          echo JPDC_MIDDLE_GCS_ORIGINAL_128_EVENT_SOURCE_REPLAY_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-middle-250-original-temporal-prefix
+          path: middle-google2011/
+          if-no-files-found: warn
