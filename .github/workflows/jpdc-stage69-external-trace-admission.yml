@@ -1,0 +1,47 @@
+name: JPDC Stage69 external production trace source admission
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage69-external-trace-admission.yml'
+      - 'jpdc/STAGE69_EXTERNAL_TRACE_ADMISSION_PREREG_2026-11-14.md'
+      - 'jpdc/external_trace_admission_stage69.py'
+      - 'jpdc/test_stage69_external_trace_admission.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  provenance_and_trace_contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen original source and negative data eligibility fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage69
+          git rev-parse HEAD > stage69/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/STAGE69_EXTERNAL_TRACE_ADMISSION_PREREG_2026-11-14.md
+          python3 -m py_compile jpdc/external_trace_admission_stage69.py jpdc/test_stage69_external_trace_admission.py
+          python3 jpdc/test_stage69_external_trace_admission.py | tee stage69/fixtures.log
+      - name: Inspect documentation-only sources twice; no data download or simulation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/external_trace_admission_stage69.py > stage69/source_screen.log
+          python3 jpdc/external_trace_admission_stage69.py > stage69/source_screen_repeat.log
+          cmp stage69/source_screen.log stage69/source_screen_repeat.log
+          grep 'JPDC_STAGE69_SOURCE_METADATA_FAIL_CLOSED_PASS' stage69/source_screen.log
+          echo JPDC_STAGE69_DOCS_ONLY_SOURCE_SCREEN_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage69-external-workload-docs-only-gate
+          path: stage69/
+          if-no-files-found: warn
