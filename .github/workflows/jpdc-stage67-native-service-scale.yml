@@ -1,0 +1,53 @@
+name: JPDC Stage67 native service-scale SpaceShared queue validity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage67-native-service-scale.yml'
+      - 'jpdc/STAGE67_NATIVE_SERVICE_SCALE_QUEUE_PREREG_2026-11-14.md'
+      - 'src/main/java/org/casperiiot/jpdc/Stage67ServiceScaleQueue.java'
+      - 'jpdc/audit_stage67_native_service_scale.py'
+      - 'jpdc/test_stage67_native_scale_contract.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native_scale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Freeze E42, protocol, parser fixtures, native Java compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage67
+          git rev-parse HEAD > stage67/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test -s jpdc/STAGE67_NATIVE_SERVICE_SCALE_QUEUE_PREREG_2026-11-14.md
+          python3 -m py_compile jpdc/audit_stage67_native_service_scale.py jpdc/test_stage67_native_scale_contract.py
+          python3 jpdc/test_stage67_native_scale_contract.py
+          mvn -B -q -DskipTests compile
+      - name: Actual CloudSimPlus 8.5.7 native six-case trace, independent audit, exact repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage67ServiceScaleQueue | grep -E '^STAGE67_|^JPDC_STAGE67_' > stage67/native.log
+          python3 jpdc/audit_stage67_native_service_scale.py --input stage67/native.log --out stage67/audit.json | tee stage67/audit.log
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.Stage67ServiceScaleQueue | grep -E '^STAGE67_|^JPDC_STAGE67_' > stage67/native_repeat.log
+          cmp stage67/native.log stage67/native_repeat.log
+          python3 jpdc/audit_stage67_native_service_scale.py --input stage67/native_repeat.log --out stage67/audit_repeat.json > stage67/audit_repeat.log
+          cmp stage67/audit.json stage67/audit_repeat.json
+          grep 'JPDC_STAGE67_SERVICE_SCALE_QUEUE_AUDIT_PASS' stage67/audit.log
+          echo JPDC_STAGE67_NATIVE_SERVICE_SCALE_REPEAT_AND_AUDIT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage67-native-scale-six-cases
+          path: stage67/
+          if-no-files-found: warn
