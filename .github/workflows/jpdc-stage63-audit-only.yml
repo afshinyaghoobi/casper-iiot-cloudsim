@@ -1,0 +1,56 @@
+name: JPDC Stage63 original chosen-node temporal coverage artifact audit only
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-stage63-audit-only.yml'
+      - 'jpdc/audit_stage63_chosen_node_cohort.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original_artifacts_only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recover EXACT original Stage63 artifacts without re-running physical source
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43657897928
+          github-token: ${{ github.token }}
+          pattern: jpdc-stage63-chosen-node-source-*
+          path: stage63-original
+          merge-multiple: false
+      - name: Validate original source commit, original rerun and independent source-n2 audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage63-cohort
+          git rev-parse HEAD > stage63-cohort/audit_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          for seed in 1611 1612; do
+            d="stage63-original/jpdc-stage63-chosen-node-source-$seed"
+            test -s "$d/source.json"
+            test "$(cat "$d/source_commit.txt")" = 4f747a46040d81faf8b784a6e1cca6c08e29e53f
+            cmp "$d/source.json" "$d/repeat.json"
+            cmp "$d/source.log" "$d/repeat.log"
+            grep 'JPDC_STAGE63_SOURCE_SHADOW_AND_STAGE6_PARITY_PASS' "$d/source.log"
+          done
+          python3 -m py_compile jpdc/audit_stage63_chosen_node_cohort.py
+          python3 jpdc/audit_stage63_chosen_node_cohort.py --source-dir stage63-original --out stage63-cohort/cohort.json | tee stage63-cohort/cohort.log
+          python3 jpdc/audit_stage63_chosen_node_cohort.py --source-dir stage63-original --out stage63-cohort/cohort_repeat.json > stage63-cohort/cohort_repeat.log
+          cmp stage63-cohort/cohort.json stage63-cohort/cohort_repeat.json
+          cmp stage63-cohort/cohort.log stage63-cohort/cohort_repeat.log
+          grep 'JPDC_STAGE63_ORIGINAL_COHORT_AUDIT_PASS' stage63-cohort/cohort.log
+          echo JPDC_STAGE63_FROZEN_SELECTED_NODE_RESIDUAL_AUDIT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-stage63-original-chosen-node-cohort-audit-only
+          path: stage63-cohort/
+          if-no-files-found: warn
