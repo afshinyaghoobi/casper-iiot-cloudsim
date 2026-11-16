@@ -13,6 +13,7 @@ import json
 import os
 import sqlite3
 from pathlib import Path
+from google2011_sqlite_source_digests import commit_digest, strict_resume
 
 EVENTS=("SUBMIT","SCHEDULE","EVICT","FAIL","FINISH","KILL","LOST",
         "UPDATE_PENDING","UPDATE_RUNNING")
@@ -79,6 +80,7 @@ def ingest(conn, source, file_index, generation, expected_sha, expected_events=N
     if old is not None:
         if old!=(generation,expected_sha,"COMPLETE"):
             raise ValueError("resume source identity mismatch")
+        strict_resume(conn,file_index,generation,expected_sha)
         return "ALREADY_VERIFIED_NOOP"
     # One transaction for entire file. No partial-success manifest survives
     # syntax/schema/EOF errors, even if some rows were already processed.
@@ -118,6 +120,7 @@ def ingest(conn, source, file_index, generation, expected_sha, expected_events=N
                          [(file_index,key,n) for key,n in sorted(events.items())])
         conn.execute("INSERT INTO file_inventory VALUES(?,?,?,?,?,?,?,'COMPLETE')",
                      (file_index,generation,expected_sha,rows,bytes_plain,first,last))
+        commit_digest(conn,file_index)
         conn.commit()
     except BaseException:
         conn.rollback()
