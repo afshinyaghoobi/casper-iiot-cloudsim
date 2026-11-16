@@ -1,0 +1,76 @@
+name: JPDC offline Google2011 500-partition source-budget and resume integrity gate
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-500file-offline-preflight.yml'
+      - 'jpdc/GOOGLE2011_FULL_FRAME_PREFLIGHT_AND_RESUME_GATES_PREREG_2026-11-16.md'
+      - 'jpdc/google2011_500file_offline_preflight.py'
+      - 'jpdc/test_google2011_500file_offline_preflight.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original_archive_only_no_new_source_download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch original archived GCS full 500-object metadata (NO new GCS)
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43926163146
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-original-500-file-task-events-metadata
+          path: old-metadata
+      - name: Fetch original verified part375 SQLite source-index (NO source download)
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43936091950
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-original-spent-full-part375-sqlite-job-inventory
+          path: old-sqlite
+      - name: Frozen original code guard, synthetic-only negative preflight tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p offline-500-preflight
+          git rev-parse HEAD > offline-500-preflight/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_FULL_FRAME_PREFLIGHT_AND_RESUME_GATES_PREREG_2026-11-16.md
+          python3 -m py_compile jpdc/google2011_500file_offline_preflight.py jpdc/test_google2011_500file_offline_preflight.py
+          python3 jpdc/test_google2011_500file_offline_preflight.py | tee offline-500-preflight/synthetic_tests.log
+      - name: Verify original 500 publisher metadata files and archived SQLite source before planning any full scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/google2011_500file_offline_preflight.py --metadata-dir old-metadata --sqlite-dir old-sqlite --out offline-500-preflight/plan.json | tee offline-500-preflight/plan.log
+          python3 jpdc/google2011_500file_offline_preflight.py --metadata-dir old-metadata --sqlite-dir old-sqlite --out offline-500-preflight/plan_repeat.json > offline-500-preflight/plan_repeat.log
+          cmp offline-500-preflight/plan.json offline-500-preflight/plan_repeat.json
+          cmp offline-500-preflight/plan.log offline-500-preflight/plan_repeat.log
+          python3 - <<'PY'
+          import json
+          p=json.load(open("offline-500-preflight/plan.json"))
+          assert p["complete_original_object_metadata_count"]==500
+          assert p["observed_original_compressed_total_bytes"]==1624496362
+          assert p["max_planned_batch_compressed_bytes"]<=67108864
+          assert p["existing_source_resume_integrity"]["status"]=="PASS"
+          assert not p["original_full_500_file_source_scan_executed"]
+          assert not p["original_source_independent_holdout_certified"]
+          assert not p["costs_or_future_egress_verified"]
+          assert p["original_stage65_safety"]=="FAIL"
+          assert p["original_java_python_parity"]=="FAIL"
+          print("JPDC_GOOGLE2011_500_FILE_ORIGINAL_OFFLINE_PREFLIGHT_PASS")
+          PY
+          sha256sum offline-500-preflight/plan.json > offline-500-preflight/plan_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-500-file-metadata-only-budget-resume-preflight
+          path: offline-500-preflight/
+          if-no-files-found: warn
