@@ -1,0 +1,55 @@
+name: JPDC independent archived original GCS all-key SQLite source audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-sqlite-independent-audit.yml'
+      - 'jpdc/audit_google2011_sqlite_source_independent.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent_original_gzip_versus_generated_sqlite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch original FULL spent Google gzip archive, no GCS call
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43928939896
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-part375-one-original-complete-gzip-pilot
+          path: original-gzip
+      - name: Fetch exact produced original SQLite identity database
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43936091950
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-original-spent-full-part375-sqlite-job-inventory
+          path: source-sqlite
+      - name: Independently test all source job IDs and job/task keys against SQLite, and repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p independent-source-sqlite-audit
+          git rev-parse HEAD > independent-source-sqlite-audit/audit_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          python3 -m py_compile jpdc/audit_google2011_sqlite_source_independent.py
+          python3 jpdc/audit_google2011_sqlite_source_independent.py --old-original original-gzip --new-inventory source-sqlite --out independent-source-sqlite-audit/audit.json | tee independent-source-sqlite-audit/audit.log
+          python3 jpdc/audit_google2011_sqlite_source_independent.py --old-original original-gzip --new-inventory source-sqlite --out independent-source-sqlite-audit/audit_repeat.json > independent-source-sqlite-audit/audit_repeat.log
+          cmp independent-source-sqlite-audit/audit.json independent-source-sqlite-audit/audit_repeat.json
+          cmp independent-source-sqlite-audit/audit.log independent-source-sqlite-audit/audit_repeat.log
+          grep 'JPDC_SQLITE_COMPLETE_ORIGINAL_SOURCE_KEY_SET_INDEPENDENT_AUDIT_PASS' independent-source-sqlite-audit/audit.log
+          echo JPDC_GOOGLE_SQLITE_ARCHIVED_FULL_ORIGINAL_SOURCE_INDEPENDENT_KEY_SET_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-sqlite-full-source-independent-key-set-audit
+          path: independent-source-sqlite-audit/
+          if-no-files-found: warn
