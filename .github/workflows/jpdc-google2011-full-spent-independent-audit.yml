@@ -1,0 +1,48 @@
+name: JPDC independent full original Google2011 spent part375 raw-byte audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-full-spent-independent-audit.yml'
+      - 'jpdc/audit_google2011_full_spent_source_independent.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent_original_one_complete_gzip:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download exact archived full original source gzip; no Google network fetch
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43928939896
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-part375-one-original-complete-gzip-pilot
+          path: original-whole-gzip
+      - name: Independently reparse all source events and compare archived observations
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p independent-complete-gzip
+          git rev-parse HEAD > independent-complete-gzip/audit_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          python3 -m py_compile jpdc/audit_google2011_full_spent_source_independent.py
+          python3 jpdc/audit_google2011_full_spent_source_independent.py --original-dir original-whole-gzip --out independent-complete-gzip/audit.json | tee independent-complete-gzip/audit.log
+          python3 jpdc/audit_google2011_full_spent_source_independent.py --original-dir original-whole-gzip --out independent-complete-gzip/audit_repeat.json > independent-complete-gzip/audit_repeat.log
+          cmp independent-complete-gzip/audit.json independent-complete-gzip/audit_repeat.json
+          cmp independent-complete-gzip/audit.log independent-complete-gzip/audit_repeat.log
+          grep 'JPDC_INDEPENDENT_GOOGLE_ORIGINAL_FULL_GZIP_SOURCE_PASS' independent-complete-gzip/audit.log
+          echo JPDC_GOOGLE_ONE_SPENT_COMPLETE_SOURCE_ARTIFACT_INDEPENDENT_AUDIT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-one-complete-source-independent-audit
+          path: independent-complete-gzip/
+          if-no-files-found: warn
