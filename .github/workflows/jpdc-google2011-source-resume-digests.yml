@@ -1,0 +1,78 @@
+name: JPDC original Google2011 source-backed SQLite resume integrity hardening
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-source-resume-digests.yml'
+      - 'jpdc/GOOGLE2011_SQLITE_RESUME_DIGEST_PREREG_2026-11-16.md'
+      - 'jpdc/google2011_sqlite_source_digests.py'
+      - 'jpdc/google2011_sqlite_job_inventory.py'
+      - 'jpdc/test_google2011_sqlite_resume_digest_hardening.py'
+      - 'jpdc/audit_google2011_original_sqlite_resume_migration.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original_source_safe_resume:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch exact historical original complete Google gzip
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43928939896
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-part375-one-original-complete-gzip-pilot
+          path: archived-original-source
+      - name: Fetch original old SQLite for source-backed migration COPY
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43936091950
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-original-spent-full-part375-sqlite-job-inventory
+          path: archived-original-sqlite
+      - name: Guard original CASPER, run all synthetic resume corruption and rollback cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p source-resume-audit
+          git rev-parse HEAD > source-resume-audit/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_SQLITE_RESUME_DIGEST_PREREG_2026-11-16.md
+          python3 -m py_compile jpdc/google2011_sqlite_source_digests.py jpdc/google2011_sqlite_job_inventory.py jpdc/test_google2011_sqlite_resume_digest_hardening.py jpdc/audit_google2011_original_sqlite_resume_migration.py
+          python3 jpdc/test_google2011_sqlite_job_inventory.py | tee source-resume-audit/legacy_synthetic_tests.log
+          python3 jpdc/test_google2011_sqlite_resume_digest_hardening.py | tee source-resume-audit/new_negative_tests.log
+      - name: Test REAL archived source-backed legacy migration and same-count SQLite key tampering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/audit_google2011_original_sqlite_resume_migration.py --old-sqlite archived-original-sqlite --old-source archived-original-source --out source-resume-audit | tee source-resume-audit/original_source_audit.log
+          python3 - <<'PY'
+          import json,sqlite3
+          x=json.load(open("source-resume-audit/audit.json"))
+          assert x["status"]=="PASS"
+          assert x["same_cardinality_real_source_task_key_tampering_rejected"]
+          assert x["same_cardinality_real_source_job_id_tampering_rejected"]
+          assert x["old_database_rejected_on_resume_before_source_backed_migration"]
+          assert x["identical_archived_original_source_resume_after_safe_migration"]=="ALREADY_VERIFIED_NOOP"
+          assert not x["no_500_file_ingestion"] is False
+          assert x["stage65_safety"]=="FAIL" and x["java_python_parity"]=="FAIL"
+          con=sqlite3.connect("source-resume-audit/migrated_presence.sqlite")
+          assert con.execute("PRAGMA integrity_check").fetchone()[0]=="ok"
+          assert con.execute("SELECT COUNT(*) FROM file_digests").fetchone()[0]==1
+          con.close()
+          print("JPDC_ARCHIVED_ORIGINAL_SOURCE_BACKED_RESUME_HARDENING_VERIFIED_PASS")
+          PY
+          sha256sum source-resume-audit/migrated_presence.sqlite source-resume-audit/audit.json > source-resume-audit/artifact_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-source-backed-sqlite-resume-hardened-migration
+          path: source-resume-audit/
+          if-no-files-found: warn
