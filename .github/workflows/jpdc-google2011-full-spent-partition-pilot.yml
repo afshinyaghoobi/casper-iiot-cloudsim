@@ -1,0 +1,59 @@
+name: JPDC full previously spent original Google2011 part375 stream pilot
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-full-spent-partition-pilot.yml'
+      - 'jpdc/GOOGLE2011_COMPLETE_PART375_STREAM_PILOT_PREREG_2026-11-16.md'
+      - 'jpdc/google2011_full_spent_partition_stream_pilot.py'
+      - 'jpdc/test_google2011_full_spent_partition_stream_pilot.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  one_full_original_spent_partition_only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen original code and negative-only CRC/source fixture test
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p full-spent-part375
+          git rev-parse HEAD > full-spent-part375/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_COMPLETE_PART375_STREAM_PILOT_PREREG_2026-11-16.md
+          python3 -m py_compile jpdc/google2011_full_spent_partition_stream_pilot.py jpdc/test_google2011_full_spent_partition_stream_pilot.py
+          python3 jpdc/test_google2011_full_spent_partition_stream_pilot.py | tee full-spent-part375/synthetic_tests.log
+      - name: Fetch ONE full original Google publisher object, verify hashes and stream all source rows
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/google2011_full_spent_partition_stream_pilot.py --out-dir full-spent-part375 > full-spent-part375/source.log 2> full-spent-part375/source.stderr
+          python3 jpdc/google2011_full_spent_partition_stream_pilot.py --out-dir full-spent-part375 --offline > full-spent-part375/offline.log
+          python3 - <<'PY'
+          import json
+          a=json.load(open("full-spent-part375/source_audit.json"))
+          b=json.load(open("full-spent-part375/audit_offline.json"))
+          for key in ("source_scan_elapsed_seconds","peak_RSS_linux_KiB","acquisition_elapsed_seconds"):
+            a.pop(key,None);b.pop(key,None)
+          assert a==b
+          assert a["original_compressed_bytes"]==1502643
+          assert a["observed_full_original_source_row_count"]>=1024
+          assert a["complete_gzip_trailer_verified"]
+          assert a["stage65_safety"]=="FAIL" and a["java_python_parity"]=="FAIL"
+          assert not a["train_dev_holdout_job_disjointness_certified"]
+          print("JPDC_ONE_ORIGINAL_COMPLETE_SOURCE_GZIP_SOURCE_PARITY_PASS")
+          PY
+          grep JPDC_GOOGLE2011_FULL_SPENT_SOURCE_STREAM_INTEGRITY_PASS full-spent-part375/source.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-part375-one-original-complete-gzip-pilot
+          path: full-spent-part375/
+          if-no-files-found: warn
