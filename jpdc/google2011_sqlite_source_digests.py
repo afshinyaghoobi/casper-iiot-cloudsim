@@ -139,6 +139,9 @@ def migrate_legacy_verified_source(conn,src,index,generation,sha,expected_events
           """SELECT job_id,task_index FROM task_presence WHERE file_index=? EXCEPT SELECT job_id,task_index FROM expected_tasks""")
         if any(conn.execute(q,(index,)).fetchone() is not None for q in checks):
             raise ValueError("UNSAFE_RESUME_INTEGRITY_FAIL original vs SQLite exact key sets differ")
+        # TEMP-table DML may have opened an implicit transaction; finish it
+        # before atomically committing only the immutable source digest record.
+        conn.commit()
         conn.execute("BEGIN IMMEDIATE")
         try:
             ensure_schema(conn)
