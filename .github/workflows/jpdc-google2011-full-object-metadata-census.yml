@@ -1,0 +1,58 @@
+name: JPDC Google2011 official complete task-events object metadata census
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-full-object-metadata-census.yml'
+      - 'jpdc/GOOGLE2011_TASK_EVENTS_FULL_METADATA_CENSUS_PREREG_2026-11-16.md'
+      - 'jpdc/google2011_complete_file_metadata_census.py'
+      - 'jpdc/test_google2011_complete_file_metadata_census.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original_gcs_object_metadata_only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Guard original CASPER, rejected Stage64 and negative metadata fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p original-gcs-metadata
+          git rev-parse HEAD > original-gcs-metadata/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_TASK_EVENTS_FULL_METADATA_CENSUS_PREREG_2026-11-16.md
+          python3 -m py_compile jpdc/google2011_complete_file_metadata_census.py jpdc/test_google2011_complete_file_metadata_census.py
+          python3 jpdc/test_google2011_complete_file_metadata_census.py | tee original-gcs-metadata/synthetic_negative_tests.log
+      - name: Fetch only Google Storage LIST object metadata; never read gzip tasks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/google2011_complete_file_metadata_census.py --out-dir original-gcs-metadata > original-gcs-metadata/source.log 2> original-gcs-metadata/source.stderr
+          cp original-gcs-metadata/census.json original-gcs-metadata/census_original.json
+          python3 jpdc/google2011_complete_file_metadata_census.py --out-dir original-gcs-metadata --offline > original-gcs-metadata/reparse.log
+          cmp original-gcs-metadata/census.json original-gcs-metadata/census_original.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('original-gcs-metadata/census.json'))
+          assert d['publisher_original_part_files']==500
+          assert d['original_task_records_loaded']==0
+          assert d['status']=='PASS'
+          assert d['original_stage65_scientific_safety']=='FAIL'
+          assert d['original_java_python_queue_parity']=='FAIL'
+          assert not d['complete_original_job_key_inventory_verified']
+          assert not d['train_dev_holdout_source_independence_certified']
+          print('JPDC_GOOGLE2011_COMPLETE_METADATA_ONLY_SOURCE_GATE_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-original-500-file-task-events-metadata
+          path: original-gcs-metadata/
+          if-no-files-found: warn
