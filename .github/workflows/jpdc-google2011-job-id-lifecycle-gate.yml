@@ -1,0 +1,66 @@
+name: JPDC original Google2011 job ID lifecycle and source-independent split gate
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-job-id-lifecycle-gate.yml'
+      - 'jpdc/GOOGLE2011_IDENTITY_LIFECYCLE_SPLIT_GATES_PREREG_2026-11-15.md'
+      - 'jpdc/google2011_original_job_identity_split_gate.py'
+      - 'jpdc/test_google2011_original_job_identity_split_gate.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source_identity_and_independent_split:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download exact ORIGINAL two-source archival artifact only
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43763164420
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-two-original-source-prefixes-overlap
+          path: original-sources
+      - name: Verify immutable CASPER and negative source split predicates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p job-lifecycle-audit
+          git rev-parse HEAD > job-lifecycle-audit/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_IDENTITY_LIFECYCLE_SPLIT_GATES_PREREG_2026-11-15.md
+          python3 -m py_compile jpdc/google2011_original_job_identity_split_gate.py jpdc/test_google2011_original_job_identity_split_gate.py
+          python3 jpdc/test_google2011_original_job_identity_split_gate.py | tee job-lifecycle-audit/synthetic_gates.log
+      - name: Independently reparse genuine publisher original bytes and compare source ID overlap
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/google2011_original_job_identity_split_gate.py --original-dir original-sources --out job-lifecycle-audit/audit.json | tee job-lifecycle-audit/audit.log
+          python3 jpdc/google2011_original_job_identity_split_gate.py --original-dir original-sources --out job-lifecycle-audit/audit_repeat.json > job-lifecycle-audit/audit_repeat.log
+          cmp job-lifecycle-audit/audit.json job-lifecycle-audit/audit_repeat.json
+          cmp job-lifecycle-audit/audit.log job-lifecycle-audit/audit_repeat.log
+          python3 - <<'PY'
+          import json
+          v=json.load(open("job-lifecycle-audit/audit.json"))
+          assert v["original_records_reparsed"]==2048
+          assert v["overlapping_source_job_count"]==2
+          assert v["overlapping_source_job_task_count"]==27
+          assert v["shared_jobs_with_shared_task_indexes"]==1
+          assert not v["independence_gate"]["full_source_job_disjointness_certified"]
+          assert v["original_stage65_safety"]=="FAIL"
+          assert v["original_java_python_parity"]=="FAIL"
+          print("JPDC_2011_ORIGINAL_SOURCE_REPRODUCIBLE_JOB_SPLIT_GATE_PASS")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-original-job-lifecycle-independence-gate
+          path: job-lifecycle-audit/
+          if-no-files-found: warn
