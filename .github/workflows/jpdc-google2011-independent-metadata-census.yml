@@ -1,0 +1,48 @@
+name: JPDC independent original Google2011 full task-event metadata census audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-independent-metadata-census.yml'
+      - 'jpdc/audit_google2011_complete_metadata_independent.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent_archived_metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch EXACT previous original official GCS metadata census artifact
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43926163146
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-original-500-file-task-events-metadata
+          path: original-metadata
+      - name: Independent publisher-metadata reanalysis and source hash guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p independent-metadata
+          git rev-parse HEAD > independent-metadata/audit_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          python3 -m py_compile jpdc/audit_google2011_complete_metadata_independent.py
+          python3 jpdc/audit_google2011_complete_metadata_independent.py --original-dir original-metadata --out independent-metadata/audit.json | tee independent-metadata/audit.log
+          python3 jpdc/audit_google2011_complete_metadata_independent.py --original-dir original-metadata --out independent-metadata/audit_repeat.json > independent-metadata/audit_repeat.log
+          cmp independent-metadata/audit.json independent-metadata/audit_repeat.json
+          cmp independent-metadata/audit.log independent-metadata/audit_repeat.log
+          grep JPDC_GOOGLE2011_INDEPENDENT_ORIGINAL_500_OBJECTS_METADATA_PASS independent-metadata/audit.log
+          echo JPDC_GOOGLE2011_ARCHIVED_500_PART_OBJECT_METADATA_INDEPENDENT_PASS
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-official-500-file-metadata-independent-audit
+          path: independent-metadata/
+          if-no-files-found: warn
