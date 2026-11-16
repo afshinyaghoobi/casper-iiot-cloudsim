@@ -1,0 +1,69 @@
+name: JPDC bounded SQLite whole-original spent source job identity inventory
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-sqlite-source-inventory.yml'
+      - 'jpdc/GOOGLE2011_SQLITE_JOB_INVENTORY_PREREG_2026-11-16.md'
+      - 'jpdc/google2011_sqlite_job_inventory.py'
+      - 'jpdc/test_google2011_sqlite_job_inventory.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  old_original_source_disk_backed_identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch exact prior archived genuine spent full source gzip, no new GCS
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43928939896
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-part375-one-original-complete-gzip-pilot
+          path: old-source
+      - name: Frozen original protections and synthetic SQLite rollback negative fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p sqlite-source-audit
+          git rev-parse HEAD > sqlite-source-audit/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_SQLITE_JOB_INVENTORY_PREREG_2026-11-16.md
+          python3 -m py_compile jpdc/google2011_sqlite_job_inventory.py jpdc/test_google2011_sqlite_job_inventory.py
+          python3 jpdc/test_google2011_sqlite_job_inventory.py | tee sqlite-source-audit/synthetic_negative_tests.log
+      - name: Ingest exact previously spent original whole file and verify idempotent resume
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/google2011_sqlite_job_inventory.py --db sqlite-source-audit/presence.sqlite --source old-source/original_full.gz --out sqlite-source-audit/source_summary.json | tee sqlite-source-audit/source.log
+          cp sqlite-source-audit/source_summary.json sqlite-source-audit/source_first.json
+          python3 jpdc/google2011_sqlite_job_inventory.py --db sqlite-source-audit/presence.sqlite --source old-source/original_full.gz --out sqlite-source-audit/resume_summary.json | tee sqlite-source-audit/resume.log
+          python3 - <<'PY'
+          import json
+          a=json.load(open("sqlite-source-audit/source_first.json"))
+          b=json.load(open("sqlite-source-audit/resume_summary.json"))
+          assert a["source_state"]=="INGESTED_VERIFIED"
+          assert b["source_state"]=="ALREADY_VERIFIED_NOOP"
+          a.pop("source_state");b.pop("source_state")
+          assert a==b
+          assert a["original_source_rows"]==130812
+          assert a["unique_file_job_presence"]==1838
+          assert a["unique_file_job_task_presence"]==44979
+          assert a["complete_source_files"]==1
+          assert not a["train_dev_holdout_independence_certified"]
+          print("JPDC_SOURCE_ORIGINAL_SQLITE_IDEMPOTENCE_AND_COUNTS_PASS")
+          PY
+          sha256sum sqlite-source-audit/presence.sqlite > sqlite-source-audit/source_sqlite_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-original-spent-full-part375-sqlite-job-inventory
+          path: sqlite-source-audit/
+          if-no-files-found: warn
