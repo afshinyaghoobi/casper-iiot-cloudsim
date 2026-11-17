@@ -63,7 +63,7 @@ def audit(native,original):
       real_native_cases=6,total_finished_native_cloudlets=18,
       direct_overtaking_cases=[name for name in EXPECTED if proof[name]["overtaken"]],
       source_same_clock_list_state_independently_reparsed=True,
-      new_original_java_source_seed=True,external_iiot_trace=False,
+      new_native_java_experiment=True,independent_external_source_seed=False,external_iiot_trace=False,
       original_30k_queue_parity="FAIL",stage65_safety="FAIL",cases=proof)
 
 if __name__=="__main__":
