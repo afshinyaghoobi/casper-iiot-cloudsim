@@ -107,7 +107,7 @@ public final class NativeArrivalOffsetCounterfactual {
             System.out.printf(Locale.US,
                 "ARRIVALCF_OUTCOME,%s,%d,%d,%.12f,%.12f,%.12f,%.12f%n",
                 name,i,c.getId(),c.getStartWaitTime()*1000.0,
-                c.getTotalExecutionTime()*1000.0,ARRIVE_MS[i],SERVICE_MS[i]);
+                c.getTotalExecutionTime()*1000.0,ARRIVE_MS[i]+(i==2?shiftMs:0.0),SERVICE_MS[i]);
         }
         System.out.printf(Locale.US,"ARRIVALCF_CASE_DONE,%s,submissions=%d,finishes=%d%n",
             name,events.stream().filter(z->z.startsWith("ARRIVALCF_SUBMIT,"+name+",BEFORE,")).count(),
