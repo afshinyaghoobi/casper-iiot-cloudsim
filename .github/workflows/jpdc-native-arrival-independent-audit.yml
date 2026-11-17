@@ -1,0 +1,58 @@
+name: JPDC independent audit-only original native arrival counterfactual
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-native-arrival-independent-audit.yml'
+      - 'jpdc/independent_original_native_arrival_audit.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit_archived_real_native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 44153953054
+          github-token: ${{ github.token }}
+          name: jpdc-real-native-arrival-offset-queue-counterfactual-six-cases
+          path: native-original
+      - name: Check exact archived original Java source and independent native event parser
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p independent-arrival-audit
+          git rev-parse HEAD > independent-arrival-audit/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          echo 'b80536e332b04ffeb0285005b38a95563bac36c29201fc8f93693efc95e5c250  native-original/native.log' | sha256sum -c -
+          echo '4d4454a11b59420c0ff17b064d7988f2bcd0f927e2cfa4ff3600b9ac7a6579a0  native-original/audit.json' | sha256sum -c -
+          cmp native-original/native.log native-original/native_repeat.log
+          cmp native-original/audit.json native-original/audit_repeat.json
+          python3 jpdc/independent_original_native_arrival_audit.py --native native-original/native.log --primary native-original/audit.json --out independent-arrival-audit/audit.json | tee independent-arrival-audit/audit.log
+          python3 jpdc/independent_original_native_arrival_audit.py --native native-original/native.log --primary native-original/audit.json --out independent-arrival-audit/audit_repeat.json > independent-arrival-audit/audit_repeat.log
+          cmp independent-arrival-audit/audit.json independent-arrival-audit/audit_repeat.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open("independent-arrival-audit/audit.json"))
+          assert d["status"]=="PASS"
+          assert d["direct_overtaking_cases"]==["ORIGINAL_5MS","LATE10_5MS"]
+          assert d["real_native_cases"]==6 and d["total_finished_native_cloudlets"]==18
+          assert d["original_30k_queue_parity"]=="FAIL"
+          assert d["stage65_safety"]=="FAIL"
+          print("JPDC_REAL_NATIVE_ARRIVAL_ORIGINAL_INDEPENDENT_REPLAY_CHECK_PASS")
+          PY
+          sha256sum independent-arrival-audit/audit.json > independent-arrival-audit/source_sha.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-native-arrival-counterfactual-independent-original-artifact-audit
+          path: independent-arrival-audit/
+          if-no-files-found: warn
