@@ -1,0 +1,63 @@
+name: JPDC native CloudSimPlus third-arrival timing counterfactual
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-native-arrival-counterfactual.yml'
+      - 'jpdc/NATIVE_ARRIVAL_SHIFT_QUEUE_COUNTERFACTUAL_PREREG_2026-11-17.md'
+      - 'src/main/java/org/casperiiot/jpdc/NativeArrivalOffsetCounterfactual.java'
+      - 'jpdc/audit_native_arrival_offset_counterfactual.py'
+      - 'jpdc/test_native_arrival_offset_audit.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual_native_counterfactual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Frozen scientific sources and native CloudSimPlus 8.5.7 build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p native-arrival-audit
+          git rev-parse HEAD > native-arrival-audit/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/NATIVE_ARRIVAL_SHIFT_QUEUE_COUNTERFACTUAL_PREREG_2026-11-17.md
+          python3 -m py_compile jpdc/audit_native_arrival_offset_counterfactual.py jpdc/test_native_arrival_offset_audit.py
+          python3 jpdc/test_native_arrival_offset_audit.py | tee native-arrival-audit/synthetic_control.log
+          mvn -B -q -DskipTests compile
+      - name: Run six actual native queue configurations, audit and byte-exact repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeArrivalOffsetCounterfactual | grep -E '^ARRIVALCF_|^JPDC_ARRIVALCF_' > native-arrival-audit/native.log
+          python3 jpdc/audit_native_arrival_offset_counterfactual.py --native native-arrival-audit/native.log --out native-arrival-audit/audit.json | tee native-arrival-audit/audit_stdout.log
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeArrivalOffsetCounterfactual | grep -E '^ARRIVALCF_|^JPDC_ARRIVALCF_' > native-arrival-audit/native_repeat.log
+          cmp native-arrival-audit/native.log native-arrival-audit/native_repeat.log
+          python3 jpdc/audit_native_arrival_offset_counterfactual.py --native native-arrival-audit/native_repeat.log --out native-arrival-audit/audit_repeat.json > native-arrival-audit/audit_repeat_stdout.log
+          cmp native-arrival-audit/audit.json native-arrival-audit/audit_repeat.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open("native-arrival-audit/audit.json"))
+          assert d["actual_native_cases"]==6 and d["completed_cloudlets"]==18
+          assert d["status"]=="PASS"
+          assert d["original_30k_crossruntime_parity"]=="FAIL"
+          assert d["stage65_safety"]=="FAIL"
+          assert all(x["all_3_native_finish"] for x in d["cases"])
+          print("JPDC_ARRIVAL_SHIFT_NEW_REAL_CLOUDSIM_SOURCE_AND_REPEAT_PASS")
+          PY
+          sha256sum native-arrival-audit/native.log native-arrival-audit/audit.json > native-arrival-audit/source_hashes.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-real-native-arrival-offset-queue-counterfactual-six-cases
+          path: native-arrival-audit/
+          if-no-files-found: warn
