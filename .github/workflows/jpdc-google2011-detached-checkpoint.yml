@@ -1,0 +1,73 @@
+name: JPDC original Google2011 independently pinned detached SQLite checkpoint
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-detached-checkpoint.yml'
+      - 'jpdc/GOOGLE2011_EXTERNAL_CHECKPOINT_PREREG_2026-11-17.md'
+      - 'jpdc/GOOGLE2011_PART375_EXTERNAL_CHECKPOINT_PIN_2026-11-17.md'
+      - 'jpdc/google2011_sqlite_detached_checkpoint.py'
+      - 'jpdc/test_google2011_sqlite_detached_checkpoint.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original_archived_db_external_pin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download EXACT prior originally source-backed SQLite artifact; no new GCS
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43975777090
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-source-backed-sqlite-resume-hardened-migration
+          path: original-old-migrated
+      - name: Verify frozen scientific code and independently PIN original checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p detached-checkpoint
+          git rev-parse HEAD > detached-checkpoint/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_EXTERNAL_CHECKPOINT_PREREG_2026-11-17.md
+          test -s jpdc/GOOGLE2011_PART375_EXTERNAL_CHECKPOINT_PIN_2026-11-17.md
+          python3 -m py_compile jpdc/google2011_sqlite_detached_checkpoint.py jpdc/test_google2011_sqlite_detached_checkpoint.py
+          python3 jpdc/google2011_sqlite_detached_checkpoint.py --db original-old-migrated/migrated_presence.sqlite --checkpoint detached-checkpoint/pinned_checkpoint.json --issue | tee detached-checkpoint/issue.log
+          echo 'e8b134abc3f1f4e656d830ee5906548124daddd4ecbecb1cdcfe24c0bf8a83f5  detached-checkpoint/pinned_checkpoint.json' | sha256sum -c -
+          python3 jpdc/google2011_sqlite_detached_checkpoint.py --db original-old-migrated/migrated_presence.sqlite --checkpoint detached-checkpoint/pinned_checkpoint.json --trusted-sha e8b134abc3f1f4e656d830ee5906548124daddd4ecbecb1cdcfe24c0bf8a83f5 --minimum-ordinal 1 --expected-latest 1 --out detached-checkpoint/verified.json | tee detached-checkpoint/verify.log
+      - name: Independently exercise source-based full DB substitution, coordinated SQL+digest edits, stale checkpoint denial
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/test_google2011_sqlite_detached_checkpoint.py --archived-db original-old-migrated/migrated_presence.sqlite | tee detached-checkpoint/negative_tests.log
+          python3 jpdc/google2011_sqlite_detached_checkpoint.py --db original-old-migrated/migrated_presence.sqlite --checkpoint detached-checkpoint/pinned_checkpoint_repeat.json --issue > detached-checkpoint/issue_repeat.log
+          cmp detached-checkpoint/pinned_checkpoint.json detached-checkpoint/pinned_checkpoint_repeat.json
+          python3 - <<'PY'
+          import json
+          p=json.load(open("detached-checkpoint/pinned_checkpoint.json"))
+          v=json.load(open("detached-checkpoint/verified.json"))
+          assert p["sqlite_sha256"]=="ab4851f5fd43f01bbd212a31789b9d88237cfec81db074f921d570ea3d44f5dc"
+          assert p["file_digests"]["tasks_n"]==44979
+          assert p["file_digests"]["jobs_n"]==1838
+          assert p["file_digests"]["events_n"]==130812
+          assert p["ordinal"]==1
+          assert v["status"]=="PASS"
+          assert not p["original_500_file_scan_executed"]
+          assert not p["original_source_independent_holdout_certified"]
+          assert p["stage65_scientific_safety"]=="FAIL"
+          print("JPDC_EXTERNAL_SHA_PIN_ORIGINAL_SQLITE_TRUST_BOUNDARY_PASS")
+          PY
+          sha256sum detached-checkpoint/pinned_checkpoint.json detached-checkpoint/verified.json > detached-checkpoint/artifacts_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-original-source-sqlite-external-checkpoint-verified
+          path: detached-checkpoint/
+          if-no-files-found: warn
