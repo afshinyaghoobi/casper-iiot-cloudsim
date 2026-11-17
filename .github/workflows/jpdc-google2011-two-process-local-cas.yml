@@ -1,0 +1,68 @@
+name: JPDC real two-process old-source local head CAS and SIGKILL recovery
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-two-process-local-cas.yml'
+      - 'jpdc/GOOGLE2011_TWO_PROCESS_LOCAL_CAS_PREREG_2026-11-17.md'
+      - 'jpdc/test_google2011_checkpoint_head_cas_two_process.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  actual_two_os_writers_one_old_source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 43975777090
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-source-backed-sqlite-resume-hardened-migration
+          path: original-source-sqlite
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 44121519950
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-original-source-sqlite-external-checkpoint-verified
+          path: original-checkpoint
+      - name: Frozen original source hashes and real dual-process POSIX CAS
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p two-process-audit
+          git rev-parse HEAD > two-process-audit/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_TWO_PROCESS_LOCAL_CAS_PREREG_2026-11-17.md
+          echo 'ab4851f5fd43f01bbd212a31789b9d88237cfec81db074f921d570ea3d44f5dc  original-source-sqlite/migrated_presence.sqlite' | sha256sum -c -
+          echo 'e8b134abc3f1f4e656d830ee5906548124daddd4ecbecb1cdcfe24c0bf8a83f5  original-checkpoint/pinned_checkpoint.json' | sha256sum -c -
+          python3 -m py_compile jpdc/test_google2011_checkpoint_head_cas_two_process.py
+          python3 jpdc/test_google2011_checkpoint_head_cas_two_process.py \
+            --db original-source-sqlite/migrated_presence.sqlite \
+            --checkpoint original-checkpoint/pinned_checkpoint.json \
+            --out two-process-audit | tee two-process-audit/test.log
+          cmp two-process-audit/audit.json two-process-audit/audit_repeat_contract.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open("two-process-audit/audit.json"))
+          assert x["status"]=="PASS" and x["actual_race_trials"]==3
+          assert x["total_unique_winners"]==3 and x["total_stale_writer_denials"]==3
+          assert x["actual_sigkill_held_lock_and_reacquired"]
+          assert not x["distributed_multi_runner_CAS_verified"]
+          assert not x["all_500_source_files_scanned"]
+          assert x["stage65_safety"]=="FAIL" and x["java_python_queue_parity"]=="FAIL"
+          print("JPDC_TWO_REAL_OS_WRITERS_UNIQUE_WINNER_AND_LOCK_RECOVERY_PASS")
+          PY
+          sha256sum two-process-audit/audit.json > two-process-audit/audit_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-two-process-real-local-cas-old-original-source
+          path: two-process-audit/
+          if-no-files-found: warn
