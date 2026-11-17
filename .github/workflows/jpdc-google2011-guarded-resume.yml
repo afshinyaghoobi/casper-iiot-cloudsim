@@ -1,0 +1,95 @@
+name: JPDC mandatory external trust guarded Google2011 original source resume
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-guarded-resume.yml'
+      - 'jpdc/GOOGLE2011_GUARDED_RESUME_ENTRYPOINT_PREREG_2026-11-17.md'
+      - 'jpdc/google2011_guarded_resume.py'
+      - 'jpdc/test_google2011_guarded_resume.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original_archive_guarded_resume:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retrieve EXACT authentic source-backed original SQLite and original GCS gzip
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43975777090
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-source-backed-sqlite-resume-hardened-migration
+          path: old-sqlite
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 43928939896
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-part375-one-original-complete-gzip-pilot
+          path: old-source
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 44121519950
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-original-source-sqlite-external-checkpoint-verified
+          path: old-pinned
+      - name: Guard scientific frozen files and run actual externally pinned source entrypoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p guarded-audit
+          git rev-parse HEAD > guarded-audit/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_GUARDED_RESUME_ENTRYPOINT_PREREG_2026-11-17.md
+          python3 -m py_compile jpdc/google2011_guarded_resume.py jpdc/test_google2011_guarded_resume.py
+          cp old-sqlite/migrated_presence.sqlite guarded-audit/copied-source-index.sqlite
+          python3 jpdc/google2011_guarded_resume.py \
+            --db guarded-audit/copied-source-index.sqlite \
+            --checkpoint old-pinned/pinned_checkpoint.json \
+            --source old-source/original_full.gz \
+            --trusted-checkpoint-sha e8b134abc3f1f4e656d830ee5906548124daddd4ecbecb1cdcfe24c0bf8a83f5 \
+            --trusted-latest-ordinal 1 \
+            --out guarded-audit/guarded_result.json | tee guarded-audit/guarded.log
+          python3 jpdc/google2011_guarded_resume.py \
+            --db guarded-audit/copied-source-index.sqlite \
+            --checkpoint old-pinned/pinned_checkpoint.json \
+            --source old-source/original_full.gz \
+            --trusted-checkpoint-sha e8b134abc3f1f4e656d830ee5906548124daddd4ecbecb1cdcfe24c0bf8a83f5 \
+            --trusted-latest-ordinal 1 \
+            --out guarded-audit/repeat.json > guarded-audit/repeat.log
+          cmp guarded-audit/guarded_result.json guarded-audit/repeat.json
+      - name: Actual original source negative cases and synthetic-only administrative multi-link chain
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/test_google2011_guarded_resume.py \
+            --old-db old-sqlite/migrated_presence.sqlite \
+            --old-checkpoint old-pinned/pinned_checkpoint.json \
+            --old-gzip old-source/original_full.gz | tee guarded-audit/negative_tests.log
+          python3 - <<'PY'
+          import json
+          v=json.load(open("guarded-audit/guarded_result.json"))
+          assert v["status"]=="PASS"
+          assert v["source_state"]=="ALREADY_VERIFIED_NOOP"
+          assert v["trusted_latest_ordinal"]==1
+          assert v["source_event_rows"]==130812
+          assert not v["all_500_original_files_ingested"]
+          assert v["stage65_safety"]=="FAIL"
+          assert v["original_java_python_parity"]=="FAIL"
+          print("JPDC_MANDATORY_EXTERNAL_PIN_ORIGINAL_SOURCE_GUARDED_RESUME_PASS")
+          PY
+          sha256sum guarded-audit/guarded_result.json > guarded-audit/audit_sha256.txt
+          rm -f guarded-audit/copied-source-index.sqlite
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-guarded-original-source-resume-and-synthetic-chain
+          path: guarded-audit/
+          if-no-files-found: warn
