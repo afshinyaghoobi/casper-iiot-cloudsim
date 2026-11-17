@@ -1,0 +1,64 @@
+name: JPDC retrospective native CloudSimPlus service versus waiting time semantics
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-native-retrospective-service-wait.yml'
+      - 'jpdc/NATIVE_SERVICE_VS_WAIT_RETROSPECTIVE_PROTOCOL_2026-11-17.md'
+      - 'jpdc/audit_native_reported_service_vs_fcfs_wait.py'
+      - 'jpdc/independently_check_native_service_wait.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source_original_native_archive_forensic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 43665010131
+          github-token: ${{ github.token }}
+          name: jpdc-stage67-native-scale-six-cases
+          path: old-native
+      - name: Frozen source checks and two independent analytic implementations
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p source-native-forensic
+          git rev-parse HEAD > source-native-forensic/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/NATIVE_SERVICE_VS_WAIT_RETROSPECTIVE_PROTOCOL_2026-11-17.md
+          echo '61d92e93812b20b473d70c9b3ba5a67f65af574fcd35c5e6a590f19a76b6e9eb  old-native/native.log' | sha256sum -c -
+          echo '9c3bc5ae2dbd4d0b95b54b09cc8d9f3993ba9afc' | grep -Fx "$(cat old-native/source_commit.txt)"
+          python3 -m py_compile jpdc/audit_native_reported_service_vs_fcfs_wait.py jpdc/independently_check_native_service_wait.py
+          python3 jpdc/audit_native_reported_service_vs_fcfs_wait.py --native old-native/native.log --repeat old-native/native_repeat.log --source-commit old-native/source_commit.txt --out source-native-forensic/source.json | tee source-native-forensic/source.log
+          python3 jpdc/independently_check_native_service_wait.py --native old-native/native.log --primary source-native-forensic/source.json --out source-native-forensic/independent.json | tee source-native-forensic/independent.log
+          python3 jpdc/audit_native_reported_service_vs_fcfs_wait.py --native old-native/native.log --repeat old-native/native_repeat.log --source-commit old-native/source_commit.txt --out source-native-forensic/repeat.json > source-native-forensic/repeat.log
+          cmp source-native-forensic/source.json source-native-forensic/repeat.json
+          python3 - <<'PY'
+          import json
+          src=json.load(open("source-native-forensic/source.json"))
+          independent=json.load(open("source-native-forensic/independent.json"))
+          assert src["status"]=="PASS" and independent["status"]=="PASS"
+          assert src["original_native_cases"]==6 and src["original_native_jobs"]==18
+          assert src["native_reported_service_fcfs_discrepant_cases"]>=1
+          assert src["native_reported_service_fcfs_discrepant_cases"]==independent["native_service_unreconciled_gt1ms_cases"]
+          assert src["native_accounting_identity_passes_all_cases"]
+          assert src["original_java_python_30k_parity"]=="FAIL" and src["stage65_safety"]=="FAIL"
+          assert not src["actual_new_native_java_experiment"]
+          print("JPDC_ORIGINAL_NATIVE_SPENT_SERVICE_DURATION_INSUFFICIENT_RECONCILIATION_VERIFIED")
+          PY
+          sha256sum source-native-forensic/*.json > source-native-forensic/artifacts_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-original-native-execution-vs-wait-retrospective-forensic
+          path: source-native-forensic/
+          if-no-files-found: warn
