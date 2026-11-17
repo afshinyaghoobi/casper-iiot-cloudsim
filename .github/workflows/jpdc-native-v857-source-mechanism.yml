@@ -1,0 +1,81 @@
+name: JPDC exact CloudSimPlus 8.5.7 publisher source queue path audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-native-v857-source-mechanism.yml'
+      - 'jpdc/NATIVE_V857_SOURCE_MECHANISM_AUDIT_PREREG_2026-11-17.md'
+      - 'jpdc/audit_cloudsim_v857_scheduler_source_path.py'
+      - 'jpdc/independent_check_cloudsim_v857_source_audit.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exact_dependency_source_and_original_native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 44153953054
+          github-token: ${{ github.token }}
+          name: jpdc-real-native-arrival-offset-queue-counterfactual-six-cases
+          path: old-original-native
+      - name: Original science freeze and exact 8.5.7 source JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p exact-v857-source-audit
+          git rev-parse HEAD > exact-v857-source-audit/audit_source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/NATIVE_V857_SOURCE_MECHANISM_AUDIT_PREREG_2026-11-17.md
+          echo 'b80536e332b04ffeb0285005b38a95563bac36c29201fc8f93693efc95e5c250  old-original-native/native.log' | sha256sum -c -
+          echo '4d4454a11b59420c0ff17b064d7988f2bcd0f927e2cfa4ff3600b9ac7a6579a0  old-original-native/audit.json' | sha256sum -c -
+          cmp old-original-native/native.log old-original-native/native_repeat.log
+          mvn -B -q dependency:get -Dartifact=org.cloudsimplus:cloudsimplus:8.5.7:jar:sources -Dtransitive=false
+          test -s "$HOME/.m2/repository/org/cloudsimplus/cloudsimplus/8.5.7/cloudsimplus-8.5.7-sources.jar"
+          sha256sum "$HOME/.m2/repository/org/cloudsimplus/cloudsimplus/8.5.7/cloudsimplus-8.5.7-sources.jar" > exact-v857-source-audit/maven_source_sha256.txt
+      - name: Compare ACTUAL exact-version source methods to archived original Java WAIT/EXEC
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="$HOME/.m2/repository/org/cloudsimplus/cloudsimplus/8.5.7/cloudsimplus-8.5.7-sources.jar"
+          python3 -m py_compile jpdc/audit_cloudsim_v857_scheduler_source_path.py jpdc/independent_check_cloudsim_v857_source_audit.py
+          python3 jpdc/audit_cloudsim_v857_scheduler_source_path.py \
+            --sources "$JAR" --native old-original-native/native.log \
+            --repeat old-original-native/native_repeat.log --old-audit old-original-native/audit.json \
+            --out exact-v857-source-audit/source_method_audit.json | tee exact-v857-source-audit/source_method_audit.log
+          python3 jpdc/independent_check_cloudsim_v857_source_audit.py \
+            --sources "$JAR" --native old-original-native/native.log \
+            --primary exact-v857-source-audit/source_method_audit.json \
+            --out exact-v857-source-audit/independent_audit.json | tee exact-v857-source-audit/independent_audit.log
+          python3 jpdc/audit_cloudsim_v857_scheduler_source_path.py \
+            --sources "$JAR" --native old-original-native/native.log \
+            --repeat old-original-native/native_repeat.log --old-audit old-original-native/audit.json \
+            --out exact-v857-source-audit/source_method_audit_repeat.json > exact-v857-source-audit/source_method_audit_repeat.log
+          cmp exact-v857-source-audit/source_method_audit.json exact-v857-source-audit/source_method_audit_repeat.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open("exact-v857-source-audit/source_method_audit.json"))
+          b=json.load(open("exact-v857-source-audit/independent_audit.json"))
+          assert a["status"]=="PASS" and b["status"]=="PASS"
+          assert b["direct_bypass_cases"]==["ORIGINAL_5MS","LATE10_5MS"]
+          assert a["original_30k_java_python_parity"]=="FAIL" and a["stage65_safety"]=="FAIL"
+          assert not a["dynamic_branch_taken_proven"] and not a["new_java_execution"]
+          print("JPDC_EXACT_V857_PUBLISHER_SOURCE_REANALYSIS_PASS")
+          PY
+          sha256sum exact-v857-source-audit/*.json > exact-v857-source-audit/audit_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-exact-cloudsim-v857-source-method-original-native-bypass-audit
+          path: exact-v857-source-audit/
+          if-no-files-found: warn
