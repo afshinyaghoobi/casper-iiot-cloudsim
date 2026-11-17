@@ -1,0 +1,82 @@
+name: JPDC genuine Google2011 genesis and offline checkpoint-head CAS rehearsal
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-google2011-checkpoint-head-cas.yml'
+      - 'jpdc/GOOGLE2011_TRUSTED_HEAD_CAS_PREREG_2026-11-17.md'
+      - 'jpdc/google2011_checkpoint_head_cas.py'
+      - 'jpdc/test_google2011_checkpoint_head_cas.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  old_source_head_and_synthetic_transitions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retrieve authentic previously source-verified Google part375 SQLite
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 43975777090
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-source-backed-sqlite-resume-hardened-migration
+          path: original-db
+      - name: Retrieve previously pinned authentic detached checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 44121519950
+          github-token: ${{ github.token }}
+          name: jpdc-google2011-original-source-sqlite-external-checkpoint-verified
+          path: original-checkpoint
+      - name: Enforce frozen original CASPER and verify SQL/initial external pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p cas-audit
+          git rev-parse HEAD > cas-audit/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/GOOGLE2011_TRUSTED_HEAD_CAS_PREREG_2026-11-17.md
+          python3 -m py_compile jpdc/google2011_checkpoint_head_cas.py jpdc/test_google2011_checkpoint_head_cas.py
+          echo 'ab4851f5fd43f01bbd212a31789b9d88237cfec81db074f921d570ea3d44f5dc  original-db/migrated_presence.sqlite' | sha256sum -c -
+          echo 'e8b134abc3f1f4e656d830ee5906548124daddd4ecbecb1cdcfe24c0bf8a83f5  original-checkpoint/pinned_checkpoint.json' | sha256sum -c -
+      - name: Bootstrap genuine source head, run administrative fake successors, fault injection and stale trust negatives
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jpdc/test_google2011_checkpoint_head_cas.py \
+            --db original-db/migrated_presence.sqlite \
+            --checkpoint original-checkpoint/pinned_checkpoint.json | tee cas-audit/test.log
+          cp original-db/migrated_presence.sqlite cas-audit/source_copy.sqlite
+          python3 jpdc/google2011_checkpoint_head_cas.py \
+            --head cas-audit/latest_head.json \
+            --db cas-audit/source_copy.sqlite \
+            --checkpoint original-checkpoint/pinned_checkpoint.json \
+            --bootstrap \
+            --trusted-genesis-sha e8b134abc3f1f4e656d830ee5906548124daddd4ecbecb1cdcfe24c0bf8a83f5 \
+            --out cas-audit/genesis_result.json | tee cas-audit/genesis.log
+          python3 - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          v=json.loads(Path("cas-audit/genesis_result.json").read_text())
+          original=Path("cas-audit/latest_head.json").read_bytes()
+          assert v["status"]=="PASS" and v["ordinal"]==1
+          assert v["head_sha256"]==hashlib.sha256(original).hexdigest()
+          assert not v["protected_external_head_publication"]
+          assert json.loads(original)["original_source_data_batches"]==1
+          print("JPDC_LOCAL_HEAD_GENESIS_SOURCE_VERIFIED_BUT_NOT_EXTERNALLY_PUBLISHED_PASS")
+          PY
+          sha256sum cas-audit/latest_head.json cas-audit/genesis_result.json > cas-audit/sha256.txt
+          rm cas-audit/source_copy.sqlite
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-google2011-checkpoint-head-cas-genuine-old-source-synthetic-transitions
+          path: cas-audit/
+          if-no-files-found: warn
