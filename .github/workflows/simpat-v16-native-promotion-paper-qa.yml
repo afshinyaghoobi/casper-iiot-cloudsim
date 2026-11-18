@@ -1,0 +1,39 @@
+name: SIMPAT v1.6 native source-path and editorial claim static audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-v16-native-promotion-paper-qa.yml'
+      - 'jpdc/check_simpat_v16_promotion_claim_integrity.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V16_NATIVE_PROMOTION_OBSERVATION_2026-11-18.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact user title, original experiment counts, and new method-path claims
+        run: |
+          set -euo pipefail
+          python3 jpdc/check_simpat_v16_promotion_claim_integrity.py | tee simpat_v16_paper_qa.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('simpat_v16_paper_qa.json'))
+          assert a['status']=='PASS_STATIC_PACKET_CHECK'
+          assert a['title_locked'] and a['source_cases']==24
+          assert a['references_numbered']==12 and a['unresolved_author_approvals']
+          assert not a['publisher_submission']
+          print('SIMPAT_V16_OBSERVATIONAL_PROMOTION_MANUSCRIPT_STATIC_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v16-observational-promotion-paper-qa
+          path: simpat_v16_paper_qa.json
+          if-no-files-found: warn
