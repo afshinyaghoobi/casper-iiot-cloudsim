@@ -1,0 +1,38 @@
+name: SIMPAT v1.0 title-locked manuscript direct-prior-art and source QA
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-v10-publication-package-qa.yml'
+      - 'jpdc/check_simpat_v10_publication_packet.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V10_DIRECT_FULLTEXT_REVIEW_2026-11-18.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check_v10:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Audit exact approved title, main text, bibliography, source table and AI disclosure gate
+        run: |
+          set -euo pipefail
+          python3 jpdc/check_simpat_v10_publication_packet.py | tee simpat_v10_package_audit.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('simpat_v10_package_audit.json'))
+          assert x['status']=='PASS_STATIC_PACKET_CHECK' and x['title_locked']
+          assert x['source_cases']==24 and x['unresolved_author_approvals']
+          assert x['references_numbered']==11 and not x['publisher_submission']
+          print('SIMPAT_V10_MANUSCRIPT_AND_SOURCE_PACKAGE_PASS_PENDING_HUMAN_APPROVAL')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v10-paper-package-qa
+          path: simpat_v10_package_audit.json
+          if-no-files-found: warn
