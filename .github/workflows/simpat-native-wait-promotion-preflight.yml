@@ -1,0 +1,71 @@
+name: SIMPAT exact 8.5.7 passive A1 waiting-promotion observability check
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-native-wait-promotion-preflight.yml'
+      - 'src/main/java/org/casperiiot/jpdc/NativeV857WaitingPromotionPassiveTrace.java'
+      - 'jpdc/audit_simpat_v857_wait_promotion_trace.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  passive_new_mechanism_measurement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Check frozen prior methodology and untouched original code
+        run: |
+          set -euo pipefail
+          test -s jpdc/SIMPAT_A1_A2_SOURCE_OBSERVABILITY_AND_MECHANISM_PROTOCOL_2026-11-18.md
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          mvn -B -q -DskipTests compile
+      - name: Execute original A1 passive eligibility trace and new isolated promotion-hook trace
+        run: |
+          set -euo pipefail
+          mkdir -p simpat-promotion
+          git rev-parse HEAD > simpat-promotion/source_commit.txt
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeV857EligibilityCallbackTrace | grep -E '^ARRIVALTRACE_|^JPDC_ARRIVALTRACE_' > simpat-promotion/original_control.log
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeV857WaitingPromotionPassiveTrace | grep -E '^ARRIVALTRACE_|^JPDC_ARRIVALTRACE_' > simpat-promotion/passive_promotion.log
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeV857WaitingPromotionPassiveTrace | grep -E '^ARRIVALTRACE_|^JPDC_ARRIVALTRACE_' > simpat-promotion/passive_promotion_repeat.log
+          cmp simpat-promotion/passive_promotion.log simpat-promotion/passive_promotion_repeat.log
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('simpat-promotion')
+          lines=(root/'passive_promotion.log').read_text().splitlines()
+          filtered=[x for x in lines if not x.startswith('ARRIVALTRACE_PROMOTION,')]
+          (root/'passive_without_promotion_lines.log').write_text('\n'.join(filtered)+'\n')
+          assert (root/'passive_without_promotion_lines.log').read_bytes()==(root/'original_control.log').read_bytes(), "Observational instrumentation changed original source controls"
+          assert sum(x.startswith('ARRIVALTRACE_PROMOTION,') for x in lines)>0, "The source hook never executed"
+          print('SIMPAT_857_WAIT_PROMOTION_PASSIVE_BYTE_EQUIVALENCE_PASS')
+          PY
+          python3 jpdc/audit_simpat_v857_wait_promotion_trace.py \
+            --trace simpat-promotion/passive_promotion.log \
+            --out simpat-promotion/promotion_audit.json
+          python3 jpdc/audit_simpat_v857_wait_promotion_trace.py \
+            --trace simpat-promotion/passive_promotion_repeat.log \
+            --out simpat-promotion/promotion_repeat.json
+          cmp simpat-promotion/promotion_audit.json simpat-promotion/promotion_repeat.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('simpat-promotion/promotion_audit.json'))
+          assert x['cases']==6
+          assert x['status']=='PASS_SOURCE_VERIFIED_PASSIVE_PROMOTION_TRACE'
+          assert x['promotion_hook_invocations']>=1
+          assert x['original_30k_crossruntime_parity']=='FAIL' and x['stage65_safety']=='FAIL'
+          print('SIMPAT_PASSIVE_PROMOTION_OBSERVABILITY_PASS_NO_CAUSAL_CLAIM')
+          PY
+          sha256sum simpat-promotion/*.log simpat-promotion/*.json > simpat-promotion/provenance_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v857-native-passive-wait-promotion-a1
+          path: simpat-promotion/
+          if-no-files-found: warn
