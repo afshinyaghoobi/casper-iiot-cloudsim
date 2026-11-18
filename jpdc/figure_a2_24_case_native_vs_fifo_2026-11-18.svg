@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="930" viewBox="0 0 1200 930" role="img" aria-labelledby="chart-title chart-desc">
+<title id="chart-title">A2 24-case maximum absolute native wait versus FIFO reference discrepancy</title>
+<desc id="chart-desc">Twenty-four fixed synthetic CloudSimPlus 8.5.7 conditions. Each bar reports the maximum across 12 jobs of the absolute difference between native reported wait and requested-service capacity-matched FIFO reference. NOT a CPU performance loss or proven simulator defect.</desc>
+<rect x="0" y="0" width="1200" height="930" fill="white"/>
+<text x="24" y="35" font-family="Arial,sans-serif" font-size="19" font-weight="bold" fill="#1a2942">Native-reported vs analytical FIFO waiting difference</text>
+<text x="24" y="57" font-family="Arial,sans-serif" font-size="13" fill="#4c5966">Max absolute within-case difference (ms); 12 fixed jobs per condition, CloudSimPlus 8.5.7</text>
+<line x1="235" y1="82" x2="235" y2="847" stroke="#e6e8ea" stroke-width="1"/>
+<text x="235" y="79" font-family="Arial,sans-serif" font-size="12" text-anchor="middle" fill="#5d6774">0</text>
+<line x1="405" y1="82" x2="405" y2="847" stroke="#e6e8ea" stroke-width="1"/>
+<text x="405" y="79" font-family="Arial,sans-serif" font-size="12" text-anchor="middle" fill="#5d6774">50</text>
+<line x1="575" y1="82" x2="575" y2="847" stroke="#e6e8ea" stroke-width="1"/>
+<text x="575" y="79" font-family="Arial,sans-serif" font-size="12" text-anchor="middle" fill="#5d6774">100</text>
+<line x1="745" y1="82" x2="745" y2="847" stroke="#e6e8ea" stroke-width="1"/>
+<text x="745" y="79" font-family="Arial,sans-serif" font-size="12" text-anchor="middle" fill="#5d6774">150</text>
+<line x1="915" y1="82" x2="915" y2="847" stroke="#e6e8ea" stroke-width="1"/>
+<text x="915" y="79" font-family="Arial,sans-serif" font-size="12" text-anchor="middle" fill="#5d6774">200</text>
+<line x1="1085" y1="82" x2="1085" y2="847" stroke="#e6e8ea" stroke-width="1"/>
+<text x="1085" y="79" font-family="Arial,sans-serif" font-size="12" text-anchor="middle" fill="#5d6774">250</text>
+<text x="226" y="112" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">BURSTY_S0_1US_P1</text>
+<rect x="235" y="99" width="533.86" height="18" fill="#3b628e"/>
+<text x="775.86" y="113" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">157.018</text>
+<text x="226" y="143" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">BURSTY_S0_1US_P2</text>
+<rect x="235" y="130" width="85.02" height="18" fill="#3b628e"/>
+<text x="327.02" y="144" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">25.005</text>
+<text x="226" y="174" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">BURSTY_S0_5MS_P1</text>
+<rect x="235" y="161" width="401.20" height="18" fill="#3b628e"/>
+<text x="643.20" y="175" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">118</text>
+<text x="226" y="205" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">BURSTY_S0_5MS_P2</text>
+<rect x="235" y="192" width="173.40" height="18" fill="#3b628e"/>
+<text x="415.40" y="206" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">51</text>
+<text x="226" y="236" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">BURSTY_S1_1US_P1</text>
+<rect x="235" y="223" width="533.86" height="18" fill="#3b628e"/>
+<text x="775.86" y="237" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">157.018</text>
+<text x="226" y="267" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">BURSTY_S1_1US_P2</text>
+<rect x="235" y="254" width="102.02" height="18" fill="#3b628e"/>
+<text x="344.02" y="268" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">30.006</text>
+<text x="226" y="298" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">BURSTY_S1_5MS_P1</text>
+<rect x="235" y="285" width="401.20" height="18" fill="#3b628e"/>
+<text x="643.20" y="299" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">118</text>
+<text x="226" y="329" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">BURSTY_S1_5MS_P2</text>
+<rect x="235" y="316" width="174.76" height="18" fill="#3b628e"/>
+<text x="416.76" y="330" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">51.4</text>
+<text x="226" y="360" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">BURSTY_S2_1US_P1</text>
+<rect x="235" y="347" width="605.26" height="18" fill="#3b628e"/>
+<text x="847.26" y="361" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">178.019</text>
+<text x="226" y="391" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">BURSTY_S2_1US_P2</text>
+<rect x="235" y="378" width="112.21" height="18" fill="#3b628e"/>
+<text x="354.21" y="392" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">33.004</text>
+<text x="226" y="422" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">BURSTY_S2_5MS_P1</text>
+<rect x="235" y="409" width="836.40" height="18" fill="#3b628e"/>
+<text x="1078.40" y="423" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">246</text>
+<text x="226" y="453" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">BURSTY_S2_5MS_P2</text>
+<rect x="235" y="440" width="190.40" height="18" fill="#3b628e"/>
+<text x="432.40" y="454" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">56</text>
+<line x1="16" y1="468" x2="1182" y2="468" stroke="#8c99a5" stroke-width="1.5"/>
+<text x="226" y="484" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">STAGGERED_S0_1US_P1</text>
+<rect x="235" y="471" width="295.84" height="18" fill="#ad7148"/>
+<text x="537.84" y="485" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">87.011</text>
+<text x="226" y="515" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">STAGGERED_S0_1US_P2</text>
+<rect x="235" y="502" width="81.60" height="18" fill="#ad7148"/>
+<text x="323.60" y="516" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">24</text>
+<text x="226" y="546" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">STAGGERED_S0_5MS_P1</text>
+<rect x="235" y="533" width="581.40" height="18" fill="#ad7148"/>
+<text x="823.40" y="547" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">171</text>
+<text x="226" y="577" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">STAGGERED_S0_5MS_P2</text>
+<rect x="235" y="564" width="204.00" height="18" fill="#ad7148"/>
+<text x="446.00" y="578" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">60</text>
+<text x="226" y="608" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">STAGGERED_S1_1US_P1</text>
+<rect x="235" y="595" width="297.20" height="18" fill="#ad7148"/>
+<text x="539.20" y="609" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">87.411</text>
+<text x="226" y="639" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">STAGGERED_S1_1US_P2</text>
+<rect x="235" y="626" width="81.60" height="18" fill="#ad7148"/>
+<text x="323.60" y="640" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">24</text>
+<text x="226" y="670" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">STAGGERED_S1_5MS_P1</text>
+<rect x="235" y="657" width="581.40" height="18" fill="#ad7148"/>
+<text x="823.40" y="671" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">171</text>
+<text x="226" y="701" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">STAGGERED_S1_5MS_P2</text>
+<rect x="235" y="688" width="204.00" height="18" fill="#ad7148"/>
+<text x="446.00" y="702" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">60</text>
+<text x="226" y="732" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">STAGGERED_S2_1US_P1</text>
+<rect x="235" y="719" width="294.48" height="18" fill="#ad7148"/>
+<text x="536.48" y="733" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">86.611</text>
+<text x="226" y="763" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">STAGGERED_S2_1US_P2</text>
+<rect x="235" y="750" width="81.60" height="18" fill="#ad7148"/>
+<text x="323.60" y="764" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">24</text>
+<text x="226" y="794" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">STAGGERED_S2_5MS_P1</text>
+<rect x="235" y="781" width="581.40" height="18" fill="#ad7148"/>
+<text x="823.40" y="795" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">171</text>
+<text x="226" y="825" font-family="Arial,sans-serif" font-size="11.5" text-anchor="end" fill="#253042">STAGGERED_S2_5MS_P2</text>
+<rect x="235" y="812" width="204.00" height="18" fill="#ad7148"/>
+<text x="446.00" y="826" font-family="Arial,sans-serif" font-size="10.5" fill="#263547">60</text>
+<rect x="30" y="856" width="14" height="14" fill="#3b628e"/><text x="52" y="868" font-family="Arial" font-size="13">BURSTY</text>
+<rect x="150" y="856" width="14" height="14" fill="#ad7148"/><text x="172" y="868" font-family="Arial" font-size="13">STAGGERED</text>
+<text x="30" y="898" font-family="Arial,sans-serif" font-size="12" fill="#55606d">Fixed synthetic conditions: model difference, not measured physical CPU wait, deadline error, or CloudSimPlus defect.</text>
+</svg>
