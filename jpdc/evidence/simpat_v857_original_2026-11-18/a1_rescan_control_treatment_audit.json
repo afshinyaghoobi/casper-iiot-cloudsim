@@ -1,0 +1,364 @@
+{
+  "case_details": [
+    {
+      "case": "EARLY4_1US",
+      "old_wait_young_exec_original": false,
+      "old_wait_young_exec_treatment": false,
+      "per_job_outcomes": [
+        {
+          "control_reported_service_ms": 18.100623,
+          "control_wait_ms": 0.0,
+          "job_id": 0,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 18.100623,
+          "treated_wait_ms": 0.0,
+          "wait_delta_ms": 0.0
+        },
+        {
+          "control_reported_service_ms": 10.001,
+          "control_wait_ms": 42.784703,
+          "job_id": 1,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 10.001,
+          "treated_wait_ms": 22.782703,
+          "wait_delta_ms": -20.002
+        },
+        {
+          "control_reported_service_ms": 10.001,
+          "control_wait_ms": 24.0018824,
+          "job_id": 2,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 10.001,
+          "treated_wait_ms": 14.0008824,
+          "wait_delta_ms": -10.001
+        }
+      ],
+      "post_update_rescan_calls": 2,
+      "post_update_rescan_moves_old_job1": true,
+      "rescan_records": [
+        {
+          "clock_ms": 1018.101623,
+          "exec_after": "2",
+          "extra_next": 0.009120283,
+          "original_next": 1e-06,
+          "returned_next": 1e-06,
+          "wait_after": "1",
+          "wait_before": "2;1"
+        },
+        {
+          "clock_ms": 1028.102623,
+          "exec_after": "1",
+          "extra_next": 0.004730689,
+          "original_next": 1e-06,
+          "returned_next": 1e-06,
+          "wait_after": "",
+          "wait_before": "1"
+        }
+      ]
+    },
+    {
+      "case": "EARLY4_5MS",
+      "old_wait_young_exec_original": false,
+      "old_wait_young_exec_treatment": false,
+      "per_job_outcomes": [
+        {
+          "control_reported_service_ms": 8.099623,
+          "control_wait_ms": 0.0,
+          "job_id": 0,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 8.099623,
+          "treated_wait_ms": 0.0,
+          "wait_delta_ms": 0.0
+        },
+        {
+          "control_reported_service_ms": 15.0,
+          "control_wait_ms": 47.780703,
+          "job_id": 1,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 15.0,
+          "treated_wait_ms": 17.780703,
+          "wait_delta_ms": -30.0
+        },
+        {
+          "control_reported_service_ms": 15.0,
+          "control_wait_ms": 18.9998824,
+          "job_id": 2,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 15.0,
+          "treated_wait_ms": 3.9998824,
+          "wait_delta_ms": -15.0
+        }
+      ],
+      "post_update_rescan_calls": 2,
+      "post_update_rescan_moves_old_job1": true,
+      "rescan_records": [
+        {
+          "clock_ms": 1013.099623,
+          "exec_after": "2",
+          "extra_next": 0.009120283,
+          "original_next": 0.005,
+          "returned_next": 0.005,
+          "wait_after": "1",
+          "wait_before": "2;1"
+        },
+        {
+          "clock_ms": 1028.099623,
+          "exec_after": "1",
+          "extra_next": 0.005,
+          "original_next": 0.005,
+          "returned_next": 0.005,
+          "wait_after": "",
+          "wait_before": "1"
+        }
+      ]
+    },
+    {
+      "case": "ORIGINAL_1US",
+      "old_wait_young_exec_original": false,
+      "old_wait_young_exec_treatment": false,
+      "per_job_outcomes": [
+        {
+          "control_reported_service_ms": 18.100623,
+          "control_wait_ms": 0.0,
+          "job_id": 0,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 18.100623,
+          "treated_wait_ms": 0.0,
+          "wait_delta_ms": 0.0
+        },
+        {
+          "control_reported_service_ms": 10.001,
+          "control_wait_ms": 22.782703,
+          "job_id": 1,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 10.001,
+          "treated_wait_ms": 12.781703,
+          "wait_delta_ms": -10.001
+        },
+        {
+          "control_reported_service_ms": 10.001,
+          "control_wait_ms": 40.0038824,
+          "job_id": 2,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 10.001,
+          "treated_wait_ms": 20.0018824,
+          "wait_delta_ms": -20.002
+        }
+      ],
+      "post_update_rescan_calls": 2,
+      "post_update_rescan_moves_old_job1": true,
+      "rescan_records": [
+        {
+          "clock_ms": 1018.101623,
+          "exec_after": "1",
+          "extra_next": 0.004730689,
+          "original_next": 1e-06,
+          "returned_next": 1e-06,
+          "wait_after": "2",
+          "wait_before": "1;2"
+        },
+        {
+          "clock_ms": 1028.102623,
+          "exec_after": "2",
+          "extra_next": 0.009120283,
+          "original_next": 1e-06,
+          "returned_next": 1e-06,
+          "wait_after": "",
+          "wait_before": "2"
+        }
+      ]
+    },
+    {
+      "case": "ORIGINAL_5MS",
+      "old_wait_young_exec_original": true,
+      "old_wait_young_exec_treatment": false,
+      "per_job_outcomes": [
+        {
+          "control_reported_service_ms": 8.099623,
+          "control_wait_ms": 0.0,
+          "job_id": 0,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 8.099623,
+          "treated_wait_ms": 0.0,
+          "wait_delta_ms": 0.0
+        },
+        {
+          "control_reported_service_ms": 5.8795994,
+          "control_wait_ms": 26.9011036,
+          "job_id": 1,
+          "reported_service_delta_ms": 9.1204006,
+          "treated_reported_service_ms": 15.0,
+          "treated_wait_ms": 2.780703,
+          "wait_delta_ms": -24.1204006
+        },
+        {
+          "control_reported_service_ms": 14.9998824,
+          "control_wait_ms": 0.0,
+          "job_id": 2,
+          "reported_service_delta_ms": 0.0001176,
+          "treated_reported_service_ms": 15.0,
+          "treated_wait_ms": 14.9998824,
+          "wait_delta_ms": 14.9998824
+        }
+      ],
+      "post_update_rescan_calls": 2,
+      "post_update_rescan_moves_old_job1": true,
+      "rescan_records": [
+        {
+          "clock_ms": 1013.099623,
+          "exec_after": "1",
+          "extra_next": 0.005,
+          "original_next": 0.005,
+          "returned_next": 0.005,
+          "wait_after": "",
+          "wait_before": "1"
+        },
+        {
+          "clock_ms": 1028.099623,
+          "exec_after": "2",
+          "extra_next": 0.009120283,
+          "original_next": 0.005,
+          "returned_next": 0.005,
+          "wait_after": "",
+          "wait_before": "2"
+        }
+      ]
+    },
+    {
+      "case": "LATE10_1US",
+      "old_wait_young_exec_original": false,
+      "old_wait_young_exec_treatment": false,
+      "per_job_outcomes": [
+        {
+          "control_reported_service_ms": 18.100623,
+          "control_wait_ms": 0.0,
+          "job_id": 0,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 18.100623,
+          "treated_wait_ms": 0.0,
+          "wait_delta_ms": 0.0
+        },
+        {
+          "control_reported_service_ms": 10.001,
+          "control_wait_ms": 22.782703,
+          "job_id": 1,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 10.001,
+          "treated_wait_ms": 12.781703,
+          "wait_delta_ms": -10.001
+        },
+        {
+          "control_reported_service_ms": 10.001,
+          "control_wait_ms": 30.0038824,
+          "job_id": 2,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 10.001,
+          "treated_wait_ms": 10.0018824,
+          "wait_delta_ms": -20.002
+        }
+      ],
+      "post_update_rescan_calls": 2,
+      "post_update_rescan_moves_old_job1": true,
+      "rescan_records": [
+        {
+          "clock_ms": 1018.101623,
+          "exec_after": "1",
+          "extra_next": 0.004730689,
+          "original_next": 1e-06,
+          "returned_next": 1e-06,
+          "wait_after": "2",
+          "wait_before": "1;2"
+        },
+        {
+          "clock_ms": 1028.102623,
+          "exec_after": "2",
+          "extra_next": 0.009120283,
+          "original_next": 1e-06,
+          "returned_next": 1e-06,
+          "wait_after": "",
+          "wait_before": "2"
+        }
+      ]
+    },
+    {
+      "case": "LATE10_5MS",
+      "old_wait_young_exec_original": true,
+      "old_wait_young_exec_treatment": false,
+      "per_job_outcomes": [
+        {
+          "control_reported_service_ms": 8.099623,
+          "control_wait_ms": 0.0,
+          "job_id": 0,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 8.099623,
+          "treated_wait_ms": 0.0,
+          "wait_delta_ms": 0.0
+        },
+        {
+          "control_reported_service_ms": 15.0,
+          "control_wait_ms": 47.780703,
+          "job_id": 1,
+          "reported_service_delta_ms": 0.0,
+          "treated_reported_service_ms": 15.0,
+          "treated_wait_ms": 2.780703,
+          "wait_delta_ms": -45.0
+        },
+        {
+          "control_reported_service_ms": 19.9998824,
+          "control_wait_ms": 0.0,
+          "job_id": 2,
+          "reported_service_delta_ms": -4.9998824,
+          "treated_reported_service_ms": 15.0,
+          "treated_wait_ms": 4.9998824,
+          "wait_delta_ms": 4.9998824
+        }
+      ],
+      "post_update_rescan_calls": 2,
+      "post_update_rescan_moves_old_job1": true,
+      "rescan_records": [
+        {
+          "clock_ms": 1013.099623,
+          "exec_after": "1",
+          "extra_next": 0.005,
+          "original_next": 0.005,
+          "returned_next": 0.005,
+          "wait_after": "",
+          "wait_before": "1"
+        },
+        {
+          "clock_ms": 1028.099623,
+          "exec_after": "2",
+          "extra_next": 0.009120283,
+          "original_next": 0.005,
+          "returned_next": 0.005,
+          "wait_after": "",
+          "wait_before": "2"
+        }
+      ]
+    }
+  ],
+  "cases": 6,
+  "identifies_single_internal_cause": false,
+  "jobs_per_arm": 18,
+  "library_defect_or_physical_cpu_claim": false,
+  "negative_cases_newly_showing_bypass": [],
+  "original_log_sha256": "18b39fb536ae863ea665067f0318a285252ea2c5199792cb3362aa4a5a989abf",
+  "original_positive_cases": [
+    "ORIGINAL_5MS",
+    "LATE10_5MS"
+  ],
+  "original_six_case_control_exact_bytes": true,
+  "original_strict_cross_runtime_parity": "FAIL",
+  "positive_cases_losing_old_wait_young_exec": [
+    "ORIGINAL_5MS",
+    "LATE10_5MS"
+  ],
+  "positive_cases_preserving_old_wait_young_exec": [],
+  "rescan_calls_with_recorded_job1_promotion": 6,
+  "research_input_fixtures_were_known_before_prereg": true,
+  "stage65_safety": "FAIL",
+  "status": "PASS_SOURCE_VERIFIED_A1_PREREGISTERED_BUNDLED_RESCAN_INTERVENTION",
+  "total_rescan_calls": 12,
+  "treated_log_sha256": "af80c4a83caf8542cc6467493252be0d38c1c42f48a313fa4e45fcc52f0f2f55",
+  "treatment_changes_future_event_scheduling_possible": true
+}

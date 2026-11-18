@@ -1,0 +1,80 @@
+{
+  "analysis_design": "EXPLORATORY_POSTHOC_FIXED_0_TO_250_MS_STEP_5",
+  "cases": 24,
+  "general_causal_significance_claim": false,
+  "illustrative_fixed_thresholds": [
+    {
+      "one_pe_disagreements": 0,
+      "threshold_ms": 0,
+      "total_disagreements": 0,
+      "two_minus_one": 0,
+      "two_pe_disagreements": 0
+    },
+    {
+      "one_pe_disagreements": 27,
+      "threshold_ms": 25,
+      "total_disagreements": 86,
+      "two_minus_one": 32,
+      "two_pe_disagreements": 59
+    },
+    {
+      "one_pe_disagreements": 49,
+      "threshold_ms": 50,
+      "total_disagreements": 107,
+      "two_minus_one": 9,
+      "two_pe_disagreements": 58
+    },
+    {
+      "one_pe_disagreements": 51,
+      "threshold_ms": 55,
+      "total_disagreements": 98,
+      "two_minus_one": -4,
+      "two_pe_disagreements": 47
+    },
+    {
+      "one_pe_disagreements": 64,
+      "threshold_ms": 75,
+      "total_disagreements": 86,
+      "two_minus_one": -42,
+      "two_pe_disagreements": 22
+    },
+    {
+      "one_pe_disagreements": 78,
+      "threshold_ms": 100,
+      "total_disagreements": 79,
+      "two_minus_one": -77,
+      "two_pe_disagreements": 1
+    },
+    {
+      "one_pe_disagreements": 14,
+      "threshold_ms": 250,
+      "total_disagreements": 14,
+      "two_minus_one": -14,
+      "two_pe_disagreements": 0
+    }
+  ],
+  "input_per_job_csv_sha256": "895dfdb1ed9eba80d49a5b2fd23c6fbbec12259de9b0850f6b0e9106a4e3a885",
+  "jobs": 288,
+  "model_comparison_not_observed_iot_error": true,
+  "new_java_simulations": false,
+  "not_preregistered": true,
+  "one_pe_jobs": 144,
+  "original_30k_parity": "FAIL",
+  "peak_thresholds_ms": [
+    40
+  ],
+  "peak_total_disagreement_count": 119,
+  "stage65_safety": "FAIL",
+  "status": "PASS_ORIGINAL_SOURCE_VERIFIED_POSTHOC_THRESHOLD_SWEEP",
+  "step_ms": 5,
+  "strict_miss_tol_ms": 1e-08,
+  "threshold_grid_n": 51,
+  "threshold_max_ms": 250,
+  "threshold_min_ms": 0,
+  "two_pe_jobs": 144,
+  "two_pe_minus_one_pe_sign_counts": {
+    "negative": 40,
+    "positive": 9,
+    "tie": 2
+  }
+}

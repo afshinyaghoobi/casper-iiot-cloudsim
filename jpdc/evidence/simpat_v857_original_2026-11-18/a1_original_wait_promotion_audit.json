@@ -1,0 +1,93 @@
+{
+  "cases": 6,
+  "instrumentation_byte_equal_control_must_be_verified_separately": true,
+  "interpretation": "Method-hook before-after list observations, not physical CPU starts or proof of error.",
+  "observational_only": true,
+  "observed_promoted_cloudlet_ids_by_case": {
+    "EARLY4_1US": [
+      {
+        "clock_ms": 1028.102623,
+        "ids": [
+          "2"
+        ]
+      },
+      {
+        "clock_ms": 1048.104623,
+        "ids": [
+          "1"
+        ]
+      }
+    ],
+    "EARLY4_5MS": [
+      {
+        "clock_ms": 1028.099623,
+        "ids": [
+          "2"
+        ]
+      },
+      {
+        "clock_ms": 1058.099623,
+        "ids": [
+          "1"
+        ]
+      }
+    ],
+    "LATE10_1US": [
+      {
+        "clock_ms": 1028.102623,
+        "ids": [
+          "1"
+        ]
+      },
+      {
+        "clock_ms": 1048.104623,
+        "ids": [
+          "2"
+        ]
+      }
+    ],
+    "LATE10_5MS": [
+      {
+        "clock_ms": 1058.099623,
+        "ids": [
+          "1"
+        ]
+      }
+    ],
+    "ORIGINAL_1US": [
+      {
+        "clock_ms": 1028.102623,
+        "ids": [
+          "1"
+        ]
+      },
+      {
+        "clock_ms": 1048.104623,
+        "ids": [
+          "2"
+        ]
+      }
+    ],
+    "ORIGINAL_5MS": [
+      {
+        "clock_ms": 1037.2200236,
+        "ids": [
+          "1"
+        ]
+      }
+    ]
+  },
+  "original_30k_crossruntime_parity": "FAIL",
+  "promotion_call_counts_by_case": {
+    "EARLY4_1US": 6,
+    "EARLY4_5MS": 5,
+    "LATE10_1US": 6,
+    "LATE10_5MS": 5,
+    "ORIGINAL_1US": 6,
+    "ORIGINAL_5MS": 5
+  },
+  "promotion_hook_invocations": 33,
+  "promotion_with_observed_wait_to_exec": 10,
+  "stage65_safety": "FAIL",
+  "status": "PASS_SOURCE_VERIFIED_PASSIVE_PROMOTION_TRACE"
+}

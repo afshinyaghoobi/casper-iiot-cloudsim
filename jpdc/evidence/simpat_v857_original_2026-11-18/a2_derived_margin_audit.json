@@ -1,0 +1,97 @@
+{
+  "analysis_is_posthoc": true,
+  "by_vm_pe": {
+    "1": {
+      "deadline25_disagreements": 27,
+      "deadline50_disagreements": 49,
+      "jobs": 144,
+      "mean_abs_completion_difference_ms": 78.837076,
+      "mean_abs_wait_difference_ms": 75.711958
+    },
+    "2": {
+      "deadline25_disagreements": 59,
+      "deadline50_disagreements": 58,
+      "jobs": 144,
+      "mean_abs_completion_difference_ms": 25.076118,
+      "mean_abs_wait_difference_ms": 22.480236
+    }
+  },
+  "cases": 24,
+  "causal_claim_or_real_iot_validation": false,
+  "classification_identity": "disagree iff native and FIFO completion margins lie on opposite sides of the synthetic threshold (strict > with 1e-8 tolerance)",
+  "fixed_thresholds_ms": [
+    25,
+    50
+  ],
+  "jobs": 288,
+  "new_java_simulation": false,
+  "original_30k_crossruntime_parity": "FAIL",
+  "original_stage65_safety": "FAIL",
+  "signed_disagreement_direction": {
+    "25": {
+      "disagreements": 86,
+      "native_completes_earlier_than_fifo": 13,
+      "native_completes_later_than_fifo": 73
+    },
+    "50": {
+      "disagreements": 107,
+      "native_completes_earlier_than_fifo": 5,
+      "native_completes_later_than_fifo": 102
+    }
+  },
+  "source_case_csv_sha256": "6e11e12e4b1e82df8070b0bc2d78a15b819a3246cde99c17919a099a51eca844",
+  "source_native_log_sha256": "9fb08d07fe9741772b0de59a837046d0152362d3724da04daf02ccbc3d879391",
+  "status": "PASS_VERIFIED_POSTHOC_PER_JOB_COMPLETION_MARGIN_DIAGNOSTIC",
+  "two_case_example": [
+    {
+      "case": "BURSTY_S0_1US_P1",
+      "deadline25_disagreements": 1,
+      "jobs_disagree25": [
+        {
+          "completion_delta_ms": 53.003,
+          "fifo_margin25_ms": -4.0,
+          "job_id": 1,
+          "native_margin25_ms": 49.003
+        }
+      ],
+      "max_abs_wait_gap_ms": 157.018
+    },
+    {
+      "case": "BURSTY_S0_1US_P2",
+      "deadline25_disagreements": 5,
+      "jobs_disagree25": [
+        {
+          "completion_delta_ms": 15.002,
+          "fifo_margin25_ms": -12.0,
+          "job_id": 2,
+          "native_margin25_ms": 3.002
+        },
+        {
+          "completion_delta_ms": 18.003,
+          "fifo_margin25_ms": -17.0,
+          "job_id": 4,
+          "native_margin25_ms": 1.003
+        },
+        {
+          "completion_delta_ms": 22.004,
+          "fifo_margin25_ms": -6.0,
+          "job_id": 5,
+          "native_margin25_ms": 16.004
+        },
+        {
+          "completion_delta_ms": 20.006,
+          "fifo_margin25_ms": -1.0,
+          "job_id": 6,
+          "native_margin25_ms": 19.006
+        },
+        {
+          "completion_delta_ms": 23.003,
+          "fifo_margin25_ms": -11.0,
+          "job_id": 7,
+          "native_margin25_ms": 12.003
+        }
+      ],
+      "max_abs_wait_gap_ms": 25.005
+    }
+  ]
+}

@@ -1,0 +1,207 @@
+{
+  "all_cases": 24,
+  "cells": [
+    {
+      "case": "BURSTY_S0_1US_P1",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 157.018,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 157.018,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "BURSTY_S0_1US_P2",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 25.005,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 25.005,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "BURSTY_S0_5MS_P1",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 118.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 118.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "BURSTY_S0_5MS_P2",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 51.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 51.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "BURSTY_S1_1US_P1",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 157.018,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 157.018,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "BURSTY_S1_1US_P2",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 30.006,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 30.006,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "BURSTY_S1_5MS_P1",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 118.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 118.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "BURSTY_S1_5MS_P2",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 51.4,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 51.4,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "BURSTY_S2_1US_P1",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 178.019,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 178.019,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "BURSTY_S2_1US_P2",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 33.004,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 33.004,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "BURSTY_S2_5MS_P1",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 246.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 246.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "BURSTY_S2_5MS_P2",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 56.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 56.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "STAGGERED_S0_1US_P1",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 87.011,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 87.011,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "STAGGERED_S0_1US_P2",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 24.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 24.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "STAGGERED_S0_5MS_P1",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 171.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 171.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "STAGGERED_S0_5MS_P2",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 60.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 60.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "STAGGERED_S1_1US_P1",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 87.411,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 87.411,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "STAGGERED_S1_1US_P2",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 24.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 24.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "STAGGERED_S1_5MS_P1",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 171.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 171.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "STAGGERED_S1_5MS_P2",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 60.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 60.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "STAGGERED_S2_1US_P1",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 86.611,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 86.611,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "STAGGERED_S2_1US_P2",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 24.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 24.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "STAGGERED_S2_5MS_P1",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 171.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 171.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    },
+    {
+      "case": "STAGGERED_S2_5MS_P2",
+      "count_datacenter_arrival_differs_from_scheduler_submit": 0,
+      "max_abs_dc_arrival_minus_submit_ms": 0.0,
+      "max_abs_native_reported_wait_minus_fifo_ms": 60.0,
+      "max_abs_submit_to_native_start_minus_fifo_ms": 60.0,
+      "mean_signed_dc_arrival_minus_submit_ms": 0.0
+    }
+  ],
+  "different_dc_arrival_vs_submit_jobs": 0,
+  "jobs": 288,
+  "max_abs_dc_arrival_minus_submit_ms": 0.0,
+  "max_abs_native_wait_minus_fifo_ms": 246.0,
+  "max_abs_submit_to_start_minus_fifo_ms": 246.0,
+  "original_30k_fidelity": "FAIL",
+  "original_a2_trace_byte_identical_without_added_clock_rows": true,
+  "source_version": "8.5.7",
+  "stage65_safety": "FAIL",
+  "status": "PASS_MEASUREMENT_CONSTRUCT_DIAGNOSTIC"
+}

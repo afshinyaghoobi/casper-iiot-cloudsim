@@ -1,0 +1,118 @@
+{
+  "P_negative_bypass_coverage_counterexamples": 0,
+  "cases": [
+    {
+      "before_submit_exec": "0",
+      "before_submit_wait": "1",
+      "case": "H_A_1US",
+      "event_gap": "1US",
+      "new_job_eligibility_used_in_prediction": false,
+      "observed_old_wait_young_exec": false,
+      "predicted_bypass_P": false,
+      "predictor_latest_update_clock_ms": null,
+      "source_jobs_completed": 3
+    },
+    {
+      "before_submit_exec": "0",
+      "before_submit_wait": "1",
+      "case": "H_A_5MS",
+      "event_gap": "5MS",
+      "new_job_eligibility_used_in_prediction": false,
+      "observed_old_wait_young_exec": false,
+      "predicted_bypass_P": false,
+      "predictor_latest_update_clock_ms": null,
+      "source_jobs_completed": 3
+    },
+    {
+      "before_submit_exec": "",
+      "before_submit_wait": "1",
+      "case": "H_B_1US",
+      "event_gap": "1US",
+      "new_job_eligibility_used_in_prediction": false,
+      "observed_old_wait_young_exec": true,
+      "predicted_bypass_P": true,
+      "predictor_latest_update_clock_ms": 1011.601,
+      "source_jobs_completed": 3
+    },
+    {
+      "before_submit_exec": "",
+      "before_submit_wait": "1",
+      "case": "H_B_5MS",
+      "event_gap": "5MS",
+      "new_job_eligibility_used_in_prediction": false,
+      "observed_old_wait_young_exec": true,
+      "predicted_bypass_P": true,
+      "predictor_latest_update_clock_ms": 1016.6,
+      "source_jobs_completed": 3
+    },
+    {
+      "before_submit_exec": "0",
+      "before_submit_wait": "1",
+      "case": "H_C_1US",
+      "event_gap": "1US",
+      "new_job_eligibility_used_in_prediction": false,
+      "observed_old_wait_young_exec": false,
+      "predicted_bypass_P": false,
+      "predictor_latest_update_clock_ms": null,
+      "source_jobs_completed": 3
+    },
+    {
+      "before_submit_exec": "0",
+      "before_submit_wait": "1",
+      "case": "H_C_5MS",
+      "event_gap": "5MS",
+      "new_job_eligibility_used_in_prediction": false,
+      "observed_old_wait_young_exec": false,
+      "predicted_bypass_P": false,
+      "predictor_latest_update_clock_ms": null,
+      "source_jobs_completed": 3
+    },
+    {
+      "before_submit_exec": "0",
+      "before_submit_wait": "1",
+      "case": "H_D_1US",
+      "event_gap": "1US",
+      "new_job_eligibility_used_in_prediction": false,
+      "observed_old_wait_young_exec": false,
+      "predicted_bypass_P": false,
+      "predictor_latest_update_clock_ms": null,
+      "source_jobs_completed": 3
+    },
+    {
+      "before_submit_exec": "0",
+      "before_submit_wait": "1",
+      "case": "H_D_5MS",
+      "event_gap": "5MS",
+      "new_job_eligibility_used_in_prediction": false,
+      "observed_old_wait_young_exec": false,
+      "predicted_bypass_P": false,
+      "predictor_latest_update_clock_ms": null,
+      "source_jobs_completed": 3
+    }
+  ],
+  "confusion_pre_submit_event_predicate": {
+    "FN": 0,
+    "FP": 0,
+    "TN": 6,
+    "TP": 2
+  },
+  "exact_version": "CloudSimPlus 8.5.7",
+  "frozen_input_prereg": "SIMPAT_A1_EIGHTCASE_UNSEEN_INPUT_PREDICTION_PREREG_2026-11-18.md",
+  "independently_configured_synthetic_fixtures": 8,
+  "input_only_gap_counts": {
+    "1US": 1,
+    "5MS": 1
+  },
+  "jobs_completed": 24,
+  "native_log_sha256": "c4bd49c77c488626fb027831bc8704b34db53f0d34845e1f01fc278ca3438c02",
+  "new_sampling_population_or_real_iot": false,
+  "novel_method_or_library_defect_proven": false,
+  "positive_P_sufficiency_counterexamples": 0,
+  "predictor_uses_downstream_admission_result": false,
+  "prior_stage65_safety": "FAIL",
+  "prior_strict30k_crossruntime_gate": "FAIL",
+  "source_only_prediction_numerically_scoped": true,
+  "status": "PASS_UNSEEN_EIGHT_INPUT_TRACE_AUDIT",
+  "uninformative_predicate_if_all_one_label": false,
+  "weak_input_H_5MS_greater_than_1US": false
+}
