@@ -10,6 +10,7 @@ import org.cloudsimplus.cloudlets.CloudletSimple;
 import org.cloudsimplus.core.CloudSimPlus;
 import org.cloudsimplus.datacenters.DatacenterSimple;
 import org.cloudsimplus.hosts.HostSimple;
+import org.cloudsimplus.resources.Pe;
 import org.cloudsimplus.resources.PeSimple;
 import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerSpaceShared;
 import org.cloudsimplus.utilizationmodels.UtilizationModelFull;
@@ -54,7 +55,7 @@ public final class NativeA2BoundedGeneralization {
         CloudSimPlus sim=new CloudSimPlus(eventGap);
         List<String> events=new ArrayList<>();
         Passive scheduler=new Passive(sim,name,events);
-        List<PeSimple> hostPes=new ArrayList<>();
+        List<Pe> hostPes=new ArrayList<>();
         for(int i=0;i<pes;i++)hostPes.add(new PeSimple(MIPS+1_000_000));
         HostSimple host=new HostSimple(16384,100_000,100_000,hostPes);
         new DatacenterSimple(sim,List.of(host));
