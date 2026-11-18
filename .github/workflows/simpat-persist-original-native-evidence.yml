@@ -1,0 +1,136 @@
+name: SIMPAT archive immutable original native logs and derived evidence in Git
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-persist-original-native-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: simpat-persistent-native-evidence
+  cancel-in-progress: false
+jobs:
+  freeze_original_evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Read original A2 genuine native Java log and source audit
+        uses: actions/download-artifact@v4
+        with:
+          name: jpdc-a2-original-native-24-case-288-cloudlets
+          run-id: 44215741883
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: originals/a2
+      - name: Read original A3 genuine datacenter-clock source log
+        uses: actions/download-artifact@v4
+        with:
+          name: jpdc-a3-exact-native-datacenter-arrival-start-audit
+          run-id: 44228414078
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: originals/a3
+      - name: Read original A1 passive native waiting-promotion method trace
+        uses: actions/download-artifact@v4
+        with:
+          name: simpat-v857-native-passive-wait-promotion-a1
+          run-id: 44359114031
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: originals/a1
+      - name: Read source-verified original control-versus-intervention Java traces
+        uses: actions/download-artifact@v4
+        with:
+          name: simpat-a1-preregistered-bundled-rescan-java
+          run-id: 44381766155
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: originals/rescan
+      - name: Read eight previously unseen native Java holdout traces
+        uses: actions/download-artifact@v4
+        with:
+          name: simpat-a1-eight-independent-input-native-prediction
+          run-id: 44391376042
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: originals/eight
+      - name: Read 288 original-source reconstructed job-level measures
+        uses: actions/download-artifact@v4
+        with:
+          name: simpat-a2-verified-original-perjob-completion-margins
+          run-id: 44352984149
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: originals/perjob
+      - name: Read source-checked 51-point synthetic deadline threshold table
+        uses: actions/download-artifact@v4
+        with:
+          name: simpat-a2-source-verified-threshold-sweep
+          run-id: 44354321501
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: originals/threshold
+      - name: Validate immutable source SHA256 and ORIGINAL repeat equality BEFORE persisting
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "9fb08d07fe9741772b0de59a837046d0152362d3724da04daf02ccbc3d879391  originals/a2/native.log" | sha256sum --check
+          echo "c3a978e3e19ec577e752ca31e32da3226ddb05c1fa435577ad8f48d3244e6022  originals/a3/native_clocks.log" | sha256sum --check
+          echo "18b39fb536ae863ea665067f0318a285252ea2c5199792cb3362aa4a5a989abf  originals/a1/passive_promotion.log" | sha256sum --check
+          echo "af80c4a83caf8542cc6467493252be0d38c1c42f48a313fa4e45fcc52f0f2f55  originals/rescan/TREATMENT_first.log" | sha256sum --check
+          echo "c4bd49c77c488626fb027831bc8704b34db53f0d34845e1f01fc278ca3438c02  originals/eight/native_first.log" | sha256sum --check
+          echo "895dfdb1ed9eba80d49a5b2fd23c6fbbec12259de9b0850f6b0e9106a4e3a885  originals/perjob/a2_per_job_completion_margins.csv" | sha256sum --check
+          echo "042e55184e16fea6b781104be864cd0445b53ee8ba2e2861edbbc83e44d02bf8  originals/threshold/a2_disagreement_threshold_sweep_0_250_step5.csv" | sha256sum --check
+          cmp originals/a2/native.log originals/a2/native_repeat.log
+          cmp originals/a3/native_clocks.log originals/a3/native_clocks_repeat.log
+          cmp originals/a3/original_control.log originals/a2/native.log
+          cmp originals/a1/passive_promotion.log originals/a1/passive_promotion_repeat.log
+          cmp originals/rescan/CONTROL_first.log originals/a1/passive_promotion.log
+          cmp originals/rescan/CONTROL_first.log originals/rescan/CONTROL_repeat.log
+          cmp originals/rescan/TREATMENT_first.log originals/rescan/TREATMENT_repeat.log
+          cmp originals/eight/native_first.log originals/eight/native_repeat.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,csv
+          r=Path("originals")
+          c=json.loads((r/"eight"/"unseen_prediction_audit.json").read_text())
+          assert c["jobs_completed"]==24 and c["confusion_pre_submit_event_predicate"]=={"TP":2,"FP":0,"TN":6,"FN":0}
+          assert c["input_only_gap_counts"]=={"1US":1,"5MS":1}
+          x=json.loads((r/"rescan"/"counterfactual_audit.json").read_text())
+          assert x["cases"]==6 and len(x["positive_cases_losing_old_wait_young_exec"])==2
+          assert len(x["negative_cases_newly_showing_bypass"])==0
+          assert len(list(csv.DictReader((r/"perjob"/"a2_per_job_completion_margins.csv").open())))==288
+          assert len(list(csv.DictReader((r/"threshold"/"a2_disagreement_threshold_sweep_0_250_step5.csv").open())))==51
+          print("SIMPAT_FROZEN_NATIVE_ARCHIVE_SOURCE_AND_NEGATIVE_OUTCOME_CHECK_PASS")
+          PY
+      - name: Commit original immutable source-log evidence with SHA manifest to tracked Git branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=jpdc/evidence/simpat_v857_original_2026-11-18
+          mkdir -p "$base"
+          cp originals/a2/native.log "$base/a2_original_native_288jobs.log"
+          cp originals/a2/primary_audit.json "$base/a2_original_primary_audit.json"
+          cp originals/a3/native_clocks.log "$base/a3_original_arrival_clock_288jobs.log"
+          cp originals/a3/audit.json "$base/a3_original_clock_audit.json"
+          cp originals/a1/passive_promotion.log "$base/a1_original_sixcase_wait_promotion.log"
+          cp originals/a1/promotion_audit.json "$base/a1_original_wait_promotion_audit.json"
+          cp originals/rescan/TREATMENT_first.log "$base/a1_original_sixcase_rescan_treatment.log"
+          cp originals/rescan/counterfactual_audit.json "$base/a1_rescan_control_treatment_audit.json"
+          cp originals/eight/native_first.log "$base/a1_new_eightcase_original_native.log"
+          cp originals/eight/unseen_prediction_audit.json "$base/a1_new_eightcase_audit.json"
+          cp originals/perjob/a2_per_job_completion_margins.csv "$base/a2_derived_original_288_job_margins.csv"
+          cp originals/perjob/a2_per_job_completion_margin_audit.json "$base/a2_derived_margin_audit.json"
+          cp originals/threshold/a2_disagreement_threshold_sweep_0_250_step5.csv "$base/a2_derived_51_threshold_sweep.csv"
+          cp originals/threshold/a2_disagreement_threshold_sweep_audit.json "$base/a2_derived_threshold_audit.json"
+          (cd "$base" && sha256sum *.log *.csv *.json > SHA256SUMS.txt)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$base"
+          if git diff --cached --quiet; then
+            echo "ALREADY_FROZEN_IDENTICAL"
+          else
+            git commit -m "data(simpat): permanently commit SHA-checked original native A1/A2/A3 and eight-case evidence"
+            git push origin HEAD:jpdc-seed0-repro-20261024
+          fi
+          (cd "$base" && sha256sum -c SHA256SUMS.txt)
+          echo "SIMPAT_NATIVE_EVIDENCE_PERMANENT_GIT_COMMIT_AND_HASH_PASS"
