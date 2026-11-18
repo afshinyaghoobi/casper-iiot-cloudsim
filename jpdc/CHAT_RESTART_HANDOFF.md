@@ -1,3 +1,9 @@
+# RESEARCH PROGRAM DECISION — TWO SEPARATE ARTICLES (2026-11-17)
+
+**User approved submission-first strategy. TOP PRIORITY Program A / JPDC manuscript preparation; Program B future risk-aware scheduling is RESERVED ONLY.** FIRST READ [program index](TWO_PAPER_RESEARCH_PROGRAM_INDEX_2026-11-17.md), [Program A bounded submission plan](JPDC_MINIMUM_SUBMITTABLE_PAPER_PLAN_2026-11-17.md), [Program B future research roadmap](NEXT_PAPER_RISK_AWARE_SCHEDULING_RESEARCH_ROADMAP_2026-11-17.md). A aim is a distinct simulation-semantics paper, conditional target December 15–20 2026 (fallback Dec 20–Jan 10). A still requires new native callback tracing [prereg](NATIVE_V857_DYNAMIC_ADMISSION_TRACE_PREREG_2026-11-17.md), at least one bounded prospective independently audited generalization experiment, complete manuscript, originality review; no article is yet submission-ready. B is NEW POLICY research, NOT started and not allowed to recycle FGCS original CASPER, Stage64/65 failed results or A contribution. The earlier original cross-runtime Java/Python strict-FCFS queue >5ms FAIL and Stage65 safety FAIL remain unchanged. For user's «ادامه», advance actual Program A work and verified GitHub CI, not B, unless explicitly redirected. Research-planning documents are not completed experimental evidence.
+
+---
+
 # START HERE IF CHATGPT CONTEXT IS LOST — CASPER → JPDC RESEARCH HANDOFF
 
 **Updated: 2026-11-17.** This file is a compact, self-contained operational restart guide. It is intentionally different from the verbose chronological `jpdc/CURRENT_RESEARCH_HANDOFF.md`, which may grow too large to read as a whole. Always inspect THIS document and the top of CURRENT_RESEARCH_HANDOFF before beginning new experiments. **The user's short Persian command «ادامه» means: continue real, committed, executable research in the connected GitHub repo, with verification and human-readable results, not just propose ideas.** Respond in Persian.
