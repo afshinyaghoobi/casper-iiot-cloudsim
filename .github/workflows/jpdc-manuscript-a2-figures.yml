@@ -1,0 +1,59 @@
+name: JPDC manuscript A2 figures and table from original archived evidence
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-manuscript-a2-figures.yml'
+      - 'jpdc/make_jpdc_a2_manuscript_figure.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original_a2_manuscript_visuals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 44215741883
+          github-token: ${{ github.token }}
+          name: jpdc-a2-original-native-24-case-288-cloudlets
+          path: original-a2
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 44216958536
+          github-token: ${{ github.token }}
+          name: jpdc-a2-retrospective-service-oracle-source-audit
+          path: original-oracle
+      - name: Verify original source audits and produce 24-case figure/table
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p manuscript-a2
+          git rev-parse HEAD > manuscript-a2/source_commit.txt
+          echo '433035fa66895fa2d47b8e48757e2edbe68849a2947c9ea79474a43e27b06266  original-a2/primary_audit.json' | sha256sum -c -
+          python3 jpdc/make_jpdc_a2_manuscript_figure.py --primary original-a2/primary_audit.json --oracle original-oracle/service_oracle.json --csv manuscript-a2/a2_all_24_cases.csv --svg manuscript-a2/figure_a2_wait_reference_comparison.svg | tee manuscript-a2/summary.json
+          python3 jpdc/make_jpdc_a2_manuscript_figure.py --primary original-a2/primary_audit.json --oracle original-oracle/service_oracle.json --csv manuscript-a2/a2_all_24_cases_repeat.csv --svg manuscript-a2/figure_a2_wait_reference_comparison_repeat.svg > manuscript-a2/summary_repeat.json
+          cmp manuscript-a2/a2_all_24_cases.csv manuscript-a2/a2_all_24_cases_repeat.csv
+          cmp manuscript-a2/figure_a2_wait_reference_comparison.svg manuscript-a2/figure_a2_wait_reference_comparison_repeat.svg
+          python3 - <<'PY'
+          import csv,json
+          p='manuscript-a2/'
+          a=json.load(open(p+'summary.json'))
+          assert a==dict(cases=24,max_req=246.0,max_oracle=154.0,d25req=86,d25oracle=58,d50req=107,d50oracle=78)
+          rows=list(csv.DictReader(open(p+'a2_all_24_cases.csv')))
+          assert len(rows)==24 and len(set(r["case"] for r in rows))==24
+          print("JPDC_A2_MANUSCRIPT_24_CASE_VECTOR_FIGURE_AND_TABLE_PASS")
+          PY
+          sha256sum manuscript-a2/*.csv manuscript-a2/*.svg manuscript-a2/summary.json > manuscript-a2/sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-verified-a2-manuscript-table-svg
+          path: manuscript-a2/
+          if-no-files-found: warn
