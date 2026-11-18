@@ -1,0 +1,64 @@
+name: SIMPAT A1 preregistered after-update rescan six-case intervention
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-a1-prereg-rescan-intervention.yml'
+      - 'src/main/java/org/casperiiot/jpdc/NativeV857EndUpdateRescanCounterfactual.java'
+      - 'jpdc/audit_simpat_a1_end_update_rescan_counterfactual.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real_java_six_case_control_and_treatment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Original science immutability and pre-registration gate
+        run: |
+          set -euo pipefail
+          test -s jpdc/SIMPAT_A1_END_OF_UPDATE_RESCAN_INTERVENTION_PREREG_2026-11-18.md
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          mvn -B -q -DskipTests compile
+      - name: Run original, new CONTROL, and new TREATMENT twice each on original six inputs
+        run: |
+          set -euo pipefail
+          mkdir -p simpat-rescan
+          git rev-parse HEAD > simpat-rescan/source_commit.txt
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeV857WaitingPromotionPassiveTrace | grep -E '^ARRIVALTRACE_|^JPDC_ARRIVALTRACE_' > simpat-rescan/original.log
+          for arm in CONTROL TREATMENT; do
+            for suffix in first repeat; do
+              mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeV857EndUpdateRescanCounterfactual -Dexec.args="$arm" | grep -E '^ARRIVALTRACE_|^JPDC_ARRIVALTRACE_|^SIMPAT_INTERVENTION,' > "simpat-rescan/${arm}_${suffix}.log"
+            done
+            cmp "simpat-rescan/${arm}_first.log" "simpat-rescan/${arm}_repeat.log"
+          done
+          cmp simpat-rescan/original.log simpat-rescan/CONTROL_first.log
+          python3 jpdc/audit_simpat_a1_end_update_rescan_counterfactual.py \
+            --original simpat-rescan/original.log \
+            --control simpat-rescan/CONTROL_first.log \
+            --treatment simpat-rescan/TREATMENT_first.log \
+            --out simpat-rescan/counterfactual_audit.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('simpat-rescan/counterfactual_audit.json'))
+          assert x['status']=='PASS_SOURCE_VERIFIED_A1_PREREGISTERED_BUNDLED_RESCAN_INTERVENTION'
+          assert x['cases']==6 and x['jobs_per_arm']==18
+          assert x['original_six_case_control_exact_bytes']
+          assert x['original_strict_cross_runtime_parity']=='FAIL' and x['stage65_safety']=='FAIL'
+          assert x['identifies_single_internal_cause']==False
+          print('SIMPAT_A1_PREREG_BUNDLED_RESCAN_AUDIT_PASS_NO_CAUSAL_BUG_CLAIM')
+          PY
+          sha256sum simpat-rescan/*.log simpat-rescan/*.json > simpat-rescan/source_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-a1-preregistered-bundled-rescan-java
+          path: simpat-rescan/
+          if-no-files-found: warn
