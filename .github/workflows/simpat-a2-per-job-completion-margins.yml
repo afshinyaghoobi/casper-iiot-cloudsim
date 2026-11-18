@@ -1,0 +1,56 @@
+name: SIMPAT original A2 per-job completion margin provenance audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-a2-per-job-completion-margins.yml'
+      - 'jpdc/audit_simpat_a2_per_job_completion_margins.py'
+      - 'jpdc/manuscript_a2_primary_24_cases_2026-11-18.csv'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original_artifact_analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download ORIGINAL frozen real-Java A2 24-case artifact (not a new simulation)
+        uses: actions/download-artifact@v4
+        with:
+          name: jpdc-a2-original-native-24-case-288-cloudlets
+          run-id: 44215741883
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: a2-original
+      - name: Verify hashes and compute exact 288 per-job paired completion margins
+        run: |
+          set -euo pipefail
+          echo "9fb08d07fe9741772b0de59a837046d0152362d3724da04daf02ccbc3d879391  a2-original/native.log" | sha256sum -c -
+          python3 jpdc/audit_simpat_a2_per_job_completion_margins.py \
+            --native a2-original/native.log \
+            --cases jpdc/manuscript_a2_primary_24_cases_2026-11-18.csv \
+            --outdir simpat-per-job | tee simpat-per-job-console.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('simpat-per-job/a2_per_job_completion_margin_audit.json'))
+          assert a['status']=='PASS_VERIFIED_POSTHOC_PER_JOB_COMPLETION_MARGIN_DIAGNOSTIC'
+          assert a['jobs']==288 and a['cases']==24
+          assert a['two_case_example'][0]['deadline25_disagreements']==1
+          assert a['two_case_example'][1]['deadline25_disagreements']==5
+          assert a['signed_disagreement_direction']['25']['disagreements']==86
+          assert a['signed_disagreement_direction']['50']['disagreements']==107
+          assert a['analysis_is_posthoc'] and not a['new_java_simulation']
+          print('SIMPAT_A2_PER_JOB_SIGNED_DEADLINE_MARGIN_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-a2-verified-original-perjob-completion-margins
+          path: |
+            simpat-per-job/a2_per_job_completion_margins.csv
+            simpat-per-job/a2_per_job_completion_margin_audit.json
+          if-no-files-found: warn
