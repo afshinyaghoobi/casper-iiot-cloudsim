@@ -1,0 +1,38 @@
+name: SIMPAT v1.4 job-level signed margin manuscript integrity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-v14-perjob-claim-qa.yml'
+      - 'jpdc/check_simpat_v14_perjob_claim_integrity.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V14_NATIVE_PERJOB_MARGINS_2026-11-18.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify title, original A2 full case table and posthoc per-job claims
+        run: |
+          set -euo pipefail
+          python3 jpdc/check_simpat_v14_perjob_claim_integrity.py | tee simpat-v14-source-claim.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('simpat-v14-source-claim.json'))
+          assert a['status']=='PASS_STATIC_PACKET_CHECK'
+          assert a['title_locked'] and a['source_cases']==24 and a['references_numbered']==12
+          assert not a['publisher_submission'] and a['unresolved_author_approvals']
+          print('SIMPAT_V14_JOB_LEVEL_CLAIMS_AND_TITLE_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v14-job-margin-manuscript-qa
+          path: simpat-v14-source-claim.json
+          if-no-files-found: warn
