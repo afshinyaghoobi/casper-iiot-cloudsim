@@ -1,3 +1,9 @@
+# ACTIVE PROGRAM A UPDATE — NEW A1 JAVA ELIGIBILITY OBSERVED / A2 PROTOCOL FROZEN (2026-11-17)
+
+New [A1 verified real Java CI evidence](JPDC_A1_DYNAMIC_ELIGIBILITY_CALLBACK_VERIFIED_2026-11-17.md): actual GitHub run [44214864810](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/44214864810) SUCCESS, Java CloudSimPlus 8.5.7 six cases /18 completed; **54 dynamically observed canExecuteCloudletInternal callbacks**, two prior bypass cases repeated and passive new vs old harness output byte identical after stripping eligibility-only rows. A1 PARTIAL: WAIT-promotion callback path itself not yet dynamically instrumented. [A2 prospective 24-case protocol](JPDC_A2_BOUNDED_GENERALIZATION_PREREG_2026-11-17.md) newly COMMITTED before outcomes, but **A2 actual Java experiment NOT RUN**. Current highest value is implement/run A2 and then manuscript, not enlarge diagnostic scope. Original 30k parity FAIL and Stage65 safety FAIL unchanged. Program B still RESERVED; internal JPDC submission target December remains conditional.
+
+---
+
 # CASPER Research Program — Two Distinct Papers / Single Source of Truth
 
 **Decision recorded:** 2026-11-17. **Research priority:** FINISH PROGRAM A; PRESERVE PROGRAM B FOR LATER.
