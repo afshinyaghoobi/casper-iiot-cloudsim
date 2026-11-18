@@ -1,0 +1,33 @@
+# SIMPAT CloudSimPlus 8.5.7 official API contract vs new A1 intervention — critical research audit (2026-11-18)
+
+**User-locked exact title:** Queue-Wait and Execution-Time Semantics in CloudSimPlus 8.5.7: Implications for IoT Scheduling Simulation
+**Target:** Simulation Modelling Practice and Theory (SIMPAT). **Status:** official API source reading and internal manuscript error audit, NOT a new native experiment.
+
+## Primary official published software contract (exact tested version)
+1. [CloudletSchedulerSpaceShared 8.5.7 official Javadoc](https://javadoc.io/static/org.cloudsimplus/cloudsimplus/8.5.7/org/cloudsimplus/schedulers/cloudlet/CloudletSchedulerSpaceShared.html): documents exclusive use of Cloudlet/Pe processing, a WAIT list for jobs that cannot execute, and **ignoring Cloudlet priority as an execution-order control**. It does NOT explicitly guarantee that across all event phases every already-WAIT Cloudlet must be rechecked before processing a subsequently submitted new Cloudlet. Its description alone cannot be read as an ironclad global *submission-order FIFO* contract.
+2. [CloudletSchedulerAbstract 8.5.7 official Javadoc](https://javadoc.io/static/org.cloudsimplus/cloudsimplus/8.5.7/org/cloudsimplus/schedulers/cloudlet/CloudletSchedulerAbstract.html), method **moveNextCloudletsFromWaitingToExecList(double)**: selects **suitable WAIT Cloudlets** as free PEs permit, and the documented method is **called internally by updateProcessing**. Method **findSuitableWaitingCloudlet** attempts to find the first waiting Cloudlet requiring no more PEs than free; suitability and event callback time are not an unconditional global FIFO theorem. See public method details of `updateProcessing`, `isThereEnoughFreePesForCloudlet`, and `getFreePes`.
+3. The exact **publisher Java source JAR 8.5.7** was previously hashed **8d3efcacfc661b2f1e018e279761fc4ae1e5584a770b2022d20930568688966c** and source method owners/line positions audited in [previous source contract audit](NATIVE_V857_SOURCE_MECHANISM_AUDIT_VERIFIED_2026-11-17.md). Previous source audit confirms `cloudletSubmitInternal` direct admission/wait decisions and `updateProcessing` → waiting promotion code path; its static lexical analysis on its own does not prove executed branches.
+
+## Comparison to actual experiment
+| Inference | Source status | Correct scientific interpretation |
+|---|---|---|
+| SpaceShared has separate WAIT/EXEC lists and capacity-dependent eligibility | **DOCUMENTED** in versioned API | NOT a novel method or discovery |
+| Waiting promotion is part of updateProcessing and searches for suitable waiting Cloudlet | **DOCUMENTED** in 8.5.7 API | NOT a newly discovered source path |
+| The exact ordering (job1 eligibility FALSE while job0 EXEC, update ends EXEC empty with job1 WAIT, later job2 eligible TRUE and submitted EXEC) in ORIGINAL_5MS and LATE10_5MS | **ACTUALLY OBSERVED** in 8.5.7 A1 native Java six-case source logs, independent audit CI run44365200058 | Specific reproducible event-state fixture, not universal validity or scheduler defect |
+| Adding a post-update WAIT rescan removes old-WAIT/new-EXEC state in the two preknown fixed cases | **ACTUALLY INTERVENED** control/treatment Java, prereg protocol before intervention run44381766155 PASS | Local sufficiency of an explicitly altered phase-dependent queue treatment in preknown fixtures; no blinded holdout, not stock semantics |
+| In 12 added rescan callbacks the returned next-event time matches the original next value *in those callbacks* | **MEASURED** intervention logs, not global event-schedule equivalence | Does not establish no downstream event or service changes |
+| One original 1VM 24-case A2 synthetic wait/reference discrepancy | **MEASURED**, 288 jobs | Distinct model constructs and services; no proof native CloudSimPlus violates its API or that physical IoT timing is wrong |
+
+## Critical actual manuscript v1.8 content consistency errors
+**Found in checked GitHub manuscript [v1.8](SIMPAT_MANUSCRIPT_V18_ENDUPDATE_RESCAN_INTERVENTION_2026-11-18.md):**
+- **Threats to validity, “Internal attribution...” currently says:** `a waiting-promotion callback was not instrumented`. This was accurate only for original A2, **FALSE if read as applying to whole current paper**, since A1 added a directly instrumented waiting-promotion method at v1.6 and separate rescan intervention at v1.8. Must distinguish A2-only absent hook from A1 new hook.
+- **Conclusion says:** `More precise attribution of waiting promotion ... remain future research questions` without acknowledging that A1 waiting-promotion was directly instrumented and new in-sample end-update rescan was successfully executed. Clarify that *A2-wide isolated causal attribution* remains unresolved, not A1 method observability.
+- **Threats wording “Every workload ... with one-PE CPU-only tasks”** is too broad: the A2 full 24-case grid includes **one and two VM PEs**. Correct to “one/two-PE CPU-only tasks in single-VM synthetic settings”, noting A1 itself uses one PE.
+- Existing [6] reference identifies both SpaceShared and Abstract but links only to SpaceShared. Correct bibliography to include **both exact 8.5.7 Javadocs**; no invented reference number and no new author bibliographic claim.
+
+## Scientific novelty decision — contract-aware
+The executed A1 phase-order sequence and controlled queue rescan are MORE informative than “different queue models yield different times.” However, the **specific callback-based waiting promotion and PE suitability rules are published software semantics**; describing these as *new algorithm/bug* is not defensible. The new experimental result can validly be a **reproducible version-pinned diagnostic showing an abstraction failure and intervention sensitivity under controlled fixture states**, not proof of significant first-in-literature methodology or external IoT correctness.
+
+**SIMPAT full original-research paper GO/NOGO remains HOLD** pending whether an independently grounded model-validity principle/contrast (and suitable paper type) warrants submission. More A1 variation or synthetic jobs simply to increase counts will not resolve it. If future new Java tests are justified, predeclare an **unseen scenario** based on source-defined eligibility-state conditions rather than selecting from already known positive fixtures, and distinguish generalization from causal isolation. A strong negative holdout must be reported unchanged.
+
+**Historical negatives preserved:** strict 30k Java/Python parity FAIL; Stage65 safety FAIL; Program B separate RESERVED/NOT STARTED. Author, FGCS overlap, AI disclosure, funding/COI, permanent data archive remain submission gates.
