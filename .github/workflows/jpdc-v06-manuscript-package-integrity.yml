@@ -1,0 +1,40 @@
+name: JPDC v0.6 manuscript-table-figure static data integrity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-v06-manuscript-package-integrity.yml'
+      - 'jpdc/JPDC_A_JOURNAL_FACING_MANUSCRIPT_V06_2026-11-18.md'
+      - 'jpdc/manuscript_a2_primary_24_cases_2026-11-18.csv'
+      - 'jpdc/figure_a2_24_case_native_vs_fifo_2026-11-18.svg'
+      - 'jpdc/audit_a2_manuscript_v06_package.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paper_data_integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check 24 cells against manuscript and permanent vector graphic
+        run: |
+          set -euo pipefail
+          python3 jpdc/audit_a2_manuscript_v06_package.py | tee paper_package_integrity.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open("paper_package_integrity.json"))
+          assert a["status"]=="PASS_STATIC_CROSS_ARTIFACT_QA"
+          assert a["cases"]==24 and a["tasks"]==288
+          assert not a["scientific_contribution_certified"] and not a["journal_submission_approved"]
+          print("JPDC_V06_PAPER_TABLE_SVG_STATIC_INTEGRITY_PASS")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-v06-manuscript-table-figure-qa
+          path: paper_package_integrity.json
+          if-no-files-found: warn
