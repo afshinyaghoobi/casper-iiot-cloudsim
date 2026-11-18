@@ -1,0 +1,49 @@
+name: JPDC A3 exact 8.5.7 native wait/elapsed measurement source review
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-a3-native-measurement-definitions.yml'
+      - 'jpdc/audit_v857_cloudlet_wait_execution_definitions.py'
+      - 'jpdc/JPDC_A3_V857_NATIVE_WAIT_EXEC_MEASURE_AUDIT_PROTOCOL_2026-11-17.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact_publisher_measurement_source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Download SHA-pinned publisher version 8.5.7 source, audit metric definitions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p native-measure-definitions
+          git rev-parse HEAD > native-measure-definitions/source_commit.txt
+          mvn -B -q dependency:get -Dartifact=org.cloudsimplus:cloudsimplus:8.5.7:jar:sources -Dtransitive=false
+          JAR="$HOME/.m2/repository/org/cloudsimplus/cloudsimplus/8.5.7/cloudsimplus-8.5.7-sources.jar"
+          echo '8d3efcacfc661b2f1e018e279761fc4ae1e5584a770b2022d20930568688966c  '"$JAR" | sha256sum -c -
+          python3 jpdc/audit_v857_cloudlet_wait_execution_definitions.py --sources "$JAR" --out native-measure-definitions/publisher_metric_source.json
+          python3 jpdc/audit_v857_cloudlet_wait_execution_definitions.py --sources "$JAR" --out native-measure-definitions/publisher_metric_source_repeat.json
+          cmp native-measure-definitions/publisher_metric_source.json native-measure-definitions/publisher_metric_source_repeat.json
+          python3 - <<'PY'
+          import json
+          p='native-measure-definitions/publisher_metric_source.json'
+          a=json.load(open(p))
+          assert a['status']=='SOURCE_ONLY_REVIEW' and not a['dynamic_branch_trace']
+          assert len(a['files'])==4
+          print('JPDC_EXACT_VERSION_857_NATIVE_MEASUREMENT_SOURCE_EXTRACTION_PASS')
+          PY
+          sha256sum native-measure-definitions/*.json > native-measure-definitions/audit_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-v857-exact-cloudlet-wait-exec-source-review
+          path: native-measure-definitions/
+          if-no-files-found: warn
