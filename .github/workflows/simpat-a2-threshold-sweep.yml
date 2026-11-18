@@ -1,0 +1,55 @@
+name: SIMPAT A2 original-source threshold sensitivity 0 to 250 ms
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-a2-threshold-sweep.yml'
+      - 'jpdc/audit_simpat_a2_threshold_sensitivity_grid.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect_source_verified_thresholds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download ORIGINAL A2 Java experiment output
+        uses: actions/download-artifact@v4
+        with:
+          name: jpdc-a2-original-native-24-case-288-cloudlets
+          run-id: 44215741883
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: a2-original
+      - name: Rebuild source-checked per-job completion values, then sweep all prespecified grid thresholds
+        run: |
+          set -euo pipefail
+          echo "9fb08d07fe9741772b0de59a837046d0152362d3724da04daf02ccbc3d879391  a2-original/native.log" | sha256sum -c -
+          python3 jpdc/audit_simpat_a2_per_job_completion_margins.py \
+            --native a2-original/native.log \
+            --cases jpdc/manuscript_a2_primary_24_cases_2026-11-18.csv \
+            --outdir perjob >/dev/null
+          python3 jpdc/audit_simpat_a2_threshold_sensitivity_grid.py \
+            --input perjob/a2_per_job_completion_margins.csv \
+            --outdir sweep | tee sweep-console.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('sweep/a2_disagreement_threshold_sweep_audit.json'))
+          assert a['status']=='PASS_ORIGINAL_SOURCE_VERIFIED_POSTHOC_THRESHOLD_SWEEP'
+          assert a['threshold_grid_n']==51 and a['jobs']==288 and a['cases']==24
+          assert a['not_preregistered'] and not a['new_java_simulations']
+          assert a['model_comparison_not_observed_iot_error'] and not a['general_causal_significance_claim']
+          print('SIMPAT_A2_ORIGINAL_288_JOB_THRESHOLD_SWEEP_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-a2-source-verified-threshold-sweep
+          path: |
+            sweep/a2_disagreement_threshold_sweep_0_250_step5.csv
+            sweep/a2_disagreement_threshold_sweep_audit.json
+          if-no-files-found: warn
