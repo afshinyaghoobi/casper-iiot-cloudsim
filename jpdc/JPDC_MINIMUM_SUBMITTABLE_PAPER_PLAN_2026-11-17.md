@@ -1,3 +1,9 @@
+# EXECUTION UPDATE — 2026-11-17
+
+Actual native eligibility method Java experiment [run44214864810](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/44214864810) SUCCESS: 54 callback observations, 18/18 completions, exactly same two older-WAIT/new-EXEC cases, output-equivalent vs original uninstrumented Java. [Verified scoped A1 report](JPDC_A1_DYNAMIC_ELIGIBILITY_CALLBACK_VERIFIED_2026-11-17.md). A1 PARTIAL (waiting-promotion callback not dynamically instrumented). [A2 newly frozen prospective 24-case synthetic comparison](JPDC_A2_BOUNDED_GENERALIZATION_PREREG_2026-11-17.md) NOT yet executed. First JPDC paper must still be written and achieve substantive independence from FGCS. Keep target date conditional.
+
+---
+
 # JPDC minimum-submittable paper plan (2026-11-17)
 
 STATUS: PROPOSED STRATEGY, NOT A VERIFIED MANUSCRIPT NOR ACCEPTANCE FORECAST. Aim for an ethically defensible submission, not completion of the entire CASPER research program.
