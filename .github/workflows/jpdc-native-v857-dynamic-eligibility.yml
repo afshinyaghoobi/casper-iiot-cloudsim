@@ -1,0 +1,74 @@
+name: JPDC native CloudSim 8.5.7 dynamic eligibility callback mechanism
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-native-v857-dynamic-eligibility.yml'
+      - 'src/main/java/org/casperiiot/jpdc/NativeV857EligibilityCallbackTrace.java'
+      - 'jpdc/audit_native_v857_dynamic_eligibility.py'
+      - 'jpdc/NATIVE_V857_DYNAMIC_ADMISSION_TRACE_PREREG_2026-11-17.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual_v857_dynamic_eligibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Freeze source and compile exact real CloudSimPlus v8.5.7
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p native-dynamic-eligibility
+          git rev-parse HEAD > native-dynamic-eligibility/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/NATIVE_V857_DYNAMIC_ADMISSION_TRACE_PREREG_2026-11-17.md
+          python3 -m py_compile jpdc/audit_native_v857_dynamic_eligibility.py jpdc/audit_native_arrival_offset_counterfactual.py
+          mvn -B -q -DskipTests compile
+      - name: Run actual new instrumented Java and old original Java control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeV857EligibilityCallbackTrace | grep -E '^ARRIVALTRACE_|^JPDC_ARRIVALTRACE_' > native-dynamic-eligibility/native_trace.log
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeV857EligibilityCallbackTrace | grep -E '^ARRIVALTRACE_|^JPDC_ARRIVALTRACE_' > native-dynamic-eligibility/native_trace_repeat.log
+          cmp native-dynamic-eligibility/native_trace.log native-dynamic-eligibility/native_trace_repeat.log
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeArrivalOffsetCounterfactual | grep -E '^ARRIVALCF_|^JPDC_ARRIVALCF_' > native-dynamic-eligibility/control_original_java.log
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path("native-dynamic-eligibility")
+          original=(root/"native_trace.log").read_text().splitlines()
+          normalized=[line.replace("ARRIVALTRACE_", "ARRIVALCF_") for line in original if not line.startswith("ARRIVALTRACE_ELIGIBILITY,")]
+          (root/"normalized_uninstrumented.log").write_text("\n".join(normalized)+"\n")
+          assert (root/"normalized_uninstrumented.log").read_bytes()==(root/"control_original_java.log").read_bytes(), "instrumentation changed original scheduling trace"
+          print("JPDC_PASSIVE_ELIGIBILITY_OBSERVER_EQUIVALENCE_PASS")
+          PY
+          python3 jpdc/audit_native_v857_dynamic_eligibility.py --trace native-dynamic-eligibility/native_trace.log --out native-dynamic-eligibility/eligibility_audit.json
+          python3 jpdc/audit_native_arrival_offset_counterfactual.py --native native-dynamic-eligibility/normalized_uninstrumented.log --out native-dynamic-eligibility/control_audit.json
+          python3 jpdc/audit_native_v857_dynamic_eligibility.py --trace native-dynamic-eligibility/native_trace_repeat.log --out native-dynamic-eligibility/eligibility_repeat.json
+          cmp native-dynamic-eligibility/eligibility_audit.json native-dynamic-eligibility/eligibility_repeat.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("native-dynamic-eligibility")
+          a=json.loads((root/"eligibility_audit.json").read_text())
+          b=json.loads((root/"control_audit.json").read_text())
+          assert a["status"]=="PASS" and b["status"]=="PASS"
+          assert a["bypass_cases"]==["ORIGINAL_5MS","LATE10_5MS"]
+          assert a["original_30k_java_python_parity"]==b["original_30k_crossruntime_parity"]=="FAIL"
+          assert a["stage65_safety"]==b["stage65_safety"]=="FAIL"
+          print("JPDC_REAL_DYNAMIC_ELIGIBILITY_SOURCE_PASS")
+          PY
+          sha256sum native-dynamic-eligibility/*.log native-dynamic-eligibility/*.json > native-dynamic-eligibility/source_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-v857-dynamic-eligibility-original-java-source
+          path: native-dynamic-eligibility/
+          if-no-files-found: warn
