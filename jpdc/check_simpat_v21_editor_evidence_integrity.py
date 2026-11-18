@@ -97,7 +97,7 @@ assert "| RQ2: bounded rescan |" in t
 assert "| RQ3: 5-ms vs1-μs input-only direction |" in t
 assert "Failed" in t or "**Negative:** 1/4 positives" in t
 assert "Primary evaluation-level takeaway." in t
-assert "these are not three independently validated new algorithms" in t.lower()
+assert "**not three independently validated new algorithms**" in t.lower()
 assert "evidence presented here consists of (i)" not in t.lower()
 
 
