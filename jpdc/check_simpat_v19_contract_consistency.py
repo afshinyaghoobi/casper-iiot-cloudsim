@@ -72,13 +72,12 @@ assert "SIMPAT_A1_PREREG_POSTUPDATE_RESCAN_INTERVENTION_VERIFIED_2026-11-18.md" 
 assert "a unique underlying Java branch" in t
 assert "official CloudSimPlus 8.5.7 API documentation" in t
 assert "documented software semantics" in t
-assert "the original **24-case A2** run" in t
+assert "The original **24-case A2** run" in t
 assert "A1** native microfixture did instrument" in t
 assert "one- and two-PE VM configurations" in t
 assert "**Software-contract and intervention scope.**" in t
 assert "the two affected A1 conditions were known" in t.lower()
 assert "the unique causal decomposition across the 24 A2 conditions" in t.lower()
-assert "SIMPAT_OFFICIAL_V857_SCHEDULER_CONTRACT_AND_MANUSCRIPT_AUDIT_2026-11-18.md" not in t or True
 assert "a waiting-promotion callback was not instrumented" not in t
 assert "More precise attribution of waiting promotion and validation" not in t
 assert "CloudletSchedulerAbstract.html" in t
