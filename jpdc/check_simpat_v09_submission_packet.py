@@ -17,7 +17,7 @@ words=len(re.findall(r"\b[\w]+(?:[-/–][\w]+)*\b",abstract))
 assert words<=250,("abstract too long",words) # provisional: recheck current SIMPAT Guide
 assert "Industrial Internet of Things" not in lines[0]
 assert "### 4.3 Reproducible source-to-figure analysis" in t
-assert "posthoc" in t.lower() and "one VM" in t
+assert "posthoc" in t.lower() and ("one vm" in t.lower() or "single vm" in t.lower())
 assert "AI-assisted tools were used" in t
 assert "not empirical fidelity" in t
 numbers=[int(x) for x in re.findall(r"(?m)^\[(\d+)\] ",t.split("## References\n",1)[1])]
