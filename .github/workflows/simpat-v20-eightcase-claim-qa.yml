@@ -1,0 +1,38 @@
+name: SIMPAT v2.0 pre-submission scientific source-claim integrity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-v20-eightcase-claim-qa.yml'
+      - 'jpdc/check_simpat_v20_eightcase_claim_integrity.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V20_EIGHT_NEW_INPUT_PREDICTION_2026-11-18.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  claims:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Enforce title, old source results and negative as well as positive new-input findings
+        run: |
+          set -euo pipefail
+          python3 jpdc/check_simpat_v20_eightcase_claim_integrity.py | tee simpat-v20-source-claims.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('simpat-v20-source-claims.json'))
+          assert x['status']=='PASS_STATIC_PACKET_CHECK'
+          assert x['title_locked'] and x['source_cases']==24 and x['references_numbered']==12
+          assert x['unresolved_author_approvals'] and not x['publisher_submission']
+          print('SIMPAT_V20_FIXED_TITLE_AND_EIGHT_CASE_NEGATIVE_HYPOTHESIS_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v20-eightcase-hypothesis-inclusive-paper-qa
+          path: simpat-v20-source-claims.json
+          if-no-files-found: warn
