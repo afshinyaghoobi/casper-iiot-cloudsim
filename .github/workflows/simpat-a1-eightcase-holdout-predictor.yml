@@ -1,0 +1,58 @@
+name: SIMPAT independent eight-case native 8.5.7 pre-submit prediction test
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-a1-eightcase-holdout-predictor.yml'
+      - 'src/main/java/org/casperiiot/jpdc/NativeV857IndependentEightCaseTrace.java'
+      - 'jpdc/audit_simpat_a1_eightcase_unseen_predictor.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  eight_case_trace_prediction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Check frozen prereg and untouched prior original work
+        run: |
+          set -euo pipefail
+          test -s jpdc/SIMPAT_A1_EIGHTCASE_UNSEEN_INPUT_PREDICTION_PREREG_2026-11-18.md
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          mvn -B -q -DskipTests compile
+      - name: Execute all eight newly specified cases twice (original CloudSimPlus 8.5.7 native Java)
+        run: |
+          set -euo pipefail
+          mkdir -p simpat-eight-holdout
+          git rev-parse HEAD > simpat-eight-holdout/source_commit.txt
+          for suffix in first repeat; do
+            mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeV857IndependentEightCaseTrace | grep -E '^ARRIVALTRACE_|^JPDC_ARRIVALTRACE_' > "simpat-eight-holdout/native_${suffix}.log"
+          done
+          cmp simpat-eight-holdout/native_first.log simpat-eight-holdout/native_repeat.log
+          python3 jpdc/audit_simpat_a1_eightcase_unseen_predictor.py \
+            --log simpat-eight-holdout/native_first.log \
+            --out simpat-eight-holdout/unseen_prediction_audit.json | tee simpat-eight-holdout/audit_console.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('simpat-eight-holdout/unseen_prediction_audit.json'))
+          assert x['status']=='PASS_UNSEEN_EIGHT_INPUT_TRACE_AUDIT'
+          assert x['independently_configured_synthetic_fixtures']==8 and x['jobs_completed']==24
+          assert not x['predictor_uses_downstream_admission_result']
+          assert x['prior_strict30k_crossruntime_gate']=='FAIL' and x['prior_stage65_safety']=='FAIL'
+          # DO NOT ASSERT positive predictive outcome. Failed hypothesis is valid.
+          print('SIMPAT_EIGHT_NEW_INPUT_CASES_REPRO_AND_PREDICTION_AUDIT_COMPLETE_NO_OUTCOME_SELECTION')
+          PY
+          sha256sum simpat-eight-holdout/*.log simpat-eight-holdout/unseen_prediction_audit.json > simpat-eight-holdout/provenance_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-a1-eight-independent-input-native-prediction
+          path: simpat-eight-holdout/
+          if-no-files-found: warn
