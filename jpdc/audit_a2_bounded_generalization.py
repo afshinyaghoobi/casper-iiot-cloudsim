@@ -48,7 +48,8 @@ def audit(data):
         d=data[case]
         if len(d["header"])!=1 or len(d["done"])!=1 or len(d["before"])!=12 or len(d["after"])!=12 or set(d["finish"])!=set(range(12)):
             raise ValueError("case conservation "+case)
-        _,family,seedstr,gapstr,pestr=d["header"][0]
+        _,header_case,family,seedstr,gapstr,pestr=d["header"][0]
+        if header_case != case: raise ValueError("header case key mismatch")
         seed=int(seedstr);gap=float(gapstr);pes=int(pestr)
         if (family,seed,gap,pes)!=(case.split("_")[0],int(case.split("_")[1][1:]),.000001 if "1US" in case else .005,int(case.split("_")[-1][1:])):
             raise ValueError("header factors differ from case key")
