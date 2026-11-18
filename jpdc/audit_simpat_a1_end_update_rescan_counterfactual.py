@@ -88,7 +88,7 @@ def main():
        "negative_cases_newly_showing_bypass":[x["case"] for x in negatives if x["old_wait_young_exec_treatment"]],
        "total_rescan_calls":sum(x["post_update_rescan_calls"] for x in results),
        "rescan_calls_with_recorded_job1_promotion":sum(x["post_update_rescan_moves_old_job1"] for x in results),
-       "cases":results,
+       "case_details":results,
        "original_log_sha256":hashlib.sha256(original).hexdigest(),
        "treated_log_sha256":hashlib.sha256(args.treatment.read_bytes()).hexdigest(),
        "treatment_changes_future_event_scheduling_possible":True,
@@ -97,5 +97,5 @@ def main():
        "research_input_fixtures_were_known_before_prereg":True,
        "original_strict_cross_runtime_parity":"FAIL","stage65_safety":"FAIL"}
     args.out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
-    print(json.dumps({k:v for k,v in result.items() if k!="cases"},indent=2,sort_keys=True))
+    print(json.dumps({k:v for k,v in result.items() if k!="case_details"},indent=2,sort_keys=True))
 if __name__=="__main__":main()
