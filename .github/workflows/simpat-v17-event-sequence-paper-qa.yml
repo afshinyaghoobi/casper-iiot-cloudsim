@@ -1,0 +1,38 @@
+name: SIMPAT v1.7 executed eligibility sequence manuscript integrity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-v17-event-sequence-paper-qa.yml'
+      - 'jpdc/check_simpat_v17_event_order_claim_integrity.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V17_EXECUTED_EVENT_ORDER_2026-11-18.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  static_manuscript_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact author-locked title, source data and executed-event claims
+        run: |
+          set -euo pipefail
+          python3 jpdc/check_simpat_v17_event_order_claim_integrity.py | tee simpat-v17-event-order-claim-audit.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('simpat-v17-event-order-claim-audit.json'))
+          assert a['status']=='PASS_STATIC_PACKET_CHECK'
+          assert a['title_locked'] and a['source_cases']==24 and a['references_numbered']==12
+          assert a['unresolved_author_approvals'] and not a['publisher_submission']
+          print('SIMPAT_V17_EXECUTED_EVENT_ORDER_CLAIM_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v17-executed-event-order-claim-qa
+          path: simpat-v17-event-order-claim-audit.json
+          if-no-files-found: warn
