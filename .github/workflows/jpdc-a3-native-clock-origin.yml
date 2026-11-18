@@ -1,0 +1,60 @@
+name: JPDC A3 passive native timing-origin validation
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-a3-native-clock-origin.yml'
+      - 'src/main/java/org/casperiiot/jpdc/NativeA3TimeOriginDiagnostic.java'
+      - 'jpdc/audit_native_a3_clock_origin.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native_a3_clock_origin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Freeze original scientific sources, compile exact CloudSimPlus 8.5.7
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p a3-native-clock
+          git rev-parse HEAD > a3-native-clock/commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          python3 -m py_compile jpdc/audit_native_a3_clock_origin.py
+          mvn -B -q -DskipTests compile
+      - name: New 24-case real Java clock readings, exact original control, audit and repeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeA3TimeOriginDiagnostic | grep -E '^A2_|^A3_|^JPDC_A2_' > a3-native-clock/native_clocks.log
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeA2BoundedGeneralization | grep -E '^A2_|^JPDC_A2_' > a3-native-clock/original_control.log
+          python3 jpdc/audit_native_a3_clock_origin.py --instrumented a3-native-clock/native_clocks.log --original-a2 a3-native-clock/original_control.log --out a3-native-clock/audit.json
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeA3TimeOriginDiagnostic | grep -E '^A2_|^A3_|^JPDC_A2_' > a3-native-clock/native_clocks_repeat.log
+          cmp a3-native-clock/native_clocks.log a3-native-clock/native_clocks_repeat.log
+          python3 jpdc/audit_native_a3_clock_origin.py --instrumented a3-native-clock/native_clocks_repeat.log --original-a2 a3-native-clock/original_control.log --out a3-native-clock/audit_repeat.json
+          cmp a3-native-clock/audit.json a3-native-clock/audit_repeat.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('a3-native-clock/audit.json'))
+          assert x['status']=='PASS_MEASUREMENT_CONSTRUCT_DIAGNOSTIC'
+          assert x['all_cases']==24 and x['jobs']==288
+          assert x['max_abs_native_wait_minus_fifo_ms']==246.0
+          assert x['original_a2_trace_byte_identical_without_added_clock_rows']
+          assert x['original_30k_fidelity']==x['stage65_safety']=='FAIL'
+          print('JPDC_A3_REAL_NATIVE_24_CASE_288_JOB_CLOCK_ORIGIN_PASS')
+          PY
+          sha256sum a3-native-clock/*.json a3-native-clock/*.log > a3-native-clock/hashes.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-a3-exact-native-datacenter-arrival-start-audit
+          path: a3-native-clock/
+          if-no-files-found: warn
