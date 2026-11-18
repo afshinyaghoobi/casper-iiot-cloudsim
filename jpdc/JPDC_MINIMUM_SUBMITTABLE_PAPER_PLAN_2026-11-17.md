@@ -31,3 +31,7 @@ Target earliest plausible Dec 15–20 if all gates pass; pragmatic Dec 20–Jan 
 
 ## Keep separate second paper
 Subsequent algorithm paper can use a genuinely new pre-dispatch decision rule, independent train/dev/test source seeds and prospective heldout evaluation, with different objective and empirical questions. Do not split one experiment into two minimally different papers or reuse exact results as new. Distinct title alone is NOT sufficient.
+
+## Committed two-paper architecture and next-paper boundary (2026-11-17)
+
+**User confirmed this submission-first plan.** [Master program index](TWO_PAPER_RESEARCH_PROGRAM_INDEX_2026-11-17.md) tracks Program A vs Program B and A0–A6 milestones. [Program B reserved roadmap](NEXT_PAPER_RISK_AWARE_SCHEDULING_RESEARCH_ROADMAP_2026-11-17.md) details a separate future risk-aware online scheduling research question and B0–B8 gates; it is NOT started. For immediate continuation, prioritize A1 dynamic method-level native trace, A2 bounded independent study preregistration and A4 full manuscript drafting in parallel. Never claim that writing a roadmap means a simulation ran or paper was submitted. Preserve previous original negative parity / Stage65 results. Internal target Dec 15–20 remains CONDITIONAL and may be revised based on evidence.
