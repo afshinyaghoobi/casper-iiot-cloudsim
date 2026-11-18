@@ -48,7 +48,7 @@ assert "51-threshold sweep were designed after" in t
 assert "nine" in t and "40" in t and "two" in t
 assert "51 versus 47" in t and "64 versus 22" in t and "78 versus 1" in t
 assert "SIMPAT_A2_POSTHOC_THRESHOLD_SENSITIVITY_VERIFIED_2026-11-18.md" in t
-assert "not a universal outcome" in t
+assert "neither of the original 25/50-ms results is a universal outcome" in t
 
 assert "author verification required" in t.lower()
 assert "## Declarations required before journal submission" in t
