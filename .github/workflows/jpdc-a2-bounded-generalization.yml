@@ -1,0 +1,65 @@
+name: JPDC A2 frozen 24-case native queue semantics generalization
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-a2-bounded-generalization.yml'
+      - 'src/main/java/org/casperiiot/jpdc/NativeA2BoundedGeneralization.java'
+      - 'jpdc/audit_a2_bounded_generalization.py'
+      - 'jpdc/independent_check_a2_bounded_generalization.py'
+      - 'jpdc/JPDC_A2_BOUNDED_GENERALIZATION_PREREG_2026-11-17.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real_java_native_a2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Preregistered frozen inputs and Java compiler
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p native-a2
+          git rev-parse HEAD > native-a2/source_commit.txt
+          test "$(git hash-object src/main/java/org/casperiiot/e42/E42Campaign.java)" = 34256ca7bff46f911cf20e8b94278fbd09175746
+          test "$(git hash-object jpdc/independent_physical_partial_live_stage64.py)" = 24d495dba4d29f8fe070ad6539b20361a7193cc6
+          test -s jpdc/JPDC_A2_BOUNDED_GENERALIZATION_PREREG_2026-11-17.md
+          python3 -m py_compile jpdc/audit_a2_bounded_generalization.py jpdc/independent_check_a2_bounded_generalization.py
+          mvn -B -q -DskipTests compile
+      - name: Run NEW genuine A2 native Java, exact repeat and two independent auditors
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeA2BoundedGeneralization | grep -E '^A2_|^JPDC_A2_' > native-a2/native.log
+          mvn -B -q exec:java -Dexec.mainClass=org.casperiiot.jpdc.NativeA2BoundedGeneralization | grep -E '^A2_|^JPDC_A2_' > native-a2/native_repeat.log
+          cmp native-a2/native.log native-a2/native_repeat.log
+          python3 jpdc/audit_a2_bounded_generalization.py --native native-a2/native.log --out native-a2/primary_audit.json
+          python3 jpdc/independent_check_a2_bounded_generalization.py --native native-a2/native.log --primary native-a2/primary_audit.json --out native-a2/independent_audit.json
+          python3 jpdc/audit_a2_bounded_generalization.py --native native-a2/native_repeat.log --out native-a2/primary_repeat.json
+          cmp native-a2/primary_audit.json native-a2/primary_repeat.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path("native-a2/primary_audit.json").read_text())
+          b=json.loads(Path("native-a2/independent_audit.json").read_text())
+          assert a["status"]==b["status"]=="PASS"
+          assert a["native_cases"]==b["cases"]==24
+          assert a["finished_cloudlets"]==b["cloudlets"]==288
+          assert a["stage65_safety_original"]=="FAIL"
+          assert a["crossruntime_parity_original"]=="FAIL"
+          print("JPDC_A2_NATIVE_24_CASE_288_CLOUDLET_INDEPENDENTLY_AUDITED_PASS")
+          PY
+          sha256sum native-a2/*.log native-a2/*.json > native-a2/source_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-a2-original-native-24-case-288-cloudlets
+          path: native-a2/
+          if-no-files-found: warn
