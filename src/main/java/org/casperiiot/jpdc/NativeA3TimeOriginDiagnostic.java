@@ -77,9 +77,8 @@ public final class NativeA3TimeOriginDiagnostic {
                     name,index,done.getId(),sim.clock()*1000.0,
                     done.getStartWaitTime()*1000.0,done.getTotalExecutionTime()*1000.0,
                     arrival,SERVICE[index]));
-            });
-            c.addOnFinishListener(info->{
-                Cloudlet done=info.getCloudlet();
+                // Use ONE finish listener for both records: two listeners in the
+                // first A3 trial were called in nondeterministic relative order.
                 events.add(String.format(Locale.US,
                     "A3_CLOCK,%s,%d,%.12f,%.12f,%.12f,%.12f",
                     name,index,done.getDcArrivalTime()*1000.0,
