@@ -1,0 +1,38 @@
+name: SIMPAT v2.1 RQ-to-evidence scientific claim integrity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-v21-editor-evidence-qa.yml'
+      - 'jpdc/check_simpat_v21_editor_evidence_integrity.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V21_EDITOR_RQ_EVIDENCE_SYNTHESIS_2026-11-18.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  editor_review_static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact title, RQ claim matrix, negative results, data/citation consistency and author blockers
+        run: |
+          set -euo pipefail
+          python3 jpdc/check_simpat_v21_editor_evidence_integrity.py | tee simpat_v21_editor_qa.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('simpat_v21_editor_qa.json'))
+          assert x['status']=='PASS_STATIC_PACKET_CHECK'
+          assert x['title_locked'] and x['source_cases']==24 and x['references_numbered']==12
+          assert x['unresolved_author_approvals'] and not x['publisher_submission']
+          print('SIMPAT_V21_EDITOR_EVIDENCE_AND_NEGATIVE_RESULT_QA_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v21-editorial-evidence-check
+          path: simpat_v21_editor_qa.json
+          if-no-files-found: warn
