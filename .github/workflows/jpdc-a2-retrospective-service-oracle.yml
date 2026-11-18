@@ -1,0 +1,68 @@
+name: JPDC A2 retrospective native-service decomposition audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/jpdc-a2-retrospective-service-oracle.yml'
+      - 'jpdc/audit_a2_retrospective_native_service_oracle.py'
+      - 'jpdc/JPDC_A2_NATIVE_SERVICE_ORACLE_RETROSPECTIVE_PROTOCOL_2026-11-17.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  retrospective_original_a2_analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 44215741883
+          github-token: ${{ github.token }}
+          name: jpdc-a2-original-native-24-case-288-cloudlets
+          path: original-a2
+      - name: Check exact archived original and calculate retrospective diagnostic twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p a2-service-oracle
+          git rev-parse HEAD > a2-service-oracle/source_commit.txt
+          test -s jpdc/JPDC_A2_NATIVE_SERVICE_ORACLE_RETROSPECTIVE_PROTOCOL_2026-11-17.md
+          echo '9fb08d07fe9741772b0de59a837046d0152362d3724da04daf02ccbc3d879391  original-a2/native.log' | sha256sum -c -
+          echo '433035fa66895fa2d47b8e48757e2edbe68849a2947c9ea79474a43e27b06266  original-a2/primary_audit.json' | sha256sum -c -
+          cmp original-a2/native.log original-a2/native_repeat.log
+          python3 jpdc/audit_a2_retrospective_native_service_oracle.py --native original-a2/native.log --out a2-service-oracle/service_oracle.json
+          python3 jpdc/audit_a2_retrospective_native_service_oracle.py --native original-a2/native_repeat.log --out a2-service-oracle/service_oracle_repeat.json
+          cmp a2-service-oracle/service_oracle.json a2-service-oracle/service_oracle_repeat.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open("a2-service-oracle/service_oracle.json"))
+          original=json.load(open("original-a2/primary_audit.json"))
+          assert len(a["results"])==24 and a["completed_jobs"]==288
+          assert a["max_abs_requested_ms"]==246.0
+          assert a["max_abs_oracle_ms"]==154.0
+          assert a["service_length_differs_jobs"]==250
+          assert a["oracle_residual_gt_1ms_cases"]==24
+          assert a["deadline_disagreement_requested_25ms"]==86
+          assert a["deadline_disagreement_requested_50ms"]==107
+          assert a["deadline_disagreement_oracle_25ms"]==58
+          assert a["deadline_disagreement_oracle_50ms"]==78
+          d={x["case"]:x for x in original["results"]}
+          for x in a["results"]:
+              assert abs(x["max_abs_wait_requested_ms"]-d[x["case"]]["max_abs_wait_discrepancy_ms"])<1e-6
+              assert x["deadline25_disagree_requested"]==d[x["case"]]["native_reference_deadline_disagreements_25ms"]
+              assert x["deadline50_disagree_requested"]==d[x["case"]]["native_reference_deadline_disagreements_50ms"]
+          assert a["original_30k_crossruntime_parity"]==a["stage65_safety"]=="FAIL"
+          print("A2_RETROSPECTIVE_NATIVE_SERVICE_CONFUND_SOURCE_VERIFIED")
+          PY
+          sha256sum a2-service-oracle/*.json > a2-service-oracle/audit_sha256.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpdc-a2-retrospective-service-oracle-source-audit
+          path: a2-service-oracle/
+          if-no-files-found: warn
