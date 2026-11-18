@@ -70,13 +70,13 @@ In the 5-ms original-arrival microcase, the native scheduler displayed EXEC=[] a
 
 The complete [verified A2 table](JPDC_A2_BOUNDED_GENERALIZATION_VERIFIED_2026-11-17.md) reports all 24 cells. Case-level maxima of absolute native-reported versus FIFO-reference waiting discrepancy ranged **24.0–246.0 ms**. The largest discrepancy (246 ms) occurred in the BURSTY_S2_5MS_P1 case. Across the 12 STAGGERED cells, the median of within-case maxima was **73.3055 ms** (range 24–171 ms); for the 12 BURSTY cells, the median was **87.0 ms** (range 25.005–246 ms). These summaries describe the designed fixed conditions and must not be interpreted as random-population estimates.
 
-**FIGURE TODO:** a compact 2-family × 2-minEvent × 2-capacity grouped chart showing all three variants and their maximum waiting discrepancy; avoid omitting unfavorable/nonextreme cells.
+**FIGURE 1 CREATED (author check and final typesetting pending):** [Original-data-derived vector SVG and full 24-case CSV](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/44217510468) (artifact `jpdc-verified-a2-manuscript-table-svg`, ID 14388253276). Generated solely from the pinned original 24-case A2 primary JSON and original retrospective oracle JSON using [deterministic figure source](make_jpdc_a2_manuscript_figure.py), verified by byte-exact repeat and independent per-case count checks. Horizontal bars compare requested FIFO and posthoc hindsight-native-service FIFO maxima; **do not treat distance between bar ends as a causal estimate**.
 
 ### 5.3 Consequences for synthetic deadline classifications
 
 With deadlines defined as native actual submit time plus 25 ms, the native and reference models disagreed on **86/288 paired job classifications**. At plus 50 ms they disagreed for **107/288**. These descriptive counts use repeated deterministic configuration variants; they are neither independent Bernoulli evidence for inferential testing nor evidence of field application deadline error.
 
-**TABLE TODO:** show all 24 cells and both deadline disagreement counts from the verified A2 report; include the entire tested denominator and indicate the declared arbitrariness of the deadline thresholds.
+**TABLE 1 GENERATED (final manuscript layout pending):** the same [GitHub Actions artifact](https://github.com/afshinyaghoobi/casper-iiot-cloudsim/actions/runs/44217510468) contains `a2_all_24_cases.csv` with all 24 source cases, both requested vs posthoc oracle wait residuals, and both synthetic deadline disagreement counts. The authoritative original-only table is also included in [A2 verified report](JPDC_A2_BOUNDED_GENERALIZATION_VERIFIED_2026-11-17.md). The thresholds are analytical choices, not deployment deadlines.
 
 ### 5.4 Retrospective service-length sensitivity: a major confound
 
@@ -119,7 +119,7 @@ For the tested 24 synthetic CloudSimPlus 8.5.7 SpaceShared conditions, native-re
 - [ ] Expand the targeted source-verified related-work first pass to full nearest-method comparison; complete exact bibliography, including FGCS status.
 - [ ] Verify mathematical equations, exact simulator class contract and m-server semantics wording; add a numbered recurrence.
 - [ ] Ensure a separate, genuinely original contribution relative to the full first FGCS manuscript and known literature.
-- [ ] Create final 24-case figure and table directly from original verified JSON.
+- [x] Generate all-24-case CSV and editable vector SVG from archived original audited JSON using real GitHub CI, byte-identical repeat (final editorial placement/quality inspection pending).
 - [ ] Validate all 24 raw numbers and confirm source Git SHA, ZIP SHA, code/data links.
 - [ ] Assess whether the article's contribution fits JPDC editorial scope; consider a more appropriate journal if not.
 - [ ] Decide authors, approvals, journal declarations, ethics and AI-use disclosure under current policies.
