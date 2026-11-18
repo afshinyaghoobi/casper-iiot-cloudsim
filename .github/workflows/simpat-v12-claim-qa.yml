@@ -1,0 +1,39 @@
+name: SIMPAT v1.2 scientific claim and title integrity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-v12-claim-qa.yml'
+      - 'jpdc/check_simpat_v12_claim_integrity.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V12_CONSTRUCT_CLAIM_AUDITED_2026-11-18.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Audit claim boundaries, reference order, title and original A2 figures
+        run: |
+          set -euo pipefail
+          python3 jpdc/check_simpat_v12_claim_integrity.py | tee simpat_v12_claim_audit.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('simpat_v12_claim_audit.json'))
+          assert x['status']=='PASS_STATIC_PACKET_CHECK'
+          assert x['title_locked'] and x['references_numbered']==12
+          assert x['source_cases']==24 and x['unresolved_author_approvals']
+          assert not x['publisher_submission']
+          print('SIMPAT_V12_CLAIM_AND_SOURCE_AUDIT_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v12-claim-integrity-check
+          path: simpat_v12_claim_audit.json
+          if-no-files-found: warn
