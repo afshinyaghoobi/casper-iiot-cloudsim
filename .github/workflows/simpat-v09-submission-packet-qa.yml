@@ -1,0 +1,43 @@
+name: SIMPAT v0.9 exact-title submission-packet static QA
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - ".github/workflows/simpat-v09-submission-packet-qa.yml"
+      - "jpdc/check_simpat_v09_submission_packet.py"
+      - "jpdc/SIMPAT_MANUSCRIPT_V09_SOURCE_TO_FIGURE_METHOD_2026-11-18.md"
+      - "jpdc/SIMPAT_HIGHLIGHTS_DRAFT_2026-11-18.md"
+      - "jpdc/SIMPAT_COVER_LETTER_AUTHOR_REVIEW_DRAFT_2026-11-18.md"
+      - "jpdc/SIMPAT_AUTHOR_DISCLOSURES_AND_TITLE_PAGE_WORKSHEET_2026-11-18.md"
+      - "jpdc/manuscript_a2_primary_24_cases_2026-11-18.csv"
+      - "jpdc/figure_a2_24_case_native_vs_fifo_2026-11-18.svg"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check_packet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact title, journal packet, source data, abstract and highlights
+        run: |
+          set -euo pipefail
+          python jpdc/check_simpat_v09_submission_packet.py | tee simpat_v09_packet_audit.json
+          python - <<'PY'
+          import json
+          x=json.load(open('simpat_v09_packet_audit.json'))
+          assert x['status']=='PASS_STATIC_PACKET_CHECK'
+          assert x['title_locked'] and x['source_cases']==24
+          assert x['unresolved_author_approvals'] and not x['publisher_submission']
+          print('SIMPAT_V09_STATIC_PACKET_AUDIT_PASS_AUTHOR_APPROVAL_STILL_REQUIRED')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v09-submission-packet-static-audit
+          path: simpat_v09_packet_audit.json
+          if-no-files-found: warn
