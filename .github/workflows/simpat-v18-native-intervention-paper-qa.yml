@@ -1,0 +1,39 @@
+name: SIMPAT v1.8 source-verified native intervention claims
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-v18-native-intervention-paper-qa.yml'
+      - 'jpdc/check_simpat_v18_intervention_claim_integrity.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V18_ENDUPDATE_RESCAN_INTERVENTION_2026-11-18.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  publication_integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate original title and source data, preregistered intervention evidence and limits
+        run: |
+          set -euo pipefail
+          python3 jpdc/check_simpat_v18_intervention_claim_integrity.py | tee simpat_v18_integrity.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('simpat_v18_integrity.json'))
+          assert x['status']=='PASS_STATIC_PACKET_CHECK'
+          assert x['title_locked'] and x['source_cases']==24
+          assert x['references_numbered']==12 and x['unresolved_author_approvals']
+          assert not x['publisher_submission']
+          print('SIMPAT_V18_PREREG_JAVA_INTERVENTION_TEXT_SOURCE_QA_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v18-preregistered-intervention-paper-qa
+          path: simpat_v18_integrity.json
+          if-no-files-found: warn
