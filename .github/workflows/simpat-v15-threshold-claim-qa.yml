@@ -1,0 +1,39 @@
+name: SIMPAT v1.5 threshold-sensitivity manuscript claim integrity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-v15-threshold-claim-qa.yml'
+      - 'jpdc/check_simpat_v15_threshold_claim_integrity.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V15_THRESHOLD_SENSITIVITY_2026-11-18.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  static_claim_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact title, unchanged data and honest posthoc limitations
+        run: |
+          set -euo pipefail
+          python3 jpdc/check_simpat_v15_threshold_claim_integrity.py | tee simpat_v15_claim_audit.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('simpat_v15_claim_audit.json'))
+          assert a['status']=='PASS_STATIC_PACKET_CHECK'
+          assert a['title_locked'] and a['references_numbered']==12
+          assert a['source_cases']==24 and a['unresolved_author_approvals']
+          assert not a['publisher_submission']
+          print('SIMPAT_V15_POSTHOC_THRESHOLD_CLAIM_STATIC_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v15-original-claim-threshold-audit
+          path: simpat_v15_claim_audit.json
+          if-no-files-found: warn
