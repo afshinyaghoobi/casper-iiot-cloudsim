@@ -1,0 +1,43 @@
+name: SIMPAT v2.2 raw native evidence SHA and manuscript provenance QA
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-v22-archived-evidence-qa.yml'
+      - 'jpdc/check_simpat_v22_archived_native_integrity.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V22_PERSISTENT_NATIVE_EVIDENCE_2026-11-18.md'
+      - 'jpdc/evidence/simpat_v857_original_2026-11-18/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen_original_provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recheck exact native A1/A2/A3 raw sources, 14 SHA files, negatives and final article
+        run: |
+          set -euo pipefail
+          cd jpdc/evidence/simpat_v857_original_2026-11-18
+          sha256sum --check SHA256SUMS.txt
+          cd ../../..
+          python3 jpdc/check_simpat_v22_archived_native_integrity.py | tee simpat_v22_archive_and_manuscript_audit.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('simpat_v22_archive_and_manuscript_audit.json'))
+          assert a['status']=='PASS_STATIC_PACKET_CHECK'
+          assert a['title_locked'] and a['references_numbered']==12
+          assert a['source_cases']==24 and a['unresolved_author_approvals']
+          assert not a['publisher_submission']
+          print("SIMPAT_V22_NATIVE_RAW_HASH_CROSS_SOURCE_AND_DATA_AVAILABILITY_PASS")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v22-persistent-original-raw-evidence-qa
+          path: simpat_v22_archive_and_manuscript_audit.json
+          if-no-files-found: warn
