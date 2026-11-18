@@ -1,0 +1,38 @@
+name: SIMPAT v1.1 exact title and closest-prior-work integrity
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-v11-direct-prior-art-qa.yml'
+      - 'jpdc/check_simpat_v11_publication_packet.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V11_QUEUE_PRIOR_ART_2026-11-18.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Static manuscript source and closest-paper citation QA
+        run: |
+          set -euo pipefail
+          python3 jpdc/check_simpat_v11_publication_packet.py | tee simpat_v11_static_audit.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('simpat_v11_static_audit.json'))
+          assert x['status']=='PASS_STATIC_PACKET_CHECK'
+          assert x['title_locked'] and x['references_numbered']==12 and x['source_cases']==24
+          assert x['unresolved_author_approvals'] and not x['publisher_submission']
+          print('SIMPAT_V11_REFERENCES_AND_SOURCE_TABLE_STATIC_PASS')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-v11-closest-prior-art-manuscript-audit
+          path: simpat_v11_static_audit.json
+          if-no-files-found: warn
