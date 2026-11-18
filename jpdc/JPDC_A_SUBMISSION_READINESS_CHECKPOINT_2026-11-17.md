@@ -1,3 +1,9 @@
+# LATEST EDITORIAL PRIOR-ART GATE — 2026-11-17
+
+[Working manuscript v0.3](JPDC_A_COMPLETE_WORKING_MANUSCRIPT_V03_2026-11-17.md) added explicit observed-native-submit FIFO m-server recurrence and direct nearest prior work. [Closest-prior-work comparison](JPDC_A_CLOSEST_PRIOR_ART_AND_NOVELTY_RISK_2026-11-17.md) confirms **HIGH** generic-method overlap: Vondra et al. 2017 documented CloudSim job-duration computation inaccuracies; Zakarya/Gillam 2019 compared CloudSim accuracy with simplified models; Sallo/Kecskemeti 2023 documented arrival-time handling disparities in simulator comparisons. Exact CloudSimPlus 8.5.7 Javadoc does not guarantee equivalence to our analytically defined FIFO m-server queue. Thus a JPDC article based only on “simulator outcomes differ” has real novelty risk. **Decision is still CONDITIONAL / NOT SUBMIT-READY.** Next limited tasks: manuscript mathematical and raw trace checks, direct full-text nearest-paper review, journal-appropriate article suitability and final coauthor approval. No more unmotivated simulation campaigns. Original negative parity and Stage65 safety remain failed. B research reserved.
+
+---
+
 # Program A — JPDC bounded submission-readiness checkpoint (2026-11-17)
 
 **Decision:** ADVANCE TO MANUSCRIPT QUALITY / EDITORIAL ORIGINALITY CHECK. No need to run larger native simulation grid merely because existing tests returned a negative or simulator-dependent outcome. Submission target around Dec 20, 2026 remains a conditional **internal planning milestone**, NOT forecast of acceptance or proof of sufficient novelty.
