@@ -76,8 +76,8 @@ assert "The original **24-case A2** run" in t
 assert "A1** native microfixture did instrument" in t
 assert "one- and two-PE VM configurations" in t
 assert "**Software-contract and intervention scope.**" in t
-assert "the two affected A1 conditions were known" in t.lower()
-assert "the unique causal decomposition across the 24 A2 conditions" in t.lower()
+assert "the two affected a1 conditions were known" in t.lower()
+assert "the unique causal decomposition across the 24 a2 conditions" in t.lower()
 assert "a waiting-promotion callback was not instrumented" not in t
 assert "More precise attribution of waiting promotion and validation" not in t
 assert "CloudletSchedulerAbstract.html" in t
