@@ -1,0 +1,50 @@
+name: SIMPAT A1 executed queue event-order precondition audit
+on:
+  push:
+    branches: [jpdc-seed0-repro-20261024]
+    paths:
+      - '.github/workflows/simpat-a1-event-sequence-audit.yml'
+      - 'jpdc/audit_simpat_a1_event_sequence_precondition.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download frozen source-controlled native A1 run
+        uses: actions/download-artifact@v4
+        with:
+          name: simpat-v857-native-passive-wait-promotion-a1
+          run-id: 44359114031
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: a1-original
+      - name: Recheck original unperturbed control and tested update-to-admission sequences
+        run: |
+          set -euo pipefail
+          cmp a1-original/passive_promotion.log a1-original/passive_promotion_repeat.log
+          cmp a1-original/original_control.log a1-original/passive_without_promotion_lines.log
+          python3 jpdc/audit_simpat_a1_event_sequence_precondition.py \
+            --original a1-original/original_control.log \
+            --promotion a1-original/passive_promotion.log \
+            --out a1-event-sequence-audit.json | tee a1-event-sequence-console.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('a1-event-sequence-audit.json'))
+          assert a['status']=='PASS_ORIGINAL_LOG_EXECUTED_EVENT_ORDER_AUDIT'
+          assert a['observed_precursor_sequences']==2 and a['original_source_cases']==6
+          assert not a['causal_effect_proven'] and not a['claim_of_library_defect']
+          print('SIMPAT_A1_SOURCE_EVENT_SEQUENCE_AUDIT_PASS_NONCAUSAL')
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpat-a1-observed-update-eligibility-sequence-audit
+          path: a1-event-sequence-audit.json
+          if-no-files-found: warn
