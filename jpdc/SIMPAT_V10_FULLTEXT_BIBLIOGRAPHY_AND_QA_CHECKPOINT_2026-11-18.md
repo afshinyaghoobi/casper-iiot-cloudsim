@@ -1,0 +1,20 @@
+# SIMPAT v1.0 verified editorial checkpoint — 2026-11-18
+
+**Exact author-approved title unchanged:** *Queue-Wait and Execution-Time Semantics in CloudSimPlus 8.5.7: Implications for IoT Scheduling Simulation*.
+**Selected journal:** *Simulation Modelling Practice and Theory* (Elsevier).
+**Actual current file:** [SIMPAT working manuscript v1.0](SIMPAT_MANUSCRIPT_V10_DIRECT_FULLTEXT_REVIEW_2026-11-18.md).
+
+## New completed tasks
+1. **Direct full text review of Mechalikh et al. (2025), SIMPAT 138:103042**, DOI 10.1016/j.simpat.2024.103042. The author-uploaded full text from https://www.researchgate.net/publication/386084832_Quality_matters_A_comprehensive_comparative_study_of_edge_computing_simulators was accessible, unlike ScienceDirect publisher full-text 403. Sections abstract/2/5.1.2/6/8 checked. This paper compares **24 edge simulation tools** on functionality/software quality/scalability/reliability and CloudSimPlus as a *software system*, not 24 workloads on a single v8.5.7 SpaceShared runtime nor the *reported per-Cloudlet wait vs mathematical FIFO recurrence* of our A2. Difference is factual but does not establish all-field priority or acceptance.
+2. **Bibliographic error corrected:** reference [1] and in-text mention now identify **Calheiros et al.**, not Buyya as first author. Publisher DOI https://doi.org/10.1002/spe.995 lists Rodrigo N. Calheiros, Rajiv Ranjan, Anton Beloglazov, César A. F. De Rose and Rajkumar Buyya (2011), 41(1):23–50.
+3. [Version 1.0 manuscript](SIMPAT_MANUSCRIPT_V10_DIRECT_FULLTEXT_REVIEW_2026-11-18.md) rewrites same-journal related work using directly read paper and distinguishes 24 **tools** versus 24 **configurations**, neither 24 being a random independently representative population. Preserves every original A1/A2/A3 calculation and frozen input. Adds **unapproved author-approval and AI declaration draft** immediately ahead of References; final journal copy must replace before submission with all-authors-verified truthful wording. New comparison tracked in [source-audit document](SIMPAT_MECHALIKH_FULLTEXT_AND_CALHEIROS_BIB_AUDIT_2026-11-18.md).
+4. [New static QA](check_simpat_v10_publication_packet.py) checks original user title, corrected publisher first author, full-text comparison, author-approval pending, numbered references1–11, 24-case source table/SVG and exact 86/288+107/288 deadline disagreement, 246ms max. **Real GitHub Actions run44335267841 SUCCESS**, artifact ID14441466088, reported artifact SHA256 700d70f8bf638a8f781a3bb31e0c16c75cb9e0aa91e867709ff266a293af16b5. 239-word abstract after minor edit. This is static source and packaging integrity, **not experimental replication, correctness certification, journal acceptance or author sign-off**.
+
+## Still binding publication blockers
+- Nearest CloudSim-family error/analytical validity papers (Vondra et al 2017, Zakarya/Gillam2019) need correct direct method comparison where full text can be accessed; no invention of novelty.
+- Single-VM, CPU-only fixed synthetic source is not empirical IoT/IIoT; IoT in title is application implications only; no physical deadline or scheduling superiority.
+- Journal's expectation of substantial simulator method contribution and transparent validation remains. On present evidence, the incremental scope is modest; **don't misrepresent a technical case study as novel platform-scale simulator methodology**.
+- Confirm exact current SIMPAT online author guide and formatting, 100% complete accurate citations, authors/order/affiliations, funding, conflicts, CRediT, original FGCS CASPER overlap, exact AI tool(s) and human verification, copyright/data availability before submission.
+- No journal submission made and no unconditional promise of acceptance. Internal Dec20 date conditional. Existing original Java↔Python strict30k parity **FAIL** and Stage65 safety **FAIL** unchanged. Program B independent RESERVED/NOT STARTED.
+
+**Priority next continuation:** finish a small full-text check for 2017/2019 closest literature where accessible, then journal-ready author-review package/figures; avoid needless simulation grids or unexplained stage inflation.
