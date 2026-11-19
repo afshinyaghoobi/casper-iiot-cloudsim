@@ -1,4 +1,4 @@
-name: SIMPAT v2.7 author-review Word package
+name: SIMPAT v2.8 author-review Word package
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     paths:
       - '.github/workflows/simpat-v25-word-export.yml'
       - 'jpdc/tools/build_simpat_v25_docx.py'
-      - 'jpdc/SIMPAT_MANUSCRIPT_V27_AUTHOR_DECLARATIONS_2026-11-19.md'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V28_PROFESSOR_REVIEW_DRAFT_2026-11-19.md'
       - 'jpdc/SIMPAT_V24_SUPPLEMENTARY_EXTENDED_RESULTS_2026-11-18.md'
       - 'jpdc/SIMPAT_V25_SUBMISSION_HIGHLIGHTS_2026-11-18.md'
       - 'jpdc/SIMPAT_V25_COVER_LETTER_AUTHOR_DRAFT_2026-11-18.md'
@@ -58,7 +58,7 @@ jobs:
       - name: Upload author-review package and visual-QA PDFs
         uses: actions/upload-artifact@v4
         with:
-          name: simpat-v27-author-review-word-and-pdfs
+          name: simpat-v28-author-review-word-and-pdfs
           path: |
             /tmp/simpat-submission/*
             /tmp/simpat-render/*
