@@ -113,7 +113,7 @@ def validate_primary_table(markdown: str) -> None:
     maxgap = max(r[1] for r in rows)
     if (d25, d50, maxgap) != (86, 107, 246):
         raise RuntimeError(f"Primary Table 1 mismatch: {d25}, {d50}, {maxgap}")
-    refs = re.findall(r"^\\[(\\d+)\\] ", markdown, flags=re.MULTILINE)
+    refs = re.findall(r"^\[(\d+)\] ", markdown, flags=re.MULTILINE)
     if refs != [str(i) for i in range(1, 13)]:
         raise RuntimeError("The original 12-item reference sequence has changed")
     if "### Data availability" not in markdown or "### CRediT author statement" not in markdown:
