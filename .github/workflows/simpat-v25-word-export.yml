@@ -10,7 +10,7 @@ on:
       - 'jpdc/SIMPAT_MANUSCRIPT_V29_CLEAN_PROFESSOR_REVIEW_2026-11-19.md'
       - 'jpdc/SIMPAT_V24_SUPPLEMENTARY_EXTENDED_RESULTS_2026-11-18.md'
       - 'jpdc/SIMPAT_V25_SUBMISSION_HIGHLIGHTS_2026-11-18.md'
-      - 'jpdc/SIMPAT_V25_COVER_LETTER_AUTHOR_DRAFT_2026-11-18.md'
+      - 'jpdc/SIMPAT_V29_CLEAN_COVER_LETTER_FOR_PROFESSOR_2026-11-19.md'
       - 'jpdc/figure_a2_24_case_native_vs_fifo_2026-11-18.svg'
   workflow_dispatch:
 
