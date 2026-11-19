@@ -1,13 +1,13 @@
-name: SIMPAT v2.5 author-review Word package
+name: SIMPAT v2.6 author-review Word package
 
 on:
   push:
     branches:
       - jpdc-seed0-repro-20261024
     paths:
-      - '.github/workflows/simpat-v25-word-export.yml'
-      - 'jpdc/tools/build_simpat_v25_docx.py'
-      - 'jpdc/SIMPAT_MANUSCRIPT_V25_SUBMISSION_PREPARATION_DRAFT_2026-11-18.md'
+      - '.github/workflows/simpat-v26-word-export.yml'
+      - 'jpdc/tools/build_simpat_v26_docx.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V26_AUTHORS_INTEGRATED_DRAFT_2026-11-19.md'
       - 'jpdc/SIMPAT_V24_SUPPLEMENTARY_EXTENDED_RESULTS_2026-11-18.md'
       - 'jpdc/SIMPAT_V25_SUBMISSION_HIGHLIGHTS_2026-11-18.md'
       - 'jpdc/SIMPAT_V25_COVER_LETTER_AUTHOR_DRAFT_2026-11-18.md'
@@ -34,11 +34,11 @@ jobs:
           python -m pip install python-docx cairosvg pypdf
       - name: Generate editable manuscript and separate Word attachments
         run: |
-          python jpdc/tools/build_simpat_v25_docx.py --jpdc jpdc --outdir /tmp/simpat-submission
+          python jpdc/tools/build_simpat_v26_docx.py --jpdc jpdc --outdir /tmp/simpat-submission
       - name: Render Word documents to PDF for automated layout/sanity tests
         run: |
           mkdir -p /tmp/simpat-render
-          libreoffice -env:UserInstallation=file:///tmp/lo-simpat-v25 --headless --convert-to pdf --outdir /tmp/simpat-render /tmp/simpat-submission/*.docx
+          libreoffice -env:UserInstallation=file:///tmp/lo-simpat-v26 --headless --convert-to pdf --outdir /tmp/simpat-render /tmp/simpat-submission/*.docx
           python - <<'PY'
           from pathlib import Path
           from pypdf import PdfReader
@@ -58,7 +58,7 @@ jobs:
       - name: Upload author-review package and visual-QA PDFs
         uses: actions/upload-artifact@v4
         with:
-          name: simpa-v25-author-review-word-and-pdfs
+          name: simpa-v26-author-review-word-and-pdfs
           path: |
             /tmp/simpat-submission/*
             /tmp/simpat-render/*
