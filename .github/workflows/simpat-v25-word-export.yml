@@ -1,0 +1,65 @@
+name: SIMPAT v2.5 author-review Word package
+
+on:
+  push:
+    branches:
+      - jpdc-seed0-repro-20261024
+    paths:
+      - '.github/workflows/simpat-v25-word-export.yml'
+      - 'jpdc/tools/build_simpat_v25_docx.py'
+      - 'jpdc/SIMPAT_MANUSCRIPT_V25_SUBMISSION_PREPARATION_DRAFT_2026-11-18.md'
+      - 'jpdc/SIMPAT_V24_SUPPLEMENTARY_EXTENDED_RESULTS_2026-11-18.md'
+      - 'jpdc/SIMPAT_V25_SUBMISSION_HIGHLIGHTS_2026-11-18.md'
+      - 'jpdc/SIMPAT_V25_COVER_LETTER_AUTHOR_DRAFT_2026-11-18.md'
+      - 'jpdc/figure_a2_24_case_native_vs_fifo_2026-11-18.svg'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export_word:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install document export tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y pandoc libreoffice-writer
+          python -m pip install python-docx cairosvg pypdf
+      - name: Generate editable manuscript and separate Word attachments
+        run: |
+          python jpdc/tools/build_simpat_v25_docx.py --jpdc jpdc --outdir /tmp/simpat-submission
+      - name: Render Word documents to PDF for automated layout/sanity tests
+        run: |
+          mkdir -p /tmp/simpat-render
+          libreoffice -env:UserInstallation=file:///tmp/lo-simpat-v25 --headless --convert-to pdf --outdir /tmp/simpat-render /tmp/simpat-submission/*.docx
+          python - <<'PY'
+          from pathlib import Path
+          from pypdf import PdfReader
+          rendered = list(Path('/tmp/simpat-render').glob('*.pdf'))
+          if len(rendered) != 4:
+              raise SystemExit(f'Expected 4 rendered PDFs, got {len(rendered)}')
+          for p in rendered:
+              pdf = PdfReader(str(p))
+              if not pdf.pages:
+                  raise SystemExit(f'Empty exported PDF: {p.name}')
+              for idx, page in enumerate(pdf.pages):
+                  box = page.mediabox
+                  if float(box.width) <= 0 or float(box.height) <= 0:
+                      raise SystemExit(f'Invalid page dimensions: {p.name}:{idx}')
+              print(p.name, 'pages=', len(pdf.pages))
+          PY
+      - name: Upload author-review package and visual-QA PDFs
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpa-v25-author-review-word-and-pdfs
+          path: |
+            /tmp/simpat-submission/*
+            /tmp/simpat-render/*
+          retention-days: 30
