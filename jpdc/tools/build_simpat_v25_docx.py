@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproducible, non-submitting Word export for the SIMPAT v2.7 author-review package.
+"""Reproducible, non-submitting Word export for the SIMPAT v2.8 author-review package.
 
 Inputs remain the original Markdown sources in this repository. Requires
 pandoc, python-docx and cairosvg. Does not change experimental inputs/outputs.
@@ -19,8 +19,8 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 FILES = {
-    "SIMPAT_Manuscript_v27_AUTHOR_REVIEW.docx":
-        "SIMPAT_MANUSCRIPT_V27_AUTHOR_DECLARATIONS_2026-11-19.md",
+    "SIMPAT_Manuscript_v28_AUTHOR_REVIEW.docx":
+        "SIMPAT_MANUSCRIPT_V28_PROFESSOR_REVIEW_DRAFT_2026-11-19.md",
     "SIMPAT_Supplementary_AUTHOR_REVIEW.docx":
         "SIMPAT_V24_SUPPLEMENTARY_EXTENDED_RESULTS_2026-11-18.md",
     "SIMPAT_Highlights_AUTHOR_REVIEW.docx":
@@ -137,7 +137,7 @@ def main() -> None:
                                       main=original.startswith("SIMPAT_MANUSCRIPT")))
         summary = "\n".join(str(x) for x in reports) + "\n"
         (out / "EXPORT_QA.txt").write_text(
-            "SIMPAT v2.7 Word package; not submitted or author approved.\n" + summary,
+            "SIMPAT v2.8 Word package; not submitted or author approved.\n" + summary,
             encoding="utf-8")
         print(summary)
 
