@@ -18,7 +18,11 @@ Thank you for considering the work.
 
 Sincerely,
 
-**[Corresponding author name, verified institutional affiliation, and email]**
+**Afshin Yaghoobi**
+
+Department of Business Analytics, W. Frank Barton School of Business, Wichita State University, Wichita, KS, USA
+
+axyaghoobi@shockers.wichita.edu
 
 ---
 
