@@ -26,7 +26,7 @@ FILES = {
     "SIMPAT_Highlights_AUTHOR_REVIEW.docx":
         "SIMPAT_V25_SUBMISSION_HIGHLIGHTS_2026-11-18.md",
     "SIMPAT_Cover_Letter_AUTHOR_REVIEW.docx":
-        "SIMPAT_V25_COVER_LETTER_AUTHOR_DRAFT_2026-11-18.md",
+        "SIMPAT_V29_CLEAN_COVER_LETTER_FOR_PROFESSOR_2026-11-19.md",
 }
 FIGURE = "figure_a2_24_case_native_vs_fifo_2026-11-18.svg"
 TITLE = "Queue-Wait and Execution-Time Semantics in CloudSimPlus 8.5.7: Implications for IoT Scheduling Simulation"
@@ -97,6 +97,29 @@ def format_docx(path: Path, *, main: bool = False) -> dict:
             "embedded_figures": len(d.inline_shapes)}
 
 
+def validate_primary_table(markdown: str) -> None:
+    """Recompute Table 1 column totals from the submitted main-text source."""
+    lines = markdown.splitlines()
+    rows = []
+    for line in lines:
+        if line.startswith("| BURSTY_") or line.startswith("| STAGGERED_"):
+            columns = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(columns) != 4:
+                raise RuntimeError(f"Unexpected Table 1 column count: {line}")
+            rows.append((columns[0], float(columns[1]), int(columns[2]), int(columns[3])))
+    if len(rows) != 24 or len({row[0] for row in rows}) != 24:
+        raise RuntimeError(f"Primary A2 table must have 24 unique cases, saw {len(rows)}")
+    d25, d50 = sum(r[2] for r in rows), sum(r[3] for r in rows)
+    maxgap = max(r[1] for r in rows)
+    if (d25, d50, maxgap) != (86, 107, 246):
+        raise RuntimeError(f"Primary Table 1 mismatch: {d25}, {d50}, {maxgap}")
+    refs = re.findall(r"^\\[(\\d+)\\] ", markdown, flags=re.MULTILINE)
+    if refs != [str(i) for i in range(1, 13)]:
+        raise RuntimeError("The original 12-item reference sequence has changed")
+    if "### Data availability" not in markdown or "### CRediT author statement" not in markdown:
+        raise RuntimeError("Required author-provided declarations are absent")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--jpdc", type=Path, default=Path(__file__).resolve().parents[1])
@@ -120,6 +143,8 @@ def main() -> None:
         reports = []
         for target, original in FILES.items():
             body = (root / original).read_text(encoding="utf-8")
+            if original.startswith("SIMPAT_MANUSCRIPT"):
+                validate_primary_table(body)
             if original.startswith("SIMPAT_MANUSCRIPT"):
                 if body.splitlines()[0] != "# " + TITLE:
                     raise RuntimeError("Locked title has been changed")
