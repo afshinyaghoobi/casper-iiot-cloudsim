@@ -1,16 +1,12 @@
 # Queue-Wait and Execution-Time Semantics in CloudSimPlus 8.5.7: Implications for IoT Scheduling Simulation
 
-**Afshin Yaghoobi¹, \***, Mahsa Nazemi Harandi²**
+**Afshin Yaghoobi¹, \***, Mahsa Nazemi Harandi¹**
 
 ¹ Department of Business Analytics, W. Frank Barton School of Business, Wichita State University, Wichita, KS, USA
 
-² **[Affiliation for Mahsa Nazemi Harandi — pending author confirmation]**
-
-**Corresponding author:** Afshin Yaghoobi — **[email address pending author confirmation]**
+**\* Corresponding author:** Afshin Yaghoobi — [axyaghoobi@shockers.wichita.edu](mailto:axyaghoobi@shockers.wichita.edu)
 
 **ORCID:** Afshin Yaghoobi: [0009-0006-4695-6018](https://orcid.org/0009-0006-4695-6018); Mahsa Nazemi Harandi: [0009-0000-5395-5394](https://orcid.org/0009-0000-5395-5394)
-
-**Author details are provided for manuscript preparation.** Affiliation 2, corresponding-author email, and contribution approvals remain incomplete.
 
 ## Abstract
 
