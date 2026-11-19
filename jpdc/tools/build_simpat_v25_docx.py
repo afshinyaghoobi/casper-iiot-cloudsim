@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproducible, non-submitting Word export for the SIMPAT v2.6 author-review package.
+"""Reproducible, non-submitting Word export for the SIMPAT v2.7 author-review package.
 
 Inputs remain the original Markdown sources in this repository. Requires
 pandoc, python-docx and cairosvg. Does not change experimental inputs/outputs.
@@ -19,8 +19,8 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 FILES = {
-    "SIMPAT_Manuscript_v26_AUTHOR_REVIEW.docx":
-        "SIMPAT_MANUSCRIPT_V26_AUTHORS_INTEGRATED_DRAFT_2026-11-19.md",
+    "SIMPAT_Manuscript_v27_AUTHOR_REVIEW.docx":
+        "SIMPAT_MANUSCRIPT_V27_AUTHOR_DECLARATIONS_2026-11-19.md",
     "SIMPAT_Supplementary_AUTHOR_REVIEW.docx":
         "SIMPAT_V24_SUPPLEMENTARY_EXTENDED_RESULTS_2026-11-18.md",
     "SIMPAT_Highlights_AUTHOR_REVIEW.docx":
@@ -72,7 +72,7 @@ def format_docx(path: Path, *, main: bool = False) -> dict:
     if main:
         if TITLE not in all_text:
             raise RuntimeError("Locked title missing from Word")
-        for name in ["Afshin Yaghoobi", "Mahsa Nazemi Harandi", "0009-0006-4695-6018", "0009-0000-5395-5394"]:
+        for name in ["Afshin Yaghoobi", "Mahsa Nazemi Harandi", "0009-0006-4695-6018", "0009-0000-5395-5394", "axyaghoobi@shockers.wichita.edu", "This research did not receive any specific grant", "The authors declare that they have no known competing financial", "available from the corresponding author upon reasonable request", "Writing – review and editing"]:
             if name not in all_text:
                 raise RuntimeError(f"Missing supplied author/ORCID field: {name}")
         for term in ["86/288", "107/288", "250/288", "SIMPAT", "FAILED"]:
@@ -137,7 +137,7 @@ def main() -> None:
                                       main=original.startswith("SIMPAT_MANUSCRIPT")))
         summary = "\n".join(str(x) for x in reports) + "\n"
         (out / "EXPORT_QA.txt").write_text(
-            "SIMPAT v2.6 Word package; not submitted or author approved.\n" + summary,
+            "SIMPAT v2.7 Word package; not submitted or author approved.\n" + summary,
             encoding="utf-8")
         print(summary)
 
