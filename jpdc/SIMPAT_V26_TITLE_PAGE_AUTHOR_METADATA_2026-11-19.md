@@ -1,17 +1,15 @@
-# SIMPAT — title-page author metadata (provided 2026-11-19)
+# SIMPAT — confirmed author/title-page metadata (updated 2026-11-19)
 
 **Manuscript:** Queue-Wait and Execution-Time Semantics in CloudSimPlus 8.5.7: Implications for IoT Scheduling Simulation
 
-**Authors in supplied order:** Afshin Yaghoobi¹, *; Mahsa Nazemi Harandi².
+**Authors, supplied order:** Afshin Yaghoobi¹, *; Mahsa Nazemi Harandi¹.
 
-**¹** Department of Business Analytics, W. Frank Barton School of Business, Wichita State University, Wichita, KS, USA
+**¹ Shared affiliation (both authors):** Department of Business Analytics, W. Frank Barton School of Business, Wichita State University, Wichita, KS, USA.
 
-**²** [Affiliation pending confirmation by Mahsa Nazemi Harandi]
+**Corresponding author:** Afshin Yaghoobi, axyaghoobi@shockers.wichita.edu
 
-***** Corresponding author: Afshin Yaghoobi, [email address pending confirmation].
-
-**ORCID**
+**ORCID:**
 - Afshin Yaghoobi: https://orcid.org/0009-0006-4695-6018
 - Mahsa Nazemi Harandi: https://orcid.org/0009-0000-5395-5394
 
-Author-provided factual metadata only. University affiliation for the second author, corresponding-author email, CRediT statements, funding, competing interests and final submission consent must not be inferred. Do not automatically attribute the first author's affiliation to the second author.
+Author names, author order, corresponding author and email, ORCIDs, and both authors' identical WSU department affiliation were supplied or explicitly confirmed in conversation. No second superscript/affiliation needed. CRediT contributions, any funding and competing interests, related-manuscript disclosure and final author approval remain to be verified; do not infer or fabricate them.
