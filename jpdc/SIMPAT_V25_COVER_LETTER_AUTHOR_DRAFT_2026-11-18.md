@@ -12,7 +12,7 @@ The empirical evidence includes a prespecified factorial of 24 synthetic cases a
 
 The submission is relevant to SIMPAT readers assessing the validity, reproducibility, and measurement assumptions of cloud/edge scheduling simulations. We have limited our conclusions to the tested synthetic single-VM configuration: the comparison does not establish a simulator defect or real-world IoT deadline error.
 
-**[To be completed by the corresponding author before submission: confirm all author approvals, originality, accurate disclosure of the separate FGCS-oriented CASPER manuscript and any overlap, journal-specific declarations, and any simultaneous-submission restrictions. Remove this instruction once verified.]**
+**[Corresponding author to confirm all coauthors have approved the final submission and all publisher-specific declarations are complete. A distinct FGCS CASPER submission was rejected; any substantive overlap should be assessed honestly but it is not currently under review.]**
 
 Thank you for considering the work.
 
